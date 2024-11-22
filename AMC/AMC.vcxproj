@@ -207,6 +207,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClCompile Include="src\include\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="src\include\imgui\imgui_tables.cpp" />
     <ClCompile Include="src\include\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="src\module\EventManager.cpp" />
     <ClCompile Include="src\module\Model.cpp" />
     <ClCompile Include="src\module\AudioPlayer.cpp" />
     <ClCompile Include="src\module\Camera.cpp" />
@@ -305,6 +306,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\include\AudioPlayer.h" />
     <ClInclude Include="src\include\Camera.h" />
     <ClInclude Include="src\include\common.h" />
+    <ClInclude Include="src\include\EventManager.h" />
     <ClInclude Include="src\include\glm\common.hpp" />
     <ClInclude Include="src\include\glm\detail\compute_common.hpp" />
     <ClInclude Include="src\include\glm\detail\compute_vector_decl.hpp" />

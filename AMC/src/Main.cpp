@@ -8,6 +8,7 @@
 #include<AudioPlayer.h>
 #include<TextureManager.h>
 #include<Model.h>
+#include<EventManager.h>
 
 // Libraries
 #pragma comment(lib,"glew32.lib")
@@ -49,8 +50,11 @@ GLuint msaaDepthBuffer;
 
 AMC::DebugCamera *gpDebugCamera;
 AMC::AudioPlayer *gpAudioPlayer;
+AMC::EventManager* gpEventManager;
+
 DOUBLE fps = 0.0;
 BOOL bPlayAudio = TRUE;
+float moveZ = -15.0f;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow) {
 	WNDCLASSEX wc;
@@ -278,7 +282,7 @@ void RenderFrame(void)
 	glBindVertexArray(vao);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
-	modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, -15.0f));
+	modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, moveZ));
 	mvpMatrix = gpDebugCamera->getProjectionMatrix() * gpDebugCamera->getViewMatrix() * modelMatrix;
 	programModel->use();
 	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
@@ -361,6 +365,7 @@ void RenderFrame(void)
 
 void Update(void)
 {
+	gpEventManager->update();
 	modelHelmet->update((float)AMC::deltaTime);
 	modelAnim->update((float)AMC::deltaTime);
 }
@@ -416,6 +421,8 @@ void InitGraphics()
 
 	modelHelmet = new AMC::Model(RESOURCE_PATH("models\\BoxAnimated.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 	modelAnim = new AMC::Model(RESOURCE_PATH("models\\CesiumMan\\CesiumMan.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+
+	gpEventManager = new AMC::EventManager({{"Event1", 0.0f, 5.0f,[](float t) {moveZ = std::lerp(-15.0f,-5.0f,t); }, nullptr}});
 
 	// Setup All FBO's 
 

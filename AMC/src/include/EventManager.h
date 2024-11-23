@@ -25,6 +25,7 @@ namespace AMC {
 		public:
 
 			EventManager(const std::vector<std::tuple<std::string, float, float, UpdateCallback, EasingFunction>>& events);
+			~EventManager();
 			void resetEvents();
 			float getEventTime(std::string eventName);
 			float getCurrentTime();

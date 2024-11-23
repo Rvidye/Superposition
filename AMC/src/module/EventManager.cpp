@@ -25,6 +25,10 @@ namespace AMC {
 		}
 	}
 
+	EventManager::~EventManager(){
+		eventList.clear();
+	}
+
 	void EventManager::resetEvents(){
 		currentTime = 0.0f;
 		recalculateTs();

@@ -4,11 +4,10 @@
 #include<Log.h>
 #include<RenderWindow.h>
 #include<ShaderProgram.h>
-#include<Camera.h>
 #include<AudioPlayer.h>
 #include<TextureManager.h>
 #include<Model.h>
-#include<EventManager.h>
+#include<Camera.h>
 
 // Libraries
 #pragma comment(lib,"glew32.lib")
@@ -50,7 +49,6 @@ GLuint msaaDepthBuffer;
 
 AMC::DebugCamera *gpDebugCamera;
 AMC::AudioPlayer *gpAudioPlayer;
-AMC::EventManager* gpEventManager;
 
 DOUBLE fps = 0.0;
 BOOL bPlayAudio = TRUE;
@@ -238,6 +236,9 @@ void keyboard(AMC::RenderWindow*, char key, UINT keycode)
 		break;
 		case VK_F2:
 			AMC::DEBUGCAM = !AMC::DEBUGCAM;
+			if (AMC::DEBUGCAM) {
+				AMC::currentCamera = gpDebugCamera;
+			}
 		break;
 		case VK_ESCAPE:
 			window->mClosed = TRUE;
@@ -259,8 +260,9 @@ void resize(AMC::RenderWindow*, UINT width, UINT height)
 	glViewport(0, 0, (GLsizei)width, (GLsizei)height);
 	pMat = glm::perspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 1000.0f);
 
-	if (gpDebugCamera)
-		gpDebugCamera->resize((FLOAT)width, (FLOAT)height);
+	if (gpDebugCamera) {
+		gpDebugCamera->setPerspectiveParameters(45.0f, window->AspectRatio());
+	}
 }
 
 void RenderFrame(void)
@@ -275,7 +277,7 @@ void RenderFrame(void)
 	glm::mat4 view = glm::mat4(1.0f);
 
 	modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -15.0f));
-	glm::mat4 mvpMatrix = gpDebugCamera->getProjectionMatrix() * gpDebugCamera->getViewMatrix() * modelMatrix;
+	glm::mat4 mvpMatrix = AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * modelMatrix;
 	program->use();
 	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
 	glBindTextureUnit(0, tex2);
@@ -283,13 +285,13 @@ void RenderFrame(void)
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, moveZ));
-	mvpMatrix = gpDebugCamera->getProjectionMatrix() * gpDebugCamera->getViewMatrix() * modelMatrix;
+	mvpMatrix = AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * modelMatrix;
 	programModel->use();
 	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
 	modelHelmet->draw(programModel);
 
 	modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, -15.0f));
-	mvpMatrix = gpDebugCamera->getProjectionMatrix() * gpDebugCamera->getViewMatrix() * modelMatrix;
+	mvpMatrix = AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * modelMatrix;
 	programModelAnim->use();
 	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
 	modelAnim->draw(programModelAnim);
@@ -329,6 +331,9 @@ void RenderFrame(void)
 
 	if (ImGui::Button(AMC::DEBUGCAM ? "Disable Debug Camera (F2)" : "Enable Debug Camera (F2)")) {
 		AMC::DEBUGCAM = !AMC::DEBUGCAM;
+		if (AMC::DEBUGCAM) {
+			AMC::currentCamera = gpDebugCamera;
+		}
 	}
 
 	if (AMC::DEBUGCAM) {
@@ -365,7 +370,6 @@ void RenderFrame(void)
 
 void Update(void)
 {
-	gpEventManager->update();
 	modelHelmet->update((float)AMC::deltaTime);
 	modelAnim->update((float)AMC::deltaTime);
 }
@@ -379,7 +383,7 @@ void InitPipeline()
 
 	gpDebugCamera = new AMC::DebugCamera();
 	gpAudioPlayer = new AMC::AudioPlayer();
-
+	AMC::currentCamera = gpDebugCamera;
 }
 
 void InitGraphics()
@@ -421,8 +425,6 @@ void InitGraphics()
 
 	modelHelmet = new AMC::Model(RESOURCE_PATH("models\\BoxAnimated.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 	modelAnim = new AMC::Model(RESOURCE_PATH("models\\CesiumMan\\CesiumMan.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
-
-	gpEventManager = new AMC::EventManager({{"Event1", 0.0f, 5.0f,[](float t) {moveZ = std::lerp(-15.0f,-5.0f,t); }, nullptr}});
 
 	// Setup All FBO's 
 

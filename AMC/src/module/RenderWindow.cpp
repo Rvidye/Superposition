@@ -147,7 +147,7 @@ namespace AMC {
 
 	FLOAT RenderWindow::AspectRatio()
 	{
-		return FLOAT(mWidth/mHeight);
+		return (FLOAT)mWidth/(FLOAT)mHeight;
 	}
 
 #ifdef _MYDEBUG

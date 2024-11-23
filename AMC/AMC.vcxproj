@@ -1006,6 +1006,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\include\ktx\ktxvulkan.h" />
     <ClInclude Include="src\include\Log.h" />
     <ClInclude Include="src\include\Model.h" />
+    <ClInclude Include="src\include\ModelPlacer.h" />
     <ClInclude Include="src\include\ShaderProgram.h" />
     <ClInclude Include="src\include\RenderWindow.h" />
     <ClInclude Include="src\include\SplineCameraAdjuster.h" />

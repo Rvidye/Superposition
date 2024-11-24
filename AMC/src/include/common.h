@@ -28,6 +28,7 @@
 #include<tuple>
 #include<vector>
 #include<algorithm>
+#include<queue>
 
 // GL and GLEW
 #include<GL/glew.h>

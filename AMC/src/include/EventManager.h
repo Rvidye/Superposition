@@ -23,13 +23,14 @@ namespace AMC {
 			void recalculateTs();
 
 		public:
-
+			EventManager() : currentTime(0.0f) {}
 			EventManager(const std::vector<std::tuple<std::string, float, float, UpdateCallback, EasingFunction>>& events);
 			~EventManager();
 			void resetEvents();
 			float getEventTime(std::string eventName);
 			float getCurrentTime();
 			void update();
+			void AddEvent(std::string name , events_t *e);
 			friend EventManager& operator+=(EventManager& e, float f);
 			friend EventManager& operator-=(EventManager& e, float f);
 			float& operator[] (std::string eventName);

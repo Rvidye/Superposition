@@ -359,6 +359,11 @@ namespace AMC {
 
 	void RenderWindow::UninitializeGL()
 	{
+		#ifdef _MYDEBUG
+			ImGui_ImplOpenGL3_Shutdown();
+			ImGui_ImplWin32_Shutdown();
+			ImGui::DestroyContext();
+		#endif
 		// Release All OpenGL Stuff Before Destroying Window
 		if (mHGLRC)
 		{

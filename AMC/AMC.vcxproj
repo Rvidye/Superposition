@@ -207,6 +207,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClCompile Include="src\include\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="src\include\imgui\imgui_tables.cpp" />
     <ClCompile Include="src\include\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="src\module\ModelPlacer.cpp" />
     <ClCompile Include="src\module\SplineCameraAdjuster.cpp" />
     <ClCompile Include="src\module\BSpline.cpp" />
     <ClCompile Include="src\module\BSplineUtils.cpp" />
@@ -219,6 +220,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClCompile Include="src\module\RenderWindow.cpp" />
     <ClCompile Include="src\module\ShaderProgram.cpp" />
     <ClCompile Include="src\module\TextureManager.cpp" />
+    <ClCompile Include="src\scenes\testscene\testScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\AL\al.h" />
@@ -1007,11 +1009,13 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\include\Log.h" />
     <ClInclude Include="src\include\Model.h" />
     <ClInclude Include="src\include\ModelPlacer.h" />
+    <ClInclude Include="src\include\Scene.h" />
     <ClInclude Include="src\include\ShaderProgram.h" />
     <ClInclude Include="src\include\RenderWindow.h" />
     <ClInclude Include="src\include\SplineCameraAdjuster.h" />
     <ClInclude Include="src\include\stb_image.h" />
     <ClInclude Include="src\include\TextureManager.h" />
+    <ClInclude Include="src\scenes\testscene\testScene.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="lib\assimp.dll">

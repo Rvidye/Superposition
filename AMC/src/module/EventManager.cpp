@@ -34,11 +34,11 @@ namespace AMC {
 		recalculateTs();
 	}
 
-	inline float EventManager::getEventTime(std::string eventName){
+	float EventManager::getEventTime(std::string eventName){
 		return eventList[eventName]->deltaT;
 	}
 
-	inline float EventManager::getCurrentTime(){
+	float EventManager::getCurrentTime(){
 		return currentTime;
 	}
 
@@ -47,6 +47,11 @@ namespace AMC {
 			currentTime += (float)AMC::deltaTime;
 			recalculateTs();
 		}
+	}
+
+	void EventManager::AddEvent(std::string eventId,events_t* e)
+	{
+		eventList.emplace(eventId, e);
 	}
 
 	void EventManager::recalculateTs(){

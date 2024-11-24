@@ -1,4 +1,5 @@
 #include<Camera.h>
+#include<BSpline.h>
 
 namespace AMC {
 
@@ -12,11 +13,9 @@ namespace AMC {
 
 	DebugCamera::DebugCamera()
 	{
-		width = 1920.0f;
-		height = 1080.0f;
 	}
 
-	DebugCamera::DebugCamera(float _width, float _height, const glm::vec3& _pos) : width(_width), height(_height)
+	DebugCamera::DebugCamera(float _width, float _height, const glm::vec3& _pos)
 	{
 		position = _pos;
 		front = CalculateFrontVector(this->yaw, this->pitch);
@@ -27,14 +26,17 @@ namespace AMC {
 		return glm::lookAt(position, position + front, up);
 	}
 
-	const glm::mat4 DebugCamera::getProjectionMatrix() const
-	{
-		return glm::perspective(glm::radians(45.0f), width / height, 0.1f, 10000.0f);
+	const glm::mat4 DebugCamera::getProjectionMatrix() const {
+		return glm::perspective(glm::radians(fov), aspectRatio, 0.1f, 10000.0f);
 	}
 
-	const glm::vec3 DebugCamera::getViewPosition() const
-	{
+	const glm::vec3 DebugCamera::getViewPosition() const {
 		return position;
+	}
+
+	void DebugCamera::setPerspectiveParameters(float ifov, float iaspectRatio) {
+		fov = ifov;
+		aspectRatio = iaspectRatio;
 	}
 
 	void DebugCamera::keyboard(char key, UINT keycode)
@@ -92,9 +94,48 @@ namespace AMC {
 		}
 	}
 
-	void DebugCamera::resize(float width, float height)
+	SplineCamera::SplineCamera(const std::vector<glm::vec3>& positionVector, const std::vector<glm::vec3>& frontVector)
+	:t(0.0f){
+
+		if (positionVector.size() <= 0) {
+			LOG_ERROR(L"Position Vector cannot be empty");
+		}
+
+		if (frontVector.size() <= 0) {
+			LOG_ERROR(L"Front Vector cannot be empty");
+		}
+
+		m_positionSpline = new BsplineInterpolator(positionVector);
+		m_frontSpline = new BsplineInterpolator(frontVector);
+	}
+
+	SplineCamera::~SplineCamera(){
+	}
+
+	void SplineCamera::update(float dt){
+		t = dt;
+	}
+
+	const glm::mat4 SplineCamera::getViewMatrix() const
 	{
-		this->width = width;
-		this->height = height;
+		glm::vec3 eye = m_positionSpline->interpolate(t);
+		glm::vec3 front = m_frontSpline->interpolate(t);
+		return glm::lookAt(eye, front , this->up);
+	}
+
+	const glm::mat4 SplineCamera::getProjectionMatrix() const{
+		return glm::perspective(glm::radians(fov), aspectRatio, 0.1f, 10000.0f);
+	}
+
+	const glm::vec3 SplineCamera::getViewPosition() const{
+		return m_positionSpline->interpolate(t);
+	}
+
+	void SplineCamera::keyboard(char key, UINT keycode){
+	}
+
+	void SplineCamera::setPerspectiveParameters(float ifov, float iaspectRatio){
+		fov = ifov;
+		aspectRatio = iaspectRatio;
 	}
 }

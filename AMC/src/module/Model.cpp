@@ -1,4 +1,4 @@
-#include <Model.h>
+#include<Model.h>
 #include<TextureManager.h>
 #include<assimp/Importer.hpp>
 #include<assimp/scene.h>
@@ -488,8 +488,8 @@ namespace AMC {
 			MorphTargetAnimator mta;
 			mta.meshName = morphAnim->mName.C_Str();
 			mta.currentTime = 0.0f;
-			mta.duration = animation->mDuration;
-			mta.ticksPerSecond = animation->mTicksPerSecond;
+			mta.duration = (FLOAT)animation->mDuration;
+			mta.ticksPerSecond = (INT)animation->mTicksPerSecond;
 
 			for (UINT keyIndex = 0; keyIndex < morphAnim->mNumKeys; ++keyIndex){
 				
@@ -530,9 +530,9 @@ namespace AMC {
 
 		for (UINT i = 0; i < scene->mNumAnimations; i++){
 			aiAnimation* animation = scene->mAnimations[i];
-			LOG_WARNING(L"%d", animation->mNumMeshChannels);
-			LOG_WARNING(L"%d", animation->mNumMorphMeshChannels);
-			LOG_WARNING(L"%d", animation->mNumChannels);
+			//LOG_WARNING(L"%d", animation->mNumMeshChannels);
+			//LOG_WARNING(L"%d", animation->mNumMorphMeshChannels);
+			//LOG_WARNING(L"%d", animation->mNumChannels);
 			switch (model->animType){
 				case AMC::SKELETALANIM:
 					LoadSkeletalAnimation(scene, animation, model);

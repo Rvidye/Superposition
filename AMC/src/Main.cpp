@@ -1,13 +1,17 @@
 #include<common.h>
 
-// My Headers
+// Core Headers
 #include<Log.h>
 #include<RenderWindow.h>
 #include<ShaderProgram.h>
-#include<Camera.h>
 #include<AudioPlayer.h>
 #include<TextureManager.h>
 #include<Model.h>
+#include<Camera.h>
+#include<Scene.h>
+
+// Scenes
+#include "scenes/testscene/testScene.h"
 
 // Libraries
 #pragma comment(lib,"glew32.lib")
@@ -34,13 +38,9 @@ void resize(AMC::RenderWindow*, UINT width, UINT height);
 void RenderFrame(void);
 void Update(void);
 
-void InitPipeline(void);
-void InitGraphics(void);
-
-GLuint vao, vbo, tex1,tex2;
-AMC::ShaderProgram* program, *programModel, *programModelAnim;
-glm::mat4 pMat;
-AMC::Model* modelHelmet,*modelAnim;
+void InitRenderPasses(void);
+void InitScenes(void);
+void playNextScene(void);
 
 //MSAA
 GLuint msaaFBO;
@@ -49,6 +49,10 @@ GLuint msaaDepthBuffer;
 
 AMC::DebugCamera *gpDebugCamera;
 AMC::AudioPlayer *gpAudioPlayer;
+
+std::vector<AMC::Scene*> sceneQueue;
+AMC::Scene* currentScene = nullptr;
+
 DOUBLE fps = 0.0;
 BOOL bPlayAudio = TRUE;
 
@@ -87,7 +91,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 		LOG_ERROR(L"RegisterClassEx Failed");
 	}
 
-	window = new AMC::RenderWindow(hInstance, L"MyWindowClass", L"Raster 2023", 800, 600, FALSE);
+	window = new AMC::RenderWindow(hInstance, L"MyWindowClass", L"Raster 2023", 1920, 1080, FALSE);
 
 	window->InitializeWindow();
 	window->InitializeGL();
@@ -96,10 +100,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	window->SetKeyboardFunc(keyboard);
 	window->SetMouseFunc(mouse);
 	window->SetResizeFunc(resize);
-	resize(window,800, 600);
+	resize(window,1920, 1080);
 
-	InitPipeline();
-	InitGraphics();
+	InitRenderPasses();
+	InitScenes();
 
 	while (!window->IsClosed()) 
 	{
@@ -119,8 +123,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 		fps = 1.0 / delta;
 		// Update
 		Update();
-		//SwapBuffers(window->mHDC);
 	};
+
+	for (auto* scene : sceneQueue) {
+		delete scene;
+	}
+	sceneQueue.clear();
 
 	AMC::TextureManager::UnloadTextures();
 	window->ShutDown();
@@ -201,6 +209,9 @@ void keyboard(AMC::RenderWindow*, char key, UINT keycode)
 	if (gpDebugCamera)
 		gpDebugCamera->keyboard(key, keycode);
 
+	if (currentScene)
+		currentScene->keyboardfunc(key, keycode);
+
 	switch (key)
 	{
 		case 'w':
@@ -234,6 +245,9 @@ void keyboard(AMC::RenderWindow*, char key, UINT keycode)
 		break;
 		case VK_F2:
 			AMC::DEBUGCAM = !AMC::DEBUGCAM;
+			if (AMC::DEBUGCAM) {
+				AMC::currentCamera = gpDebugCamera;
+			}
 		break;
 		case VK_ESCAPE:
 			window->mClosed = TRUE;
@@ -253,49 +267,32 @@ void resize(AMC::RenderWindow*, UINT width, UINT height)
 {
 	window->SetWindowSize(width, height);
 	glViewport(0, 0, (GLsizei)width, (GLsizei)height);
-	pMat = glm::perspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 1000.0f);
 
-	if (gpDebugCamera)
-		gpDebugCamera->resize((FLOAT)width, (FLOAT)height);
+	if (gpDebugCamera) {
+		gpDebugCamera->setPerspectiveParameters(45.0f, window->AspectRatio());
+	}
+
+	if (AMC::currentCamera) {
+		AMC::currentCamera->setPerspectiveParameters(45.0f, window->AspectRatio());
+	}
 }
 
 void RenderFrame(void)
 {
-	// Bind and clear the MSAA framebuffer
-
-	//glBindFramebuffer(GL_FRAMEBUFFER, msaaFBO);
-	//glViewport(0,0,2048,2048);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glm::mat4 modelMatrix = glm::mat4(1.0f);
-	glm::mat4 view = glm::mat4(1.0f);
+	if (currentScene) {
 
-	modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -15.0f));
-	glm::mat4 mvpMatrix = gpDebugCamera->getProjectionMatrix() * gpDebugCamera->getViewMatrix() * modelMatrix;
-	program->use();
-	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-	glBindTextureUnit(0, tex2);
-	glBindVertexArray(vao);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+		if (AMC::DEBUGCAM)
+			AMC::currentCamera = gpDebugCamera;
+		else
+			AMC::currentCamera = currentScene->getCamera();
 
-	modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, -15.0f));
-	mvpMatrix = gpDebugCamera->getProjectionMatrix() * gpDebugCamera->getViewMatrix() * modelMatrix;
-	programModel->use();
-	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-	modelHelmet->draw(programModel);
-
-	modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, -15.0f));
-	mvpMatrix = gpDebugCamera->getProjectionMatrix() * gpDebugCamera->getViewMatrix() * modelMatrix;
-	programModelAnim->use();
-	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-	modelAnim->draw(programModelAnim);
-
-	// Resolve the MSAA framebuffer to the default framebuffer (screen)
-	//glBindFramebuffer(GL_READ_FRAMEBUFFER, msaaFBO);
-	//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // Default framebuffer
-	//glBlitFramebuffer(0, 0, 2048, 2048, 0, 0, 2048, 2048, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	//glViewport(0, 0, window->GetWindowWidth(), window->GetWindowHeight());
+		if (!AMC::currentCamera) { 
+			AMC::currentCamera = gpDebugCamera; // just  in case someone fucks up and getCamera returns null we'll fallback to debugcam
+		}
+		currentScene->render();
+	}
 
 #ifdef _MYDEBUG
 	ImGui_ImplOpenGL3_NewFrame();
@@ -325,6 +322,9 @@ void RenderFrame(void)
 
 	if (ImGui::Button(AMC::DEBUGCAM ? "Disable Debug Camera (F2)" : "Enable Debug Camera (F2)")) {
 		AMC::DEBUGCAM = !AMC::DEBUGCAM;
+		if (AMC::DEBUGCAM) {
+			AMC::currentCamera = gpDebugCamera;
+		}
 	}
 
 	if (AMC::DEBUGCAM) {
@@ -350,6 +350,8 @@ void RenderFrame(void)
 		ImGui::EndCombo();
 	}
 
+	if (currentScene) currentScene->renderUI();
+
 	ImGui::End();
 	ImGui::EndFrame();
 	ImGui::Render();
@@ -361,61 +363,37 @@ void RenderFrame(void)
 
 void Update(void)
 {
-	modelHelmet->update((float)AMC::deltaTime);
-	modelAnim->update((float)AMC::deltaTime);
+	if (currentScene) {
+		if (currentScene->completed) {
+			playNextScene();
+			return;
+		}
+		currentScene->update();
+	}
 }
 
-void InitPipeline()
+void InitRenderPasses()
 {
-	program = new AMC::ShaderProgram({RESOURCE_PATH("shaders\\test\\basic.vert"),RESOURCE_PATH("shaders\\test\\basic.frag")});
-
-	programModel = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\model.vert"),RESOURCE_PATH("shaders\\model\\model.frag") });
-	programModelAnim = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\modelAnim.vert"),RESOURCE_PATH("shaders\\model\\model.frag") });
-
 	gpDebugCamera = new AMC::DebugCamera();
 	gpAudioPlayer = new AMC::AudioPlayer();
 
-}
-
-void InitGraphics()
-{
 	glClearDepth(1.0f);
-	glClearColor(0.0, 0.0, 1.0f, 1.0f);
+	glClearColor(0.0, 0.5, 0.5f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_MULTISAMPLE);
 
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	{
-		glGenBuffers(1, &vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+}
 
-		const GLfloat triangleVertices[] =
-		{
-			//vertices          // uv
-			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f
-		};
+void InitScenes(void)
+{
 
-		glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), NULL);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-		glEnableVertexAttribArray(1);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	sceneQueue.push_back(new testScene());
+
+	for (auto* scene : sceneQueue) {
+		scene->init();
 	}
-	glBindVertexArray(0);
-
-	tex1 = AMC::TextureManager::LoadTexture(RESOURCE_PATH("textures\\temp.jpg"));
-	tex2 = AMC::TextureManager::LoadKTX2Texture(RESOURCE_PATH("textures\\2d_rgba8.ktx2"));
-
-	modelHelmet = new AMC::Model(RESOURCE_PATH("models\\BoxAnimated.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
-	modelAnim = new AMC::Model(RESOURCE_PATH("models\\CesiumMan\\CesiumMan.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	playNextScene();
 
 	// Setup All FBO's 
 
@@ -438,3 +416,14 @@ void InitGraphics()
 	}
 }
 
+void playNextScene(void) {
+	static int current = -1;
+	current++;
+	if (current < sceneQueue.size()) {
+		currentScene = sceneQueue[current];
+	}
+
+	if (current == sceneQueue.size()) {
+		currentScene = NULL; // avoid crash after all scenes are done rendering.
+	}
+}

@@ -3,7 +3,7 @@
 #include<common.h>
 #include<ShaderProgram.h>
 #include<assimp/scene.h>
-#include <assimp/postprocess.h>
+#include<assimp/postprocess.h>
 
 #define MAX_BONE_COUNT 100
 #define MAX_BONE_INFLUENCE 4

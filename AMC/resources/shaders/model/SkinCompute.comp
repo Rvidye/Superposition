@@ -1,0 +1,53 @@
+#version 460 core 
+
+#define MAX_BONES_PER_VERTEX 4
+
+struct Vertex {
+    vec4 position;    // offset 0 
+    vec4 normal;      // offset 16 
+    vec4 texCoords;   // offset 32 
+    vec4 tangent;     // offset 48 
+    vec4 bitangent;   // offset 64 
+    ivec4 boneIDs;    // offset 80 
+    vec4 weights;     // offset 96
+};    
+
+layout(std430, binding = 0) readonly buffer VertexBufferIn {
+    Vertex vin[];
+};
+
+layout(std430, binding = 1) writeonly buffer VertexBufferOut {
+    Vertex vout[];
+};
+
+layout(std430, binding = 6) readonly buffer BoneMatricesBuffer {
+    mat4 boneMatrices[];
+};
+
+// Workgroup size
+layout(local_size_x = 256) in;
+
+void main() {
+
+uint idx = gl_GlobalInvocationID.x;
+
+    // Ensure index is within bounds
+    if (idx >= vin.length()) {
+        return;
+    }
+
+    // Read vertex data from buffer
+    Vertex vert = vin[idx];
+
+    // Accumulate weighted bone matrices
+    vec4 totalPosition = vec4(0.0);
+    for (int i = 0; i < MAX_BONES_PER_VERTEX; ++i) {
+        if(vert.boneIDs[i] == -1){
+            continue;
+        }
+        vec4 localPos = boneMatrices[vert.boneIDs[i]] * vec4(vert.position.xyz,1.0);
+        totalPosition += localPos * vert.weights[i];
+    }
+    vert.position = totalPosition;
+    vout[idx] = vert;
+}

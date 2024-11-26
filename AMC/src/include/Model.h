@@ -55,24 +55,30 @@ namespace AMC {
 			//void Bind(ShaderProgram* program);
 	};
 
-	struct Vertex {
-		glm::vec3 Position;
-		glm::vec3 Normal;
-		glm::vec2 TexCoords;
-		glm::vec3 Tangent;
-		glm::vec3 Bitangent;
-		int BoneIDs[MAX_BONE_INFLUENCE];
-		float Weights[MAX_BONE_INFLUENCE];
-		Vertex() {
-			memset(BoneIDs, 0, sizeof(BoneIDs));
-			memset(Weights, 0, sizeof(Weights));
-		}
+	__declspec(align(16)) struct Vertex {
+		glm::vec4 position;
+		glm::vec4 normal;
+		glm::vec4 texCoords;
+		glm::vec4 tangent;
+		glm::vec4 bitangent;
+		glm::ivec4 boneIDs;
+		glm::vec4 weights;
 	};
+
+	static_assert(sizeof(Vertex) == 112, "Vertex Struct must be 112 bytes");
+	static_assert(offsetof(Vertex, position) == 0, "Position offset incorrect");
+	static_assert(offsetof(Vertex, normal) == 16, "Normal offset incorrect");
+	static_assert(offsetof(Vertex, texCoords) == 32, "Tangent offset incorrect");
+	static_assert(offsetof(Vertex, tangent) == 48, "Bitangent offset incorrect");
+	static_assert(offsetof(Vertex, bitangent) == 64, "TexCoords offset incorrect");
+	static_assert(offsetof(Vertex, boneIDs) == 80, "BoneIDs offset incorrect");
+	static_assert(offsetof(Vertex, weights) == 96, "Weights offset incorrect");
 
 	class Mesh {
 	public:
-		GLuint vao;
+		GLuint vao,vbo,ibo,outVbo;
 		UINT mTriangleCount;
+		UINT mVertexCount;
 		UINT mMaterial;
 	};
 
@@ -113,6 +119,7 @@ namespace AMC {
 	};
 
 	struct SkeletonAnimator {
+		GLuint boneSSBO;
 		std::vector<glm::mat4> finalBoneMatrices;
 		FLOAT duration;
 		INT ticksPerSecond;
@@ -179,6 +186,8 @@ namespace AMC {
 			AnimationType animType;
 			INT BoneCounter = 0;
 
+			static ShaderProgram* programGPUSkin;
+
 			// Animation Data
 			std::vector<SkeletonAnimator> skeletonAnimator;
 			std::vector<NodeAnimator> nodeAnimator;
@@ -186,6 +195,8 @@ namespace AMC {
 			std::unordered_map<std::string, std::vector<float>> currentMorphWeights;
 			std::unordered_map<std::string, BoneInfo> BoneInfoMap;
 		private:
+
 			void drawNodes(const NodeData& node, const glm::mat4& parentTransform, ShaderProgram* program, UINT iNumInstance = 1, bool iUseMaterial = true);
+			void ComputeSkin();
 	};
 };

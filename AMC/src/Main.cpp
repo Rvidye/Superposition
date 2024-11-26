@@ -91,7 +91,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 		LOG_ERROR(L"RegisterClassEx Failed");
 	}
 
-	window = new AMC::RenderWindow(hInstance, L"MyWindowClass", L"Raster 2023", 1920, 1080, FALSE);
+	window = new AMC::RenderWindow(hInstance, L"MyWindowClass", L"Raster 2023", 720, 480, FALSE);
 
 	window->InitializeWindow();
 	window->InitializeGL();
@@ -100,7 +100,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	window->SetKeyboardFunc(keyboard);
 	window->SetMouseFunc(mouse);
 	window->SetResizeFunc(resize);
-	resize(window,1920, 1080);
+	resize(window,720, 480);
 
 	InitRenderPasses();
 	InitScenes();

@@ -141,84 +141,44 @@ namespace AMC {
 			aiMesh* mesh = scene->mMeshes[i];
 			Mesh* m = new Mesh();
 			AABB meshAABB;
-			GLuint VAO, VBO[7], IBO;
-			std::vector<GLuint> vertexBuffers;
-			std::vector<GLintptr> offsets;
-			std::vector<GLsizei> strides;
-			GLuint bindingIndex = 0;
+			GLuint VAO, VBO, IBO;
 
-			glCreateVertexArrays(1, &VAO);
-			glCreateBuffers(7, VBO);// Position, Normal, Texcoord, Tangent, Bitangent, BondId, Weight
-			glNamedBufferData(VBO[0], mesh->mNumVertices * sizeof(aiVector3D), mesh->mVertices, GL_STATIC_DRAW);
-			vertexBuffers.push_back(VBO[0]);
-			offsets.push_back(0);
-			strides.push_back(sizeof(aiVector3D));
-			glEnableVertexArrayAttrib(VAO, 0);
-			glVertexArrayAttribFormat(VAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
-			glVertexArrayAttribBinding(VAO, 0, bindingIndex);
-			bindingIndex++;
+			std::vector<Vertex> vertices(mesh->mNumVertices);
 
-			if (mesh->HasNormals()) {
+			bool skin = mesh->HasBones();
+			for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
+				vertices[i].position = glm::vec4(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z,1.0f);
 
-				glNamedBufferData(VBO[1],mesh->mNumVertices * sizeof(aiVector3d), mesh->mNormals, GL_STATIC_DRAW);
-				vertexBuffers.push_back(VBO[1]);
-				offsets.push_back(0);
-				strides.push_back(sizeof(aiVector3D));
-				glEnableVertexArrayAttrib(VAO, 1);
-				glVertexArrayAttribFormat(VAO, 1, 3, GL_FLOAT, GL_FALSE, 0);
-				glVertexArrayAttribBinding(VAO, 1, bindingIndex);
-				bindingIndex++;
-			}
-			else {
-				glDisableVertexArrayAttrib(VAO, 1);
-			}
-
-			if (mesh->HasTextureCoords(0)) {
-				std::vector<aiVector2D> texCoords(mesh->mNumVertices);
-				for (UINT i = 0; i < mesh->mNumVertices; i++) {
-					texCoords[i] = aiVector2D(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
+				if (mesh->HasNormals()) {
+					vertices[i].normal = glm::vec4(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, 0.0f);
 				}
-				glNamedBufferData(VBO[2], mesh->mNumVertices * sizeof(aiVector2D), texCoords.data(), GL_STATIC_DRAW);
-				vertexBuffers.push_back(VBO[2]);
-				offsets.push_back(0);
-				strides.push_back(sizeof(aiVector2D));
-				glEnableVertexArrayAttrib(VAO, 2);
-				glVertexArrayAttribFormat(VAO, 2, 2, GL_FLOAT, GL_FALSE, 0);
-				glVertexArrayAttribBinding(VAO, 2, bindingIndex);
-				bindingIndex++;
-			}
-			else {
-				glDisableVertexArrayAttrib(VAO, 2);
-			}
+				else {
+					vertices[i].normal = glm::vec4(0.0f);
+				}
 
-			if (mesh->HasTangentsAndBitangents()) {
-				glNamedBufferData(VBO[3], mesh->mNumVertices * sizeof(aiVector3D), mesh->mTangents, GL_STATIC_DRAW);
-				glNamedBufferData(VBO[4], mesh->mNumVertices * sizeof(aiVector3D), mesh->mBitangents, GL_STATIC_DRAW);
-				vertexBuffers.push_back(VBO[3]);
-				offsets.push_back(0);
-				strides.push_back(sizeof(aiVector3D));
-				glEnableVertexArrayAttrib(VAO, 3);
-				glVertexArrayAttribFormat(VAO, 3, 3, GL_FLOAT, GL_FALSE, 0);
-				glVertexArrayAttribBinding(VAO, 3, bindingIndex);
-				bindingIndex++;
-				vertexBuffers.push_back(VBO[4]);
-				offsets.push_back(0);
-				strides.push_back(sizeof(aiVector3D));
-				glEnableVertexArrayAttrib(VAO, 4);
-				glVertexArrayAttribFormat(VAO, 4, 3, GL_FLOAT, GL_FALSE, 0);
-				glVertexArrayAttribBinding(VAO, 4, bindingIndex);
-				bindingIndex++;
-			}
-			else {
-				glDisableVertexArrayAttrib(VAO, 3);
-				glDisableVertexArrayAttrib(VAO, 4);
+
+				if (mesh->HasTextureCoords(0)) {
+					vertices[i].texCoords = glm::vec4(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y,0.0f,0.0f);
+				}
+				else {
+					vertices[i].texCoords = glm::vec4(0.0f);
+				}
+
+				if (mesh->HasTangentsAndBitangents()) {
+					vertices[i].tangent = glm::vec4(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z,0.0f);
+					vertices[i].bitangent = glm::vec4(mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z,0.0f);
+				}
+				else {
+					vertices[i].tangent = glm::vec4(0.0f);
+					vertices[i].bitangent = glm::vec4(0.0f);
+				}
+
+				// Initialize bone IDs and weights to zero
+				vertices[i].boneIDs = glm::ivec4(-1);
+				vertices[i].weights = glm::vec4(0.0f);
 			}
 
 			if (mesh->HasBones()) {
-
-				std::vector<int> boneIDs(mesh->mNumVertices * 4, 0); // Assuming max 4 bones per vertex
-				std::vector<float> weights(mesh->mNumVertices * 4, 0.0f);
-				
 				for (unsigned int i = 0; i < mesh->mNumBones; ++i) {
 					aiBone* bone = mesh->mBones[i];
 					std::string boneName(bone->mName.C_Str());
@@ -236,42 +196,70 @@ namespace AMC {
 						boneIndex = model->BoneInfoMap[boneName].id;
 					}
 
-					// Assign weights to vertices
 					for (unsigned int j = 0; j < bone->mNumWeights; ++j) {
 						unsigned int vertexID = bone->mWeights[j].mVertexId;
 						float weight = bone->mWeights[j].mWeight;
-						for (int k = 0; k < MAX_BONE_INFLUENCE; ++k) {
-							if (weights[vertexID * MAX_BONE_INFLUENCE + k] == 0.0f) {
-								boneIDs[vertexID * MAX_BONE_INFLUENCE + k] = boneIndex;
-								weights[vertexID * MAX_BONE_INFLUENCE + k] = weight;
+
+						for (int k = 0; k < 4; ++k) {
+							if (vertices[vertexID].weights[k] == 0.0f) {
+								vertices[vertexID].boneIDs[k] = boneIndex;
+								vertices[vertexID].weights[k] = weight;
 								break;
 							}
 						}
 					}
 				}
-				// Upload Bone IDs and Weights
-				glNamedBufferData(VBO[5], boneIDs.size() * sizeof(int), boneIDs.data(), GL_STATIC_DRAW);
-				glNamedBufferData(VBO[6], weights.size() * sizeof(float), weights.data(), GL_STATIC_DRAW);
-
-				vertexBuffers.push_back(VBO[5]);
-				offsets.push_back(0);
-				strides.push_back(sizeof(int) * 4);
-				glEnableVertexArrayAttrib(VAO, 5);
-				glVertexArrayAttribIFormat(VAO, 5, 4, GL_INT, 0);
-				glVertexArrayAttribBinding(VAO, 5, bindingIndex);
-				bindingIndex++;
-
-				vertexBuffers.push_back(VBO[6]);
-				offsets.push_back(0);
-				strides.push_back(sizeof(float) * 4);
-				glEnableVertexArrayAttrib(VAO, 6);
-				glVertexArrayAttribFormat(VAO, 6, 4, GL_FLOAT, GL_FALSE, 0);
-				glVertexArrayAttribBinding(VAO, 6, bindingIndex);
-				bindingIndex++;
 			}
-			else {
-				glDisableVertexArrayAttrib(VAO, 5);
-				glDisableVertexArrayAttrib(VAO, 6);
+
+			glCreateVertexArrays(1, &VAO);
+			glCreateBuffers(1, &VBO);
+			glNamedBufferData(VBO, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+
+			GLuint outVBO;
+			if (skin) {
+				glCreateBuffers(1, &outVBO);
+				glNamedBufferData(outVBO, vertices.size() * sizeof(Vertex), nullptr, GL_DYNAMIC_DRAW);
+				m->outVbo = outVBO;
+			}
+
+			glVertexArrayVertexBuffer(VAO, 0, skin ? outVBO : VBO, 0, sizeof(Vertex));
+			// Positions
+			glEnableVertexArrayAttrib(VAO, 0);
+			glVertexArrayAttribFormat(VAO, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
+			glVertexArrayAttribBinding(VAO, 0, 0);
+			// Normals
+			if (mesh->HasNormals()) {
+				glEnableVertexArrayAttrib(VAO, 1);
+				glVertexArrayAttribFormat(VAO, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+				glVertexArrayAttribBinding(VAO, 1, 0);
+			}
+			// Texture Coordinates
+			if (mesh->HasTextureCoords(0)) {
+				glEnableVertexArrayAttrib(VAO, 2);
+				glVertexArrayAttribFormat(VAO, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, texCoords));
+				glVertexArrayAttribBinding(VAO, 2, 0);
+			}
+			// Tangents
+			if (mesh->HasTangentsAndBitangents()) {
+				glEnableVertexArrayAttrib(VAO, 3);
+				glVertexArrayAttribFormat(VAO, 3, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, tangent));
+				glVertexArrayAttribBinding(VAO, 3, 0);
+
+				// Bitangents
+				glEnableVertexArrayAttrib(VAO, 4);
+				glVertexArrayAttribFormat(VAO, 4, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, bitangent));
+				glVertexArrayAttribBinding(VAO, 4, 0);
+			}
+			// Bone IDs
+			if (mesh->HasBones()) {
+				glEnableVertexArrayAttrib(VAO, 5);
+				glVertexArrayAttribIFormat(VAO, 5, 4, GL_INT, offsetof(Vertex, boneIDs));
+				glVertexArrayAttribBinding(VAO, 5, 0);
+
+				// Weights
+				glEnableVertexArrayAttrib(VAO, 6);
+				glVertexArrayAttribFormat(VAO, 6, 4, GL_FLOAT, GL_FALSE, offsetof(Vertex, weights));
+				glVertexArrayAttribBinding(VAO, 6, 0);
 			}
 
 			std::vector<UINT> indices;
@@ -286,7 +274,7 @@ namespace AMC {
 			glNamedBufferData(IBO, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 			glVertexArrayElementBuffer(VAO, IBO);
 
-			glVertexArrayVertexBuffers(VAO, 0, bindingIndex, vertexBuffers.data(), offsets.data(), strides.data());
+			//glVertexArrayVertexBuffers(VAO, 0, bindingIndex, vertexBuffers.data(), offsets.data(), strides.data());
 
 			// Process material
 			UINT mIndex = 0;
@@ -294,8 +282,11 @@ namespace AMC {
 				mIndex = mesh->mMaterialIndex;
 			}
 
+			m->mVertexCount = mesh->mNumVertices;
 			m->mTriangleCount = (UINT)indices.size();
 			m->mMaterial = mIndex;
+			m->ibo = IBO;
+			m->vbo = VBO;
 			m->vao = VAO;
 			model->meshes.push_back(m);
 
@@ -408,6 +399,12 @@ namespace AMC {
 			}
 			animator.bones.push_back(b);
 		}
+
+		GLuint bSSBO;
+		glGenBuffers(1, &bSSBO);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, bSSBO);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, MAX_BONE_COUNT * sizeof(glm::mat4), nullptr, GL_DYNAMIC_DRAW);
+		animator.boneSSBO = bSSBO;
 		model->skeletonAnimator.push_back(animator);
 	}
 
@@ -793,6 +790,8 @@ namespace AMC {
 	{
 	}
 
+	ShaderProgram* Model::programGPUSkin = nullptr;
+
 	Model::Model(std::string path, int iAssimpFlags){
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path, iAssimpFlags);
@@ -827,6 +826,10 @@ namespace AMC {
 		// Load Animation Data
 		if (scene->HasAnimations()) {
 			LoadAnimations(scene, this);
+		}
+
+		if (!programGPUSkin) {
+			programGPUSkin = new ShaderProgram({ RESOURCE_PATH("shaders\\model\\SkinCompute.comp") });
 		}
 
 		//Print Info
@@ -877,7 +880,6 @@ namespace AMC {
 		materials.clear();
 	}
 
-
 	void Model::drawNodes(const NodeData& node, const glm::mat4& parentTransform, ShaderProgram* program, UINT iNumInstance, bool iUseMaterial) {
 
 		glm::mat4 globalTransform = parentTransform * node.globalTransform;
@@ -892,6 +894,7 @@ namespace AMC {
 
 			glBindVertexArray(mesh->vao);
 			glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, mesh->mTriangleCount, GL_UNSIGNED_INT, 0, iNumInstance, 0, 0);
+			//glDrawArrays(GL_TRIANGLES, 0, mesh->mVertexCount);
 		}
 
 		// Recursively draw all child nodes
@@ -909,7 +912,7 @@ namespace AMC {
 				case AMC::SKELETALANIM:
 					if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->skeletonAnimator.size()) {
 						// Set Bone Matrices?
-						glUniformMatrix4fv(program->getUniformLocation("bMat[0]"), MAX_BONE_COUNT, GL_FALSE, glm::value_ptr(this->skeletonAnimator[this->CurrentAnimation].finalBoneMatrices[0]));
+						//glUniformMatrix4fv(program->getUniformLocation("bMat[0]"), MAX_BONE_COUNT, GL_FALSE, glm::value_ptr(this->skeletonAnimator[this->CurrentAnimation].finalBoneMatrices[0]));
 					}
 				break;
 				case AMC::KEYFRAMEANIM:
@@ -919,6 +922,24 @@ namespace AMC {
 			}
 		}
 		drawNodes(rootNode, identity, program, iNumInstance, iUseMaterial);
+	}
+
+	void Model::ComputeSkin(){
+
+		programGPUSkin->use();
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, this->skeletonAnimator[this->CurrentAnimation].boneSSBO);
+		for (auto mesh : meshes) {
+
+			GLuint localSizeX = 256;
+			GLuint numVertices = mesh->mVertexCount;
+			GLuint numWorkGroups = (numVertices + localSizeX - 1) / localSizeX;
+			glBindVertexArray(mesh->vao);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mesh->vbo); // input vbo
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mesh->outVbo);
+			glDispatchCompute(numWorkGroups, 1, 1);
+			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+			glVertexArrayVertexBuffer(mesh->vao, 0, mesh->outVbo, 0, sizeof(Vertex));
+		}
 	}
 
 	void Model::update(float dt){
@@ -932,6 +953,9 @@ namespace AMC {
 					this->skeletonAnimator[this->CurrentAnimation].currentTime += this->skeletonAnimator[this->CurrentAnimation].ticksPerSecond * dt;
 					this->skeletonAnimator[this->CurrentAnimation].currentTime = fmod(this->skeletonAnimator[this->CurrentAnimation].currentTime, this->skeletonAnimator[this->CurrentAnimation].duration);
 					CalculateBoneTransform(this, &this->skeletonAnimator[this->CurrentAnimation], &this->skeletonAnimator[this->CurrentAnimation].rootNode, glm::mat4(1.0f));
+					glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->skeletonAnimator[this->CurrentAnimation].boneSSBO);
+					glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, MAX_BONE_COUNT * sizeof(glm::mat4), this->skeletonAnimator[this->CurrentAnimation].finalBoneMatrices.data());
+					ComputeSkin();
 				}
 			break;
 			case KEYFRAMEANIM:

@@ -68,9 +68,9 @@ void testScene::render()
 	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, moveZ))));
 	modelHelmet->draw(programModel);
 
-	programModelAnim->use();
+	programModel->use();
 	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * mp->getModelMatrix()));
-	modelAnim->draw(programModelAnim);
+	modelAnim->draw(programModel);
 }
 
 void testScene::renderUI()

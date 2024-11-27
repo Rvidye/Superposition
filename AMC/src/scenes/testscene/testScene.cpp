@@ -2,13 +2,14 @@
 
 void testScene::sceneEnd(float t)
 {
-	if (t > 0.9f)
+	if (t > 0.99f)
 		completed = true;
 }
 
 void testScene::moveModel(float t)
 {
 	moveZ = std::lerp(-15.0f, -5.0f, t);
+	models["cube"].matrix = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, moveZ));
 }
 
 void testScene::init()
@@ -17,12 +18,19 @@ void testScene::init()
 	programModel = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\model.vert"),RESOURCE_PATH("shaders\\model\\model.frag") });
 	programModelAnim = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\modelAnim.vert"),RESOURCE_PATH("shaders\\model\\model.frag") });
 
-	// Models Setup
-	modelHelmet = new AMC::Model(RESOURCE_PATH("models\\BoxAnimated.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
-	modelAnim = new AMC::Model(RESOURCE_PATH("models\\CesiumMan\\CesiumMan.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
-
 	// ModelPlacer
-	mp = new AMC::ModelPlacer(glm::vec3(0.0,0.0,-10.0f),glm::vec3(0.0f,0.0f,0.0f),1.0f);
+	mp = new AMC::ModelPlacer(glm::vec3(0.0, 0.0, -10.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1.0f);
+
+	// Models Setup
+	AMC::RenderModel cubeobj;
+	cubeobj.model = new AMC::Model(RESOURCE_PATH("models\\BoxAnimated.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	cubeobj.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, -10.0f));
+	addModel("cube", cubeobj);
+
+	AMC::RenderModel animman;
+	animman.model = new AMC::Model(RESOURCE_PATH("models\\CesiumMan\\CesiumMan.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	animman.matrix = mp->getModelMatrix();
+	addModel("man", animman);
 
 	// Spline Camera Setup
 	std::vector<glm::vec3> posVec = {
@@ -62,22 +70,38 @@ void testScene::init()
 	events->AddEvent("MoveModelEvent", moveEvent);
 }
 
-void testScene::render()
-{
-	programModel->use();
-	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, moveZ))));
-	modelHelmet->draw(programModel);
+//void testScene::render()
+//{
+//	programModel->use();
+//	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, moveZ))));
+//	modelHelmet->draw(programModel);
+//
+//	programModel->use();
+//	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * mp->getModelMatrix()));
+//	modelAnim->draw(programModel);
+//}
 
-	programModel->use();
-	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * mp->getModelMatrix()));
-	modelAnim->draw(programModel);
+void testScene::renderDebug()
+{
+	switch (AMC::DEBUGMODE) {
+		case AMC::MODEL:
+			break;
+		case AMC::CAMERA:
+			camAdjuster->render();
+			break;
+		case AMC::LIGHT:
+			break;
+		case AMC::SPLINE:
+			break;
+		case AMC::NONE:
+			break;
+	}
 }
 
 void testScene::renderUI()
 {
 	ImGui::Text("Tutorial Scene ");
 	ImGui::Text("Scene Time : %0.1f", events->getCurrentTime());
-	ImGui::Text("Select Debug Mode");
 	switch (AMC::DEBUGMODE) {
 		case AMC::MODEL:
 			mp->renderUI();
@@ -98,8 +122,10 @@ void testScene::renderUI()
 void testScene::update()
 {
 	events->update();
-	modelHelmet->update((float)AMC::deltaTime);
-	modelAnim->update((float)AMC::deltaTime);
+	models["cube"].model->update((float)AMC::deltaTime);
+	models["man"].model->update((float)AMC::deltaTime);
+	models["man"].matrix = mp->getModelMatrix();
+	//modelAnim->update((float)AMC::deltaTime);
 }
 
 void testScene::keyboardfunc(char key, UINT keycode)

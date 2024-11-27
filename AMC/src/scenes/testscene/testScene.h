@@ -29,7 +29,8 @@ class testScene : public AMC::Scene {
 	public:
 
 		void init() override;
-		void render() override;
+		//void render() override;
+		void renderDebug() override;
 		void renderUI() override;
 		void update() override;
 		void keyboardfunc(char key, UINT keycode) override;

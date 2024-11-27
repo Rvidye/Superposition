@@ -9,6 +9,10 @@
 #include<Model.h>
 #include<Camera.h>
 #include<Scene.h>
+#include<RenderPass.h>
+
+// Render Passes
+#include "renderpass/TestPass.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -52,6 +56,8 @@ AMC::AudioPlayer *gpAudioPlayer;
 
 std::vector<AMC::Scene*> sceneQueue;
 AMC::Scene* currentScene = nullptr;
+
+AMC::Renderer* gpRenderer;
 
 DOUBLE fps = 0.0;
 BOOL bPlayAudio = TRUE;
@@ -291,10 +297,16 @@ void RenderFrame(void)
 		if (!AMC::currentCamera) { 
 			AMC::currentCamera = gpDebugCamera; // just  in case someone fucks up and getCamera returns null we'll fallback to debugcam
 		}
-		currentScene->render();
+
+		gpRenderer->render(currentScene);
+		//currentScene->render();
 	}
 
 #ifdef _MYDEBUG
+
+	if (currentScene)
+		currentScene->renderDebug();
+
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
@@ -374,20 +386,26 @@ void Update(void)
 
 void InitRenderPasses()
 {
-	gpDebugCamera = new AMC::DebugCamera();
-	gpAudioPlayer = new AMC::AudioPlayer();
-
 	glClearDepth(1.0f);
 	glClearColor(0.0, 0.5, 0.5f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_MULTISAMPLE);
 
+	gpDebugCamera = new AMC::DebugCamera();
+	gpAudioPlayer = new AMC::AudioPlayer();
+
+	gpRenderer = new AMC::Renderer();
+
+	// Add passes here
+	gpRenderer->addPass(new TestPass());
+
+	// Create Resouces for all passes
+	gpRenderer->initPasses();
 }
 
 void InitScenes(void)
 {
-
 	sceneQueue.push_back(new testScene());
 
 	for (auto* scene : sceneQueue) {

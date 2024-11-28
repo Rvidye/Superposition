@@ -4,20 +4,14 @@
 static VkResult result;
 
 #ifdef _MYDEBUG
-#define CHECK_VULKAN_ERROR(X) if((result = X) != VK_SUCCESS) {LOG_ERROR(L"Vulkan: " #X "at %d failed with %d", __LINE__, result); return;}
+#define CHECK_VULKAN_ERROR(X) if((result = X) != VK_SUCCESS) {LOG_ERROR(L"Vulkan: " #X "at %d failed with %d", __LINE__, result); return nullptr;}
 #else
 #define CHECK_VULKAN_ERROR(X) X;
 #endif // _MYDEBUG
 
 
 namespace AMC {
-	VulkanContext::VulkanContext() {
-		instance = VK_NULL_HANDLE;
-		physicalDevice = VK_NULL_HANDLE;
-		device = VK_NULL_HANDLE;
-		commandPool = VK_NULL_HANDLE;
-		descriptorPool = VK_NULL_HANDLE;
-
+	VulkanContext::Builder::Builder() {
 		instanceLayers = {};
 		instanceExtensions = {};
 		apiVersion = VK_VERSION_1_0;
@@ -28,47 +22,44 @@ namespace AMC {
 		deviceExtensions = {};
 		deviceFeatures = {};
 		deviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-
-		descPoolSizes = {};
-		descSetCount = 1;
 	}
 
-	VulkanContext* VulkanContext::setAPIVersion(uint32_t apiv) {
+	VulkanContext::Builder& VulkanContext::Builder::setAPIVersion(uint32_t apiv) {
 		apiVersion = apiv;
-		return this;
+		return *this;
 	}
 
-	VulkanContext* VulkanContext::addInstanceExtension(const char* extension) {
+	VulkanContext::Builder& VulkanContext::Builder::addInstanceExtension(const char* extension) {
 		instanceExtensions.push_back(extension);
-		return this;
+		return *this;
 	}
 
-	VulkanContext* VulkanContext::addInstanceLayer(const char* layer) {
+	VulkanContext::Builder& VulkanContext::Builder::addInstanceLayer(const char* layer) {
 		instanceLayers.push_back(layer);
-		return this;
+		return *this;
 	}
 
-	VulkanContext* VulkanContext::setSelectedDevice(uint32_t deviceIndex) {
+	VulkanContext::Builder& VulkanContext::Builder::setSelectedDevice(uint32_t deviceIndex) {
 		selectedDevice = deviceIndex;
-		return this;
+		return *this;
 	}
 
-	VulkanContext* VulkanContext::setRequiredQueueFlags(VkQueueFlags queueFlags) {
+	VulkanContext::Builder& VulkanContext::Builder::setRequiredQueueFlags(VkQueueFlags queueFlags) {
 		requestedQueueFlags = queueFlags;
-		return this;
+		return *this;
 	}
 
-	VulkanContext* VulkanContext::addDeviceExtension(const char* extension) {
+	VulkanContext::Builder& VulkanContext::Builder::addDeviceExtension(const char* extension) {
 		deviceExtensions.push_back(extension);
-		return this;
+		return *this;
 	}
 
-	VulkanContext* VulkanContext::setDeviceFeatureStruct(VkPhysicalDeviceFeatures deviceFeature) {
+	VulkanContext::Builder& VulkanContext::Builder::setDeviceFeatureStruct(VkPhysicalDeviceFeatures deviceFeature) {
 		deviceFeatures.features = deviceFeature;
-		return this;
+		return *this;
 	}
 
-	VulkanContext* VulkanContext::addToDeviceFeatureChain(void* deviceFeature) {
+	VulkanContext::Builder& VulkanContext::Builder::addToDeviceFeatureChain(void* deviceFeature) {
 		struct InfoStruct {
 			VkStructureType sType;
 			void* pNext;
@@ -76,10 +67,12 @@ namespace AMC {
 		InfoStruct* featureStruct = reinterpret_cast<InfoStruct*>(deviceFeature);
 		featureStruct->pNext = deviceFeatures.pNext;
 		deviceFeatures.pNext = featureStruct;
-		return this;
+		return *this;
 	}
 
-	void VulkanContext::build() {
+	VulkanContext* VulkanContext::Builder::build() {
+		VulkanContext* ctx = new VulkanContext();
+
 		//Instance Creation
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -101,17 +94,17 @@ namespace AMC {
 		instanceCI.ppEnabledExtensionNames = instanceExtensions.data();
 		instanceCI.enabledLayerCount = static_cast<uint32_t>(instanceLayers.size());
 		instanceCI.ppEnabledLayerNames = instanceLayers.data();
-		CHECK_VULKAN_ERROR(vkCreateInstance(&instanceCI, nullptr, &instance));
+		CHECK_VULKAN_ERROR(vkCreateInstance(&instanceCI, nullptr, &ctx->instance));
 
 		uint32_t devCount;
-		CHECK_VULKAN_ERROR(vkEnumeratePhysicalDevices(instance, &devCount, nullptr));
+		CHECK_VULKAN_ERROR(vkEnumeratePhysicalDevices(ctx->instance, &devCount, nullptr));
 		std::vector<VkPhysicalDevice> devList(devCount);
-		CHECK_VULKAN_ERROR(vkEnumeratePhysicalDevices(instance, &devCount, devList.data()));
+		CHECK_VULKAN_ERROR(vkEnumeratePhysicalDevices(ctx->instance, &devCount, devList.data()));
 		selectedDevice = std::min(selectedDevice, devCount - 1);
-		physicalDevice = devList[selectedDevice];
+		ctx->physicalDevice = devList[selectedDevice];
 
 		VkPhysicalDeviceProperties props{};
-		vkGetPhysicalDeviceProperties(physicalDevice, &props);
+		vkGetPhysicalDeviceProperties(ctx->physicalDevice, &props);
 
 		LOG_WARNING(L"Vulkan: Using %s device. Ensure OpenGL is running on the same device.", CString(props.deviceName));
 	
@@ -119,9 +112,9 @@ namespace AMC {
 		const float queuePriorities = 1.0f;
 
 		uint32_t queueFamilyCount;
-		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
+		vkGetPhysicalDeviceQueueFamilyProperties(ctx->physicalDevice, &queueFamilyCount, nullptr);
 		std::vector<VkQueueFamilyProperties> queueFamilyProps(queueFamilyCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilyProps.data());
+		vkGetPhysicalDeviceQueueFamilyProperties(ctx->physicalDevice, &queueFamilyCount, queueFamilyProps.data());
 
 		uint32_t queueFamilyIndex = 0;
 		for (uint32_t i = 0; i < queueFamilyCount; i++) {
@@ -142,33 +135,32 @@ namespace AMC {
 		deviceCI.pQueueCreateInfos = &queueCreateInfo;
 		deviceCI.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
 		deviceCI.ppEnabledExtensionNames = deviceExtensions.data();
-		CHECK_VULKAN_ERROR(vkCreateDevice(physicalDevice, &deviceCI, nullptr, &device));
+		CHECK_VULKAN_ERROR(vkCreateDevice(ctx->physicalDevice, &deviceCI, nullptr, &ctx->device));
 	
-		vkGetDeviceQueue(device, queueFamilyIndex, 0, &queue);
+		vkGetDeviceQueue(ctx->device, queueFamilyIndex, 0, &ctx->queue);
 
 		VkCommandPoolCreateInfo commandPoolInfo{};
 		commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		commandPoolInfo.queueFamilyIndex = queueFamilyIndex;
-		CHECK_VULKAN_ERROR(vkCreateCommandPool(device, &commandPoolInfo, nullptr, &commandPool));
+		CHECK_VULKAN_ERROR(vkCreateCommandPool(ctx->device, &commandPoolInfo, nullptr, &ctx->commandPool));
 		
-		if (descPoolSizes.size()) {
-			descSetCount = std::max(descSetCount, 1u);
-			VkDescriptorPoolCreateInfo descPoolCI{};
-			descPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-			descPoolCI.poolSizeCount = static_cast<uint32_t>(descPoolSizes.size());
-			descPoolCI.pPoolSizes = descPoolSizes.data();
-			descPoolCI.maxSets = descSetCount;
-			CHECK_VULKAN_ERROR(vkCreateDescriptorPool(device, &descPoolCI, nullptr, &descriptorPool));
-		}
-
 		LOG_INFO(L"Vulkan: Context Successfully Initialized");
+		return ctx;
+	}
+
+	VulkanContext::Builder::~Builder() {
+
+	}
+
+	VulkanContext::VulkanContext() {
+		instance = VK_NULL_HANDLE;
+		physicalDevice = VK_NULL_HANDLE;
+		device = VK_NULL_HANDLE;
+		commandPool = VK_NULL_HANDLE;
 	}
 
 	VulkanContext::~VulkanContext() {
-		if (descriptorPool != VK_NULL_HANDLE) {
-			vkDestroyDescriptorPool(device, descriptorPool, nullptr);
-		}
 		if (commandPool != VK_NULL_HANDLE) {
 			vkDestroyCommandPool(device, commandPool, nullptr);
 		}

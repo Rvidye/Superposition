@@ -111,11 +111,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	window->SetResizeFunc(resize);
 	resize(window,720, 480);
 
-	vkcontext = new AMC::VulkanContext();
-	vkcontext
-		->setAPIVersion(VK_API_VERSION_1_3)
-		->setRequiredQueueFlags(VK_QUEUE_COMPUTE_BIT)
-		->build();
+	AMC::VulkanContext::Builder builder;
+
+	vkcontext = builder
+		.setAPIVersion(VK_API_VERSION_1_3)
+		.setRequiredQueueFlags(VK_QUEUE_COMPUTE_BIT)
+		.build();
 
 	InitRenderPasses();
 	InitScenes();

@@ -10,6 +10,7 @@
 #include<Camera.h>
 #include<Scene.h>
 #include<RenderPass.h>
+#include<VulkanContext.h>
 
 // Render Passes
 #include "renderpass/TestPass.h"
@@ -23,9 +24,11 @@
 #pragma comment(lib,"glu32.lib")
 #pragma comment(lib,"OpenAL32.lib")
 #pragma	comment(lib,"ktx.lib")
+#pragma comment(lib,"vulkan-1.lib")
 
 
 static AMC::RenderWindow* window;
+static AMC::VulkanContext* vkcontext;
 DOUBLE AMC::deltaTime = 0;
 
 BOOL AMC::ANIMATING = FALSE;
@@ -82,7 +85,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 
 	ZeroMemory(&wc, sizeof(WNDCLASSEX));
 	wc.cbSize = sizeof(WNDCLASSEX);
-	wc.style = CS_HREDRAW | CS_VREDRAW;
+	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 	wc.lpfnWndProc = AMC::WndProc;   
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
@@ -107,6 +110,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	window->SetMouseFunc(mouse);
 	window->SetResizeFunc(resize);
 	resize(window,720, 480);
+
+	vkcontext = new AMC::VulkanContext();
+	vkcontext
+		->setAPIVersion(VK_API_VERSION_1_3)
+		->setRequiredQueueFlags(VK_QUEUE_COMPUTE_BIT)
+		->build();
 
 	InitRenderPasses();
 	InitScenes();

@@ -221,7 +221,9 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClCompile Include="src\module\ShaderProgram.cpp" />
     <ClCompile Include="src\module\TextureManager.cpp" />
     <ClCompile Include="src\renderpass\TestPass.cpp" />
+    <ClCompile Include="src\renderpass\pbrPass.cpp" />
     <ClCompile Include="src\scenes\testscene\testScene.cpp" />
+    <ClCompile Include="src\scenes\testPBR\pbrScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\AL\al.h" />
@@ -1018,7 +1020,9 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\include\stb_image.h" />
     <ClInclude Include="src\include\TextureManager.h" />
     <ClInclude Include="src\renderpass\TestPass.h" />
+    <ClInclude Include="src\renderpass\pbrPass.h" />
     <ClInclude Include="src\scenes\testscene\testScene.h" />
+    <ClInclude Include="src\scenes\testPBR\pbrScene.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="lib\assimp.dll">

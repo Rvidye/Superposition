@@ -1,19 +1,19 @@
-#include "testScene.h"
+#include "pbrScene.h"
 
-void testScene::sceneEnd(float t) {
+void pbrScene::sceneEnd(float t) {
 	if (t > 0.99f)
 		completed = true;
 }
 
-void testScene::moveModel(float t) {
+void pbrScene::moveModel(float t) {
 	moveZ = std::lerp(-15.0f, -5.0f, t);
 	models["cube"].matrix = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, moveZ));
 }
 
-void testScene::init() {
+void pbrScene::init() {
 	// Shader Program Setup
-	programModel = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\model.vert"),RESOURCE_PATH("shaders\\model\\model.frag") });
-	programModelAnim = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\modelAnim.vert"),RESOURCE_PATH("shaders\\model\\model.frag") });
+	programModel = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\PBR\\pbr.vert"),RESOURCE_PATH("shaders\\PBR\\pbr.frag") });
+	//programModelAnim = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\modelAnim.vert"),RESOURCE_PATH("shaders\\model\\model.frag") });
 
 	// ModelPlacer
 	mp = new AMC::ModelPlacer(glm::vec3(0.0, 0.0, -10.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1.0f);
@@ -22,7 +22,7 @@ void testScene::init() {
 	AMC::RenderModel cubeobj;
 	cubeobj.model = new AMC::Model(RESOURCE_PATH("models\\BoxAnimated.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 	cubeobj.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, -10.0f));
-	addModel("cube", cubeobj);
+	//addModel("cube", cubeobj);
 
 	AMC::RenderModel animman;
 	animman.model = new AMC::Model(RESOURCE_PATH("models\\CesiumMan\\CesiumMan.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
@@ -66,16 +66,19 @@ void testScene::init() {
 	moveEvent->updateFunction = [this](float t) { this->moveModel(t); };
 	events->AddEvent("MoveModelEvent", moveEvent);
 }
-//void testScene::render() {
+
+//void pbrScene::render()
+//{
 //	programModel->use();
 //	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, moveZ))));
 //	modelHelmet->draw(programModel);
 //
 //	programModel->use();
-//	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * mp->getModelMatrix()));	modelAnim->draw(programModel);
+//	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * mp->getModelMatrix()));
+//	modelAnim->draw(programModel);
 //}
 
-void testScene::renderDebug() {
+void pbrScene::renderDebug() {
 	switch (AMC::DEBUGMODE) {
 	case AMC::MODEL:
 		break;
@@ -91,7 +94,7 @@ void testScene::renderDebug() {
 	}
 }
 
-void testScene::renderUI() {
+void pbrScene::renderUI() {
 	ImGui::Text("Tutorial Scene ");
 	ImGui::Text("Scene Time : %0.1f", events->getCurrentTime());
 	switch (AMC::DEBUGMODE) {
@@ -111,7 +114,7 @@ void testScene::renderUI() {
 	}
 }
 
-void testScene::update() {
+void pbrScene::update() {
 	events->update();
 	models["cube"].model->update((float)AMC::deltaTime);
 	models["man"].model->update((float)AMC::deltaTime);
@@ -119,7 +122,7 @@ void testScene::update() {
 	//modelAnim->update((float)AMC::deltaTime);
 }
 
-void testScene::keyboardfunc(char key, UINT keycode) {
+void pbrScene::keyboardfunc(char key, UINT keycode) {
 	switch (AMC::DEBUGMODE) {
 	case AMC::MODEL:
 		mp->keyboardfunc(key);
@@ -136,6 +139,6 @@ void testScene::keyboardfunc(char key, UINT keycode) {
 	}
 }
 
-AMC::Camera* testScene::getCamera() {
+AMC::Camera* pbrScene::getCamera() {
 	return sceneCam;
 }

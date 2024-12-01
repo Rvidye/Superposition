@@ -13,9 +13,11 @@
 
 // Render Passes
 #include "renderpass/TestPass.h"
+#include "renderpass/pbrPass.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
+#include "scenes/testPBR/pbrScene.h"
 
 // Libraries
 #pragma comment(lib,"glew32.lib")
@@ -32,10 +34,10 @@ BOOL AMC::ANIMATING = FALSE;
 BOOL AMC::DEBUGCAM = TRUE;
 BOOL AMC::MUTE = FALSE;
 UINT AMC::DEBUGMODE = AMC::DEBUGMODES::NONE;
-std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Spline" ,"PostProcess"};
+std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Spline" ,"PostProcess" };
 AMC::Camera* AMC::currentCamera;
 
-void keyboard(AMC::RenderWindow* , char key, UINT keycode);
+void keyboard(AMC::RenderWindow*, char key, UINT keycode);
 void mouse(AMC::RenderWindow*, int button, int action, int x, int y);
 void resize(AMC::RenderWindow*, UINT width, UINT height);
 
@@ -51,8 +53,8 @@ GLuint msaaFBO;
 GLuint msaaColorBuffer;
 GLuint msaaDepthBuffer;
 
-AMC::DebugCamera *gpDebugCamera;
-AMC::AudioPlayer *gpAudioPlayer;
+AMC::DebugCamera* gpDebugCamera;
+AMC::AudioPlayer* gpAudioPlayer;
 
 std::vector<AMC::Scene*> sceneQueue;
 AMC::Scene* currentScene = nullptr;
@@ -68,22 +70,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	TCHAR szAppName[] = TEXT("MyWindowClass");
 	LOG_INFO(L"Log Start");
 
-	#ifdef _MYDEBUG
-		LOG_INFO(L"Running In Debug Mode");
-	#else
-		LOG_INFO(L"Running In Release Mode");
-	#endif
+#ifdef _MYDEBUG
+	LOG_INFO(L"Running In Debug Mode");
+#else
+	LOG_INFO(L"Running In Release Mode");
+#endif
 
 	HRESULT hr = CoInitialize(nullptr);
-	if (FAILED(hr))
-	{
+	if (FAILED(hr)) {
 		LOG_ERROR(L"Failed To Initialize COM");
 	}
 
 	ZeroMemory(&wc, sizeof(WNDCLASSEX));
 	wc.cbSize = sizeof(WNDCLASSEX);
 	wc.style = CS_HREDRAW | CS_VREDRAW;
-	wc.lpfnWndProc = AMC::WndProc;   
+	wc.lpfnWndProc = AMC::WndProc;
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
@@ -92,8 +93,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	wc.lpszClassName = szAppName;
 	wc.lpszMenuName = nullptr;
 
-	if (!RegisterClassEx(&wc))
-	{
+	if (!RegisterClassEx(&wc)) {
 		LOG_ERROR(L"RegisterClassEx Failed");
 	}
 
@@ -106,15 +106,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	window->SetKeyboardFunc(keyboard);
 	window->SetMouseFunc(mouse);
 	window->SetResizeFunc(resize);
-	resize(window,720, 480);
+	resize(window, 720, 480);
 
 	InitRenderPasses();
 	InitScenes();
 
-	while (!window->IsClosed()) 
-	{
-		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) 
-		{
+	while (!window->IsClosed()) {
+		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
@@ -142,8 +140,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	return ((int)msg.wParam);
 }
 
-LRESULT CALLBACK AMC::WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
-{
+LRESULT CALLBACK AMC::WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 #ifdef _MYDEBUG
 	if (ImGui_ImplWin32_WndProcHandler(hwnd, iMsg, wParam, lParam))
 		return true;
@@ -151,66 +148,64 @@ LRESULT CALLBACK AMC::WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam
 	int mouseX;
 	int mouseY;
 	static int currentbutton = AMC::MOUSE_BUTTON_NONE;
-	switch (iMsg)
-	{
-		case WM_SIZE:
-			//window->WindowResize(LOWORD(lParam),HIWORD(lParam));
-			resize(window, LOWORD(lParam), HIWORD(lParam));
+	switch (iMsg) {
+	case WM_SIZE:
+		//window->WindowResize(LOWORD(lParam),HIWORD(lParam));
+		resize(window, LOWORD(lParam), HIWORD(lParam));
 		break;
-		case WM_CHAR:
-			keyboard(window, (char)wParam, NULL);
+	case WM_CHAR:
+		keyboard(window, (char)wParam, NULL);
 		break;
-		case WM_SYSKEYDOWN:
-		case WM_KEYDOWN:
-			keyboard(window, NULL, (UINT)wParam);
+	case WM_SYSKEYDOWN:
+	case WM_KEYDOWN:
+		keyboard(window, NULL, (UINT)wParam);
 		break;
-		case WM_LBUTTONDOWN:
-			mouse(window, AMC::MOUSE_BUTTON_LEFT, AMC::MOUSE_ACTION_PRESS, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-			currentbutton = AMC::MOUSE_BUTTON_LEFT;
-			break;
-		case WM_MBUTTONDOWN:
-			mouse(window, AMC::MOUSE_BUTTON_MIDDLE, AMC::MOUSE_ACTION_PRESS, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-			currentbutton = AMC::MOUSE_BUTTON_MIDDLE;
-			break;
-		case WM_RBUTTONDOWN:
-			mouse(window, AMC::MOUSE_BUTTON_RIGHT, AMC::MOUSE_ACTION_PRESS, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-			currentbutton = AMC::MOUSE_BUTTON_RIGHT;
-			break;
-		case WM_LBUTTONUP:
-			mouse(window, AMC::MOUSE_BUTTON_LEFT, AMC::MOUSE_ACTION_RELEASE, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-			currentbutton = AMC::MOUSE_BUTTON_NONE;
-			break;
-		case WM_MBUTTONUP:
-			mouse(window, AMC::MOUSE_BUTTON_MIDDLE, AMC::MOUSE_ACTION_RELEASE, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-			currentbutton = AMC::MOUSE_BUTTON_NONE;
-			break;
-		case WM_RBUTTONUP:
-			mouse(window, AMC::MOUSE_BUTTON_RIGHT, AMC::MOUSE_ACTION_RELEASE, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-			currentbutton = AMC::MOUSE_BUTTON_NONE;
-			break;
-		case WM_MOUSEMOVE:
-			mouseX = GET_X_LPARAM(lParam);
-			mouseY = GET_Y_LPARAM(lParam);
-			mouse(window, currentbutton, AMC::MOUSE_ACTION_MOVE, mouseX, mouseY);
+	case WM_LBUTTONDOWN:
+		mouse(window, AMC::MOUSE_BUTTON_LEFT, AMC::MOUSE_ACTION_PRESS, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		currentbutton = AMC::MOUSE_BUTTON_LEFT;
 		break;
-		case WM_CLOSE:
-			window->mClosed = TRUE;
-			PostQuitMessage(0);
+	case WM_MBUTTONDOWN:
+		mouse(window, AMC::MOUSE_BUTTON_MIDDLE, AMC::MOUSE_ACTION_PRESS, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		currentbutton = AMC::MOUSE_BUTTON_MIDDLE;
 		break;
-		case WM_DESTROY:
-			PostQuitMessage(0);
+	case WM_RBUTTONDOWN:
+		mouse(window, AMC::MOUSE_BUTTON_RIGHT, AMC::MOUSE_ACTION_PRESS, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		currentbutton = AMC::MOUSE_BUTTON_RIGHT;
 		break;
-		case WM_QUIT:
-			PostQuitMessage(0);
+	case WM_LBUTTONUP:
+		mouse(window, AMC::MOUSE_BUTTON_LEFT, AMC::MOUSE_ACTION_RELEASE, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		currentbutton = AMC::MOUSE_BUTTON_NONE;
 		break;
-		default:
+	case WM_MBUTTONUP:
+		mouse(window, AMC::MOUSE_BUTTON_MIDDLE, AMC::MOUSE_ACTION_RELEASE, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		currentbutton = AMC::MOUSE_BUTTON_NONE;
+		break;
+	case WM_RBUTTONUP:
+		mouse(window, AMC::MOUSE_BUTTON_RIGHT, AMC::MOUSE_ACTION_RELEASE, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		currentbutton = AMC::MOUSE_BUTTON_NONE;
+		break;
+	case WM_MOUSEMOVE:
+		mouseX = GET_X_LPARAM(lParam);
+		mouseY = GET_Y_LPARAM(lParam);
+		mouse(window, currentbutton, AMC::MOUSE_ACTION_MOVE, mouseX, mouseY);
+		break;
+	case WM_CLOSE:
+		window->mClosed = TRUE;
+		PostQuitMessage(0);
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	case WM_QUIT:
+		PostQuitMessage(0);
+		break;
+	default:
 		break;
 	}
 	return DefWindowProc(hwnd, iMsg, wParam, lParam);
 }
 
-void keyboard(AMC::RenderWindow*, char key, UINT keycode)
-{
+void keyboard(AMC::RenderWindow*, char key, UINT keycode) {
 
 	if (gpDebugCamera)
 		gpDebugCamera->keyboard(key, keycode);
@@ -218,59 +213,53 @@ void keyboard(AMC::RenderWindow*, char key, UINT keycode)
 	if (currentScene)
 		currentScene->keyboardfunc(key, keycode);
 
-	switch (key)
-	{
-		case 'w':
-		case 'W':
+	switch (key) {
+	case 'w':
+	case 'W':
 		break;
-		case 'F':
-		case 'f':
-			window->SetFullScreen(!window->GetFullScreen());
+	case 'F':
+	case 'f':
+		window->SetFullScreen(!window->GetFullScreen());
 		break;
-		default:
+	default:
 		break;
 	}
 
-	switch (keycode)
-	{
-		case VK_SPACE:
+	switch (keycode) {
+	case VK_SPACE:
 
-			if (bPlayAudio)
-			{
-				gpAudioPlayer->play();
-			}
+		if (bPlayAudio) {
+			gpAudioPlayer->play();
+		}
 
-			AMC::ANIMATING = !AMC::ANIMATING;
-			if (AMC::ANIMATING) {
-				gpAudioPlayer->resume();
-			}
-			else
-			{
-				gpAudioPlayer->pause();
-			}
+		AMC::ANIMATING = !AMC::ANIMATING;
+		if (AMC::ANIMATING) {
+			gpAudioPlayer->resume();
+		}
+		else {
+			gpAudioPlayer->pause();
+		}
 		break;
-		case VK_F2:
-			AMC::DEBUGCAM = !AMC::DEBUGCAM;
-			if (AMC::DEBUGCAM) {
-				AMC::currentCamera = gpDebugCamera;
-			}
+	case VK_F2:
+		AMC::DEBUGCAM = !AMC::DEBUGCAM;
+		if (AMC::DEBUGCAM) {
+			AMC::currentCamera = gpDebugCamera;
+		}
 		break;
-		case VK_ESCAPE:
-			window->mClosed = TRUE;
+	case VK_ESCAPE:
+		window->mClosed = TRUE;
 		break;
-		default:
+	default:
 		break;
 	}
 }
 
-void mouse(AMC::RenderWindow*, int button, int action, int x, int y)
-{
+void mouse(AMC::RenderWindow*, int button, int action, int x, int y) {
 	if (gpDebugCamera)
 		gpDebugCamera->mouse(button, action, x, y);
 }
 
-void resize(AMC::RenderWindow*, UINT width, UINT height)
-{
+void resize(AMC::RenderWindow*, UINT width, UINT height) {
 	window->SetWindowSize(width, height);
 	glViewport(0, 0, (GLsizei)width, (GLsizei)height);
 
@@ -283,8 +272,7 @@ void resize(AMC::RenderWindow*, UINT width, UINT height)
 	}
 }
 
-void RenderFrame(void)
-{
+void RenderFrame(void) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (currentScene) {
@@ -294,7 +282,7 @@ void RenderFrame(void)
 		else
 			AMC::currentCamera = currentScene->getCamera();
 
-		if (!AMC::currentCamera) { 
+		if (!AMC::currentCamera) {
 			AMC::currentCamera = gpDebugCamera; // just  in case someone fucks up and getCamera returns null we'll fallback to debugcam
 		}
 
@@ -321,8 +309,7 @@ void RenderFrame(void)
 		if (AMC::ANIMATING) {
 			gpAudioPlayer->resume();
 		}
-		else
-		{
+		else {
 			gpAudioPlayer->pause();
 		}
 	}
@@ -341,7 +328,7 @@ void RenderFrame(void)
 
 	if (AMC::DEBUGCAM) {
 		glm::vec3 pos = gpDebugCamera->getViewPosition();
-		ImGui::BulletText("Position: X = %.2f, Y = %.2f, Z = %.2f", pos.x,pos.y,pos.z);
+		ImGui::BulletText("Position: X = %.2f, Y = %.2f, Z = %.2f", pos.x, pos.y, pos.z);
 		ImGui::BulletText("Yaw: %.2f", gpDebugCamera->getYAW());
 		ImGui::BulletText("Pitch: %.2f", gpDebugCamera->getPITCH());
 		ImGui::SliderFloat("Speed", &gpDebugCamera->movementSpeed, 0.1f, 100.0f);
@@ -373,8 +360,7 @@ void RenderFrame(void)
 	SwapBuffers(window->mHDC);
 }
 
-void Update(void)
-{
+void Update(void) {
 	if (currentScene) {
 		if (currentScene->completed) {
 			playNextScene();
@@ -384,8 +370,7 @@ void Update(void)
 	}
 }
 
-void InitRenderPasses()
-{
+void InitRenderPasses() {
 	glClearDepth(1.0f);
 	glClearColor(0.0, 0.5, 0.5f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
@@ -398,15 +383,17 @@ void InitRenderPasses()
 	gpRenderer = new AMC::Renderer();
 
 	// Add passes here
-	gpRenderer->addPass(new TestPass());
+	//gpRenderer->addPass(new TestPass());
+	gpRenderer->addPass(new PBRPass());
+
 
 	// Create Resouces for all passes
 	gpRenderer->initPasses();
 }
 
-void InitScenes(void)
-{
-	sceneQueue.push_back(new testScene());
+void InitScenes(void) {
+	//sceneQueue.push_back(new testScene());
+	sceneQueue.push_back(new pbrScene());
 
 	for (auto* scene : sceneQueue) {
 		scene->init();

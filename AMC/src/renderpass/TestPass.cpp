@@ -9,7 +9,7 @@ void TestPass::create(){
 void TestPass::execute(const AMC::Scene* scene){
 
 	m_programTexturedDraw->use();
-
+	
 	for (const auto& [name, obj] : scene->models) {
 
 		if (!obj.visible)

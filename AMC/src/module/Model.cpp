@@ -23,7 +23,7 @@ namespace AMC {
 			return std::string(fileName.begin(), fileName.end());
 		};
 
-		for (UINT i = 0; i < scene->mNumMaterials; i++){
+		for (UINT i = 0; i < scene->mNumMaterials; i++) {
 
 			aiMaterial* mat = scene->mMaterials[i];
 
@@ -45,14 +45,13 @@ namespace AMC {
 			FLOAT alpha;
 			mat->Get(AI_MATKEY_OPACITY, alpha);
 
-			Material * material = new Material();
+			Material* material = new Material();
 
 			// Loading Texture Manually For Now
 			aiString name;
 			UINT textureFlag = 0;
 			// Diffuse Map
-			if (mat->GetTextureCount(aiTextureType_DIFFUSE) > 0)
-			{
+			if (mat->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
 				mat->GetTexture(aiTextureType_DIFFUSE, 0, &name);
 				//check if embedded texture otherwise load from file
 				const aiTexture* embeddedTex = scene->GetEmbeddedTexture(name.C_Str());
@@ -66,8 +65,7 @@ namespace AMC {
 			}
 
 			// Normal Map
-			if (mat->GetTextureCount(aiTextureType_NORMALS) > 0)
-			{
+			if (mat->GetTextureCount(aiTextureType_NORMALS) > 0) {
 				mat->GetTexture(aiTextureType_NORMALS, 0, &name);
 				const aiTexture* embeddedTex = scene->GetEmbeddedTexture(name.C_Str());
 				if (embeddedTex != nullptr) {
@@ -80,8 +78,7 @@ namespace AMC {
 			}
 
 			// Metallic Rougness Map Assuming That Metal and Roughness Maps are stored in same texture ...
-			if (mat->GetTextureCount(aiTextureType_METALNESS) > 0)
-			{
+			if (mat->GetTextureCount(aiTextureType_METALNESS) > 0) {
 				mat->GetTexture(aiTextureType_METALNESS, 0, &name);
 				const aiTexture* embeddedTex = scene->GetEmbeddedTexture(name.C_Str());
 				if (embeddedTex != nullptr) {
@@ -94,8 +91,7 @@ namespace AMC {
 			}
 
 			// Emission Map
-			if (mat->GetTextureCount(aiTextureType_EMISSIVE) > 0)
-			{
+			if (mat->GetTextureCount(aiTextureType_EMISSIVE) > 0) {
 				mat->GetTexture(aiTextureType_EMISSIVE, 0, &name);
 				const aiTexture* embeddedTex = scene->GetEmbeddedTexture(name.C_Str());
 				if (embeddedTex != nullptr) {
@@ -107,8 +103,7 @@ namespace AMC {
 				textureFlag |= (1 << 3);
 			}
 
-			if (mat->GetTextureCount(aiTextureType_LIGHTMAP) > 0)
-			{
+			if (mat->GetTextureCount(aiTextureType_LIGHTMAP) > 0) {
 				mat->GetTexture(aiTextureType_LIGHTMAP, 0, &name);
 				const aiTexture* embeddedTex = scene->GetEmbeddedTexture(name.C_Str());
 				if (embeddedTex != nullptr) {
@@ -147,7 +142,7 @@ namespace AMC {
 
 			bool skin = mesh->HasBones();
 			for (unsigned int i = 0; i < mesh->mNumVertices; ++i) {
-				vertices[i].position = glm::vec4(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z,1.0f);
+				vertices[i].position = glm::vec4(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z, 1.0f);
 
 				if (mesh->HasNormals()) {
 					vertices[i].normal = glm::vec4(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, 0.0f);
@@ -158,15 +153,15 @@ namespace AMC {
 
 
 				if (mesh->HasTextureCoords(0)) {
-					vertices[i].texCoords = glm::vec4(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y,0.0f,0.0f);
+					vertices[i].texCoords = glm::vec4(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y, 0.0f, 0.0f);
 				}
 				else {
 					vertices[i].texCoords = glm::vec4(0.0f);
 				}
 
 				if (mesh->HasTangentsAndBitangents()) {
-					vertices[i].tangent = glm::vec4(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z,0.0f);
-					vertices[i].bitangent = glm::vec4(mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z,0.0f);
+					vertices[i].tangent = glm::vec4(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z, 0.0f);
+					vertices[i].bitangent = glm::vec4(mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z, 0.0f);
 				}
 				else {
 					vertices[i].tangent = glm::vec4(0.0f);
@@ -295,7 +290,7 @@ namespace AMC {
 			meshAABB.mMax = glm::vec3(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
 			aabbs.push_back(meshAABB);
 		}
-		
+
 		AABB modelAABB;
 		modelAABB.mMin = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
 		modelAABB.mMax = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
@@ -342,7 +337,7 @@ namespace AMC {
 		}
 	}
 
-	void LoadSkeletalAnimation(const aiScene* scene,const aiAnimation* animation, Model* model) {
+	void LoadSkeletalAnimation(const aiScene* scene, const aiAnimation* animation, Model* model) {
 
 		if (!model || !animation || !scene)
 			return;
@@ -356,7 +351,7 @@ namespace AMC {
 		animator.ticksPerSecond = (INT)animation->mTicksPerSecond;
 		readHeirarchyData(animator.rootNode, scene->mRootNode);
 
-		for (UINT i = 0; i < animation->mNumChannels; i++){
+		for (UINT i = 0; i < animation->mNumChannels; i++) {
 			aiNodeAnim* channel = animation->mChannels[i];
 			std::string boneName = channel->mNodeName.C_Str();
 
@@ -368,8 +363,7 @@ namespace AMC {
 			b.name = channel->mNodeName.C_Str();
 			b.id = model->BoneInfoMap[channel->mNodeName.data].id;
 			b.localTransform = glm::mat4(1.0f);
-			for (UINT positionIndex = 0; positionIndex < channel->mNumPositionKeys; ++positionIndex)
-			{
+			for (UINT positionIndex = 0; positionIndex < channel->mNumPositionKeys; ++positionIndex) {
 				aiVector3D aiPosition = channel->mPositionKeys[positionIndex].mValue;
 				float timeStamp = (float)channel->mPositionKeys[positionIndex].mTime;
 				KeyPosition data;
@@ -378,8 +372,7 @@ namespace AMC {
 				b.positions.push_back(data);
 			}
 
-			for (UINT rotationIndex = 0; rotationIndex < channel->mNumRotationKeys; ++rotationIndex)
-			{
+			for (UINT rotationIndex = 0; rotationIndex < channel->mNumRotationKeys; ++rotationIndex) {
 				aiQuaternion aiOrientation = channel->mRotationKeys[rotationIndex].mValue;
 				float timeStamp = (float)channel->mRotationKeys[rotationIndex].mTime;
 				KeyRotation data;
@@ -388,8 +381,7 @@ namespace AMC {
 				b.rotations.push_back(data);
 			}
 
-			for (UINT keyIndex = 0; keyIndex < channel->mNumScalingKeys; ++keyIndex)
-			{
+			for (UINT keyIndex = 0; keyIndex < channel->mNumScalingKeys; ++keyIndex) {
 				aiVector3D scale = channel->mScalingKeys[keyIndex].mValue;
 				float timeStamp = (float)channel->mScalingKeys[keyIndex].mTime;
 				KeyScale data;
@@ -421,8 +413,8 @@ namespace AMC {
 		return nullptr;
 	}
 
-	void LoadNodeAnimation(const aiScene* scene, const aiAnimation *animation, Model* model) {
-		
+	void LoadNodeAnimation(const aiScene* scene, const aiAnimation* animation, Model* model) {
+
 		if (!model || !animation || !scene)
 			return;
 
@@ -442,8 +434,7 @@ namespace AMC {
 
 			if (node) {
 				NodeAnimation nodeAnim;
-				for (UINT positionIndex = 0; positionIndex < channel->mNumPositionKeys; ++positionIndex)
-				{
+				for (UINT positionIndex = 0; positionIndex < channel->mNumPositionKeys; ++positionIndex) {
 					aiVector3D aiPosition = channel->mPositionKeys[positionIndex].mValue;
 					float timeStamp = (float)channel->mPositionKeys[positionIndex].mTime;
 					KeyPosition data;
@@ -452,8 +443,7 @@ namespace AMC {
 					nodeAnim.positions.push_back(data);
 				}
 
-				for (UINT rotationIndex = 0; rotationIndex < channel->mNumRotationKeys; ++rotationIndex)
-				{
+				for (UINT rotationIndex = 0; rotationIndex < channel->mNumRotationKeys; ++rotationIndex) {
 					aiQuaternion aiOrientation = channel->mRotationKeys[rotationIndex].mValue;
 					float timeStamp = (float)channel->mRotationKeys[rotationIndex].mTime;
 					KeyRotation data;
@@ -462,8 +452,7 @@ namespace AMC {
 					nodeAnim.rotations.push_back(data);
 				}
 
-				for (UINT keyIndex = 0; keyIndex < channel->mNumScalingKeys; ++keyIndex)
-				{
+				for (UINT keyIndex = 0; keyIndex < channel->mNumScalingKeys; ++keyIndex) {
 					aiVector3D scale = channel->mScalingKeys[keyIndex].mValue;
 					float timeStamp = (float)channel->mScalingKeys[keyIndex].mTime;
 					KeyScale data;
@@ -477,10 +466,10 @@ namespace AMC {
 		model->nodeAnimator.push_back(animator);
 	}
 
-	void LoadMorphAnimation(const aiScene* scene, const aiAnimation* animation ,Model* model) {
+	void LoadMorphAnimation(const aiScene* scene, const aiAnimation* animation, Model* model) {
 		if (!model || !animation || !scene)
 			return;
-		for (UINT morphChannelIndex = 0; morphChannelIndex < animation->mNumMorphMeshChannels; ++morphChannelIndex){
+		for (UINT morphChannelIndex = 0; morphChannelIndex < animation->mNumMorphMeshChannels; ++morphChannelIndex) {
 			aiMeshMorphAnim* morphAnim = animation->mMorphMeshChannels[morphChannelIndex];
 			MorphTargetAnimator mta;
 			mta.meshName = morphAnim->mName.C_Str();
@@ -488,8 +477,8 @@ namespace AMC {
 			mta.duration = (FLOAT)animation->mDuration;
 			mta.ticksPerSecond = (INT)animation->mTicksPerSecond;
 
-			for (UINT keyIndex = 0; keyIndex < morphAnim->mNumKeys; ++keyIndex){
-				
+			for (UINT keyIndex = 0; keyIndex < morphAnim->mNumKeys; ++keyIndex) {
+
 				aiMeshMorphKey& key = morphAnim->mKeys[keyIndex];
 
 				mta.times.push_back(static_cast<float>(key.mTime));
@@ -497,7 +486,7 @@ namespace AMC {
 				std::vector<float> keyWeights;
 				std::vector<unsigned int> keyIndices;
 
-				for (UINT i = 0; i < key.mNumValuesAndWeights; ++i){
+				for (UINT i = 0; i < key.mNumValuesAndWeights; ++i) {
 					keyIndices.push_back(key.mValues[i]);
 					keyWeights.push_back(static_cast<float>(key.mWeights[i]));
 				}
@@ -513,7 +502,7 @@ namespace AMC {
 			return;
 
 		model->haveAnimation = TRUE;
-		
+
 		// This seems like a hack but should work for models with animations
 		if ((scene->mAnimations[0]->mNumChannels > 0) && (model->BoneCounter > 0)) {
 			model->animType = SKELETALANIM;
@@ -525,20 +514,20 @@ namespace AMC {
 			model->animType = MORPHANIM;
 		}
 
-		for (UINT i = 0; i < scene->mNumAnimations; i++){
+		for (UINT i = 0; i < scene->mNumAnimations; i++) {
 			aiAnimation* animation = scene->mAnimations[i];
 			//LOG_WARNING(L"%d", animation->mNumMeshChannels);
 			//LOG_WARNING(L"%d", animation->mNumMorphMeshChannels);
 			//LOG_WARNING(L"%d", animation->mNumChannels);
-			switch (model->animType){
-				case AMC::SKELETALANIM:
-					LoadSkeletalAnimation(scene, animation, model);
+			switch (model->animType) {
+			case AMC::SKELETALANIM:
+				LoadSkeletalAnimation(scene, animation, model);
 				break;
-				case AMC::KEYFRAMEANIM:
-					LoadNodeAnimation(scene, animation, model);
+			case AMC::KEYFRAMEANIM:
+				LoadNodeAnimation(scene, animation, model);
 				break;
-				case AMC::MORPHANIM:
-					LoadMorphAnimation(scene, animation, model);
+			case AMC::MORPHANIM:
+				LoadMorphAnimation(scene, animation, model);
 				break;
 			}
 		}
@@ -562,7 +551,7 @@ namespace AMC {
 	}
 
 	void CalculateBoneTransform(Model* model, SkeletonAnimator* a, const AssimpNodeData* node, glm::mat4 parentTransform) {
-		
+
 		std::string nodeName = node->name;
 		glm::mat4 nodeTransform = node->transformation;
 
@@ -741,7 +730,7 @@ namespace AMC {
 		}
 	}
 
-	Material::Material(){
+	Material::Material() {
 		albedo = glm::vec3(0.0f);
 		metallic = 0.0f;
 		roughness = 0.0f;
@@ -751,34 +740,32 @@ namespace AMC {
 		textureFlag = 0;
 	}
 
-	void Material::Apply(ShaderProgram* program)
-	{
+	void Material::Apply(ShaderProgram* program) {
 		// Upload Material Data Here
 		for (auto t : textures) {
-			switch (t.type){
-				case TextureTypeDiffuse:
-					glBindTextureUnit(TextureTypeDiffuse,t.texture);
+			switch (t.type) {
+			case TextureTypeDiffuse:
+				glBindTextureUnit(TextureTypeDiffuse, t.texture);
 				break;
-				case TextureTypeNormalMap:
-					glBindTextureUnit(TextureTypeNormalMap, t.texture);
+			case TextureTypeNormalMap:
+				glBindTextureUnit(TextureTypeNormalMap, t.texture);
 				break;
-				case TextureTypeMetallicRoughnessMap:
-					glBindTextureUnit(TextureTypeMetallicRoughnessMap, t.texture);
+			case TextureTypeMetallicRoughnessMap:
+				glBindTextureUnit(TextureTypeMetallicRoughnessMap, t.texture);
 				break;
-				case TextureTypeEmissive:
-					glBindTextureUnit(TextureTypeEmissive, t.texture);
+			case TextureTypeEmissive:
+				glBindTextureUnit(TextureTypeEmissive, t.texture);
 				break;
-				case TextureTypeAmbient:
-					glBindTextureUnit(TextureTypeAmbient, t.texture);
+			case TextureTypeAmbient:
+				glBindTextureUnit(TextureTypeAmbient, t.texture);
 				break;
-				default:
-			  	break;
+			default:
+				break;
 			}
 		}
 	}
 
-	void Material::LoadMaterialTexturesFromFile(const std::string& path, TextureType type)
-	{
+	void Material::LoadMaterialTexturesFromFile(const std::string& path, TextureType type) {
 		ModelTexture tex;
 		tex.type = type;
 		tex.texture = AMC::TextureManager::LoadTexture(path);
@@ -786,13 +773,12 @@ namespace AMC {
 	}
 
 	// TODO Later
-	void Material::LoadMaterialTexturesFromMemory(const aiTexture* t, TextureType type)
-	{
+	void Material::LoadMaterialTexturesFromMemory(const aiTexture* t, TextureType type) {
 	}
 
 	ShaderProgram* Model::programGPUSkin = nullptr;
 
-	Model::Model(std::string path, int iAssimpFlags){
+	Model::Model(std::string path, int iAssimpFlags) {
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path, iAssimpFlags);
 		if (!scene) {
@@ -839,15 +825,15 @@ namespace AMC {
 		LOG_INFO(L" Number Of Meshes : %d", meshes.size());
 		LOG_INFO(L" Number Of Materials : %d", materials.size());
 		if (haveAnimation) {
-			switch (animType){
-				case AMC::SKELETALANIM:
-					LOG_INFO(L"Skeletal Animation : %d",skeletonAnimator.size());
+			switch (animType) {
+			case AMC::SKELETALANIM:
+				LOG_INFO(L"Skeletal Animation : %d", skeletonAnimator.size());
 				break;
-				case AMC::KEYFRAMEANIM:
-					LOG_INFO(L"Keyframe Animation : %d", nodeAnimator.size());
+			case AMC::KEYFRAMEANIM:
+				LOG_INFO(L"Keyframe Animation : %d", nodeAnimator.size());
 				break;
-				case AMC::MORPHANIM:
-					LOG_INFO(L"Morph Animation : %d", morphAnimator.size());
+			case AMC::MORPHANIM:
+				LOG_INFO(L"Morph Animation : %d", morphAnimator.size());
 				break;
 			}
 		}
@@ -856,8 +842,8 @@ namespace AMC {
 		importer.FreeScene();
 	}
 
-	Model::~Model(){
-		
+	Model::~Model() {
+
 		// Clean up meshes
 		for (Mesh* mesh : meshes) {
 			if (mesh) {
@@ -890,7 +876,9 @@ namespace AMC {
 			Mesh* mesh = meshes[meshIndex];
 
 			if (iUseMaterial)
-				materials[mesh->mMaterial]->Apply(program);
+			{
+				materials[mesh->mMaterial]->Apply(program);	
+			}
 
 			glBindVertexArray(mesh->vao);
 			glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, mesh->mTriangleCount, GL_UNSIGNED_INT, 0, iNumInstance, 0, 0);
@@ -903,28 +891,28 @@ namespace AMC {
 		}
 	}
 
-	void Model::draw(ShaderProgram* program, UINT iNumInstance, bool iUseMaterial){
-		
+	void Model::draw(ShaderProgram* program, UINT iNumInstance, bool iUseMaterial) {
+
 		glm::mat4 identity = glm::mat4(1.0f);
 
 		if (haveAnimation) {
-			switch (animType){
-				case AMC::SKELETALANIM:
-					if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->skeletonAnimator.size()) {
-						// Set Bone Matrices?
-						//glUniformMatrix4fv(program->getUniformLocation("bMat[0]"), MAX_BONE_COUNT, GL_FALSE, glm::value_ptr(this->skeletonAnimator[this->CurrentAnimation].finalBoneMatrices[0]));
-					}
+			switch (animType) {
+			case AMC::SKELETALANIM:
+				if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->skeletonAnimator.size()) {
+					// Set Bone Matrices?
+					//glUniformMatrix4fv(program->getUniformLocation("bMat[0]"), MAX_BONE_COUNT, GL_FALSE, glm::value_ptr(this->skeletonAnimator[this->CurrentAnimation].finalBoneMatrices[0]));
+				}
 				break;
-				case AMC::KEYFRAMEANIM:
+			case AMC::KEYFRAMEANIM:
 				break;
-				case AMC::MORPHANIM:
+			case AMC::MORPHANIM:
 				break;
 			}
 		}
 		drawNodes(rootNode, identity, program, iNumInstance, iUseMaterial);
 	}
 
-	void Model::ComputeSkin(){
+	void Model::ComputeSkin() {
 
 		programGPUSkin->use();
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, this->skeletonAnimator[this->CurrentAnimation].boneSSBO);
@@ -942,86 +930,86 @@ namespace AMC {
 		}
 	}
 
-	void Model::update(float dt){
+	void Model::update(float dt) {
 
 		if (!haveAnimation)
-			 return;
+			return;
 
 		switch (animType) {
-			case SKELETALANIM:
-				if(this->CurrentAnimation >= 0 && this->CurrentAnimation < this->skeletonAnimator.size()){
-					this->skeletonAnimator[this->CurrentAnimation].currentTime += this->skeletonAnimator[this->CurrentAnimation].ticksPerSecond * dt;
-					this->skeletonAnimator[this->CurrentAnimation].currentTime = fmod(this->skeletonAnimator[this->CurrentAnimation].currentTime, this->skeletonAnimator[this->CurrentAnimation].duration);
-					CalculateBoneTransform(this, &this->skeletonAnimator[this->CurrentAnimation], &this->skeletonAnimator[this->CurrentAnimation].rootNode, glm::mat4(1.0f));
-					glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->skeletonAnimator[this->CurrentAnimation].boneSSBO);
-					glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, MAX_BONE_COUNT * sizeof(glm::mat4), this->skeletonAnimator[this->CurrentAnimation].finalBoneMatrices.data());
-					ComputeSkin();
-				}
+		case SKELETALANIM:
+			if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->skeletonAnimator.size()) {
+				this->skeletonAnimator[this->CurrentAnimation].currentTime += this->skeletonAnimator[this->CurrentAnimation].ticksPerSecond * dt;
+				this->skeletonAnimator[this->CurrentAnimation].currentTime = fmod(this->skeletonAnimator[this->CurrentAnimation].currentTime, this->skeletonAnimator[this->CurrentAnimation].duration);
+				CalculateBoneTransform(this, &this->skeletonAnimator[this->CurrentAnimation], &this->skeletonAnimator[this->CurrentAnimation].rootNode, glm::mat4(1.0f));
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->skeletonAnimator[this->CurrentAnimation].boneSSBO);
+				glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, MAX_BONE_COUNT * sizeof(glm::mat4), this->skeletonAnimator[this->CurrentAnimation].finalBoneMatrices.data());
+				ComputeSkin();
+			}
 			break;
-			case KEYFRAMEANIM:
-				if(this->CurrentAnimation >= 0 && this->CurrentAnimation < this->nodeAnimator.size()) {
-					this->nodeAnimator[this->CurrentAnimation].currentTime += this->nodeAnimator[this->CurrentAnimation].ticksPerSecond * dt;
-					this->nodeAnimator[this->CurrentAnimation].currentTime = fmod(this->nodeAnimator[this->CurrentAnimation].currentTime, this->nodeAnimator[this->CurrentAnimation].duration);
-					CalculateNodeTransform(&this->rootNode,glm::mat4(1.0f), this->nodeAnimator[this->CurrentAnimation]);
-				}
+		case KEYFRAMEANIM:
+			if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->nodeAnimator.size()) {
+				this->nodeAnimator[this->CurrentAnimation].currentTime += this->nodeAnimator[this->CurrentAnimation].ticksPerSecond * dt;
+				this->nodeAnimator[this->CurrentAnimation].currentTime = fmod(this->nodeAnimator[this->CurrentAnimation].currentTime, this->nodeAnimator[this->CurrentAnimation].duration);
+				CalculateNodeTransform(&this->rootNode, glm::mat4(1.0f), this->nodeAnimator[this->CurrentAnimation]);
+			}
 			break;
-			case MORPHANIM:
-				if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->nodeAnimator.size()) {
-					//float& currentTime = this->morphAnimator[this->CurrentAnimation].currentTime;
-					//currentTime += this->morphAnimator[this->CurrentAnimation].ticksPerSecond * dt;
-					//currentTime = fmod(currentTime, this->morphAnimator[this->CurrentAnimation].duration);
-					//calculateMorphTargets();
-				}
+		case MORPHANIM:
+			if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->nodeAnimator.size()) {
+				//float& currentTime = this->morphAnimator[this->CurrentAnimation].currentTime;
+				//currentTime += this->morphAnimator[this->CurrentAnimation].ticksPerSecond * dt;
+				//currentTime = fmod(currentTime, this->morphAnimator[this->CurrentAnimation].duration);
+				//calculateMorphTargets();
+			}
 			break;
 		}
 	}
 
-	void Model::lerpAnimation(float t){
+	void Model::lerpAnimation(float t) {
 		if (t < 0.0f) t = 0.0f;
 		if (t > 1.0f) t = 1.0f;
 
 		switch (animType) {
-			case SKELETALANIM:
-				if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->skeletonAnimator.size()) {
-					this->skeletonAnimator[this->CurrentAnimation].currentTime += this->skeletonAnimator[this->CurrentAnimation].ticksPerSecond * t;
-					this->skeletonAnimator[this->CurrentAnimation].currentTime = fmod(this->skeletonAnimator[this->CurrentAnimation].currentTime, this->skeletonAnimator[this->CurrentAnimation].duration);
-					//calculateBoneTransform(this, &this->skeletonAnimator[this->CurrentAnimation], &this->skeletonAnimator[this->CurrentAnimation].rootNode, DirectX::XMMatrixIdentity());
-				}
+		case SKELETALANIM:
+			if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->skeletonAnimator.size()) {
+				this->skeletonAnimator[this->CurrentAnimation].currentTime += this->skeletonAnimator[this->CurrentAnimation].ticksPerSecond * t;
+				this->skeletonAnimator[this->CurrentAnimation].currentTime = fmod(this->skeletonAnimator[this->CurrentAnimation].currentTime, this->skeletonAnimator[this->CurrentAnimation].duration);
+				//calculateBoneTransform(this, &this->skeletonAnimator[this->CurrentAnimation], &this->skeletonAnimator[this->CurrentAnimation].rootNode, DirectX::XMMatrixIdentity());
+			}
 			break;
-			case KEYFRAMEANIM:
-				if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->nodeAnimator.size()) {
-					this->nodeAnimator[this->CurrentAnimation].currentTime += this->nodeAnimator[this->CurrentAnimation].ticksPerSecond * t;
-					this->nodeAnimator[this->CurrentAnimation].currentTime = fmod(this->nodeAnimator[this->CurrentAnimation].currentTime, this->nodeAnimator[this->CurrentAnimation].duration);
-					//calculateNodeTransform();
-				}
+		case KEYFRAMEANIM:
+			if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->nodeAnimator.size()) {
+				this->nodeAnimator[this->CurrentAnimation].currentTime += this->nodeAnimator[this->CurrentAnimation].ticksPerSecond * t;
+				this->nodeAnimator[this->CurrentAnimation].currentTime = fmod(this->nodeAnimator[this->CurrentAnimation].currentTime, this->nodeAnimator[this->CurrentAnimation].duration);
+				//calculateNodeTransform();
+			}
 			break;
-			case MORPHANIM:
-				if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->nodeAnimator.size()) {
-					float& currentTime = this->morphAnimator[this->CurrentAnimation].currentTime;
-					currentTime += this->morphAnimator[this->CurrentAnimation].ticksPerSecond * t;
-					currentTime = fmod(currentTime, this->morphAnimator[this->CurrentAnimation].duration);
-					//calculateMorphTargets();
-				}
+		case MORPHANIM:
+			if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->nodeAnimator.size()) {
+				float& currentTime = this->morphAnimator[this->CurrentAnimation].currentTime;
+				currentTime += this->morphAnimator[this->CurrentAnimation].ticksPerSecond * t;
+				currentTime = fmod(currentTime, this->morphAnimator[this->CurrentAnimation].duration);
+				//calculateMorphTargets();
+			}
 			break;
 		}
 	}
 
-	void Model::setActiveAnimation(int index){
+	void Model::setActiveAnimation(int index) {
 		switch (animType) {
-			case SKELETALANIM:
-				if (index < skeletonAnimator.size() && index >= 0) {
-					this->CurrentAnimation = index;
-				}
+		case SKELETALANIM:
+			if (index < skeletonAnimator.size() && index >= 0) {
+				this->CurrentAnimation = index;
+			}
 			break;
-			case KEYFRAMEANIM:
-				if (index < nodeAnimator.size() && index >= 0) {
-					this->CurrentAnimation = index;
-				}
+		case KEYFRAMEANIM:
+			if (index < nodeAnimator.size() && index >= 0) {
+				this->CurrentAnimation = index;
+			}
 			break;
-			case MORPHANIM:
-				if (index < morphAnimator.size() && index >= 0) {
-					this->CurrentAnimation = index;
-				}
+		case MORPHANIM:
+			if (index < morphAnimator.size() && index >= 0) {
+				this->CurrentAnimation = index;
+			}
 			break;
 		}
 	}

@@ -25,7 +25,7 @@ void pbrScene::init() {
 	addModel("cube", cubeobj);
 
 	AMC::RenderModel animman;
-	animman.model = new AMC::Model(RESOURCE_PATH("models\\CesiumMan\\CesiumMan.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	animman.model = new AMC::Model(RESOURCE_PATH("models\\DamagedHelmet\\DamagedHelmet.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 	animman.matrix = mp->getModelMatrix();
 	addModel("man", animman);
 

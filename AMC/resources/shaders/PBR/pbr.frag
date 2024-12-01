@@ -27,6 +27,7 @@ struct MaterialInfo
     float roughness;
     float emission;
     float alpha;
+    float ao;
     int textureFlag;
 };
 
@@ -260,5 +261,6 @@ void main()
     //finalColor += emissive;
     FragColor =  vec4(color, materialInfo.alpha); //(albedoTexture.Sample(SamplerLinear, input.texcoord).rgb, alpha);
 
+//    FragColor =texture(texDiffuseColor,oTex);
 };
 

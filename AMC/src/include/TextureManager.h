@@ -6,14 +6,15 @@
 
 namespace AMC {
 
-	class TextureManager {
+    class TextureManager {
 
-        public:
-            static GLuint LoadTexture(const std::string& filename);
-            static GLuint LoadKTX2Texture(const std::string& filename);
-            static void UnloadTextures();
+    public:
+        static GLuint LoadTexture(const std::string& filename);
+        static GLuint LoadCubeTexture(std::vector<std::string>& faces);
+        static GLuint LoadKTX2Texture(const std::string& filename);
+        static void UnloadTextures();
 
-        private:
-            static std::unordered_map<std::string, GLuint> textureMap;
-	};
+    private:
+        static std::unordered_map<std::string, GLuint> textureMap;
+    };
 };

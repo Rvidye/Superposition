@@ -763,6 +763,19 @@ namespace AMC {
 				break;
 			}
 		}
+		glUniform3fv(program->getUniformLocation("material.albedo"), 1, glm::value_ptr(albedo));
+		glUniform1f(program->getUniformLocation("material.metallic"), metallic);
+		glUniform1f(program->getUniformLocation("material.roughness"), roughness);
+		glUniform1f(program->getUniformLocation("material.ao"), ao);
+		glUniform3fv(program->getUniformLocation("material.emission"), 1, glm::value_ptr(emission));
+		glUniform1f(program->getUniformLocation("material.alpha"), alpha);
+		glUniform1i(program->getUniformLocation("material.textureFlag"), textureFlag);
+
+
+
+
+
+
 	}
 
 	void Material::LoadMaterialTexturesFromFile(const std::string& path, TextureType type) {
@@ -875,9 +888,8 @@ namespace AMC {
 		for (UINT meshIndex : node.meshIndices) {
 			Mesh* mesh = meshes[meshIndex];
 
-			if (iUseMaterial)
-			{
-				materials[mesh->mMaterial]->Apply(program);	
+			if (iUseMaterial) {
+				materials[mesh->mMaterial]->Apply(program);
 			}
 
 			glBindVertexArray(mesh->vao);

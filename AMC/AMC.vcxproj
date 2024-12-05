@@ -222,7 +222,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClCompile Include="src\module\TextureManager.cpp" />
     <ClCompile Include="src\renderpass\TestPass.cpp" />
     <ClCompile Include="src\scenes\testscene\testScene.cpp" />
-    <ClCompile Include="src\module\VulkanContext.cpp" />
+    <ClCompile Include="src\module\VulkanHelperClasses.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\AL\al.h" />
@@ -1020,7 +1020,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\include\TextureManager.h" />
     <ClInclude Include="src\renderpass\TestPass.h" />
     <ClInclude Include="src\scenes\testscene\testScene.h" />
-    <ClInclude Include="src\include\VulkanContext.h" />
+    <ClInclude Include="src\include\VulkanHelperClasses.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="lib\assimp.dll">

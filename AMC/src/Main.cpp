@@ -10,7 +10,7 @@
 #include<Camera.h>
 #include<Scene.h>
 #include<RenderPass.h>
-#include<VulkanContext.h>
+#include<VulkanHelperClasses.h>
 
 // Render Passes
 #include "renderpass/TestPass.h"
@@ -28,7 +28,7 @@
 
 
 static AMC::RenderWindow* window;
-static AMC::VulkanContext* vkcontext;
+static AMC::VkContext* vkcontext;
 DOUBLE AMC::deltaTime = 0;
 
 BOOL AMC::ANIMATING = FALSE;
@@ -111,8 +111,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	window->SetResizeFunc(resize);
 	resize(window,720, 480);
 
-	AMC::VulkanContext::Builder builder;
-
+	AMC::VkContext::Builder builder;
 	vkcontext = builder
 		.setAPIVersion(VK_API_VERSION_1_3)
 		.setRequiredQueueFlags(VK_QUEUE_COMPUTE_BIT)

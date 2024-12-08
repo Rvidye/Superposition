@@ -223,7 +223,7 @@ namespace AMC {
 			break;
 		}
 
-		if ((id != 131076) && (id != 131184) && (id != 131185) && (id != 131186) && (id != 131188) && (id != 131204) && (id != 131218))
+		//if ((id != 131076) && (id != 131184) && (id != 131185) && (id != 131186) && (id != 131188) && (id != 131204) && (id != 131218))
 		{
 			char buffer[4096];
 			sprintf_s(buffer, "%s %s: %s %d: %s\n", severityType, debugSource, debugType, id, message);

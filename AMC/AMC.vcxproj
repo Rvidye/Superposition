@@ -154,7 +154,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)lib\debug;$(Vulkan_SDK)\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)lib\debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
@@ -183,7 +183,7 @@ copy /Y "$(ProjectDir)lib\debug\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Configu
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)lib\release;$(Vulkan_SDK)\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)lib\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
@@ -207,6 +207,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClCompile Include="src\include\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="src\include\imgui\imgui_tables.cpp" />
     <ClCompile Include="src\include\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="src\module\MemoryManager.cpp" />
     <ClCompile Include="src\module\ModelPlacer.cpp" />
     <ClCompile Include="src\module\SplineCameraAdjuster.cpp" />
     <ClCompile Include="src\module\BSpline.cpp" />
@@ -1009,6 +1010,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\include\ktx\ktx.h" />
     <ClInclude Include="src\include\ktx\ktxvulkan.h" />
     <ClInclude Include="src\include\Log.h" />
+    <ClInclude Include="src\include\MemoryManager.h" />
     <ClInclude Include="src\include\Model.h" />
     <ClInclude Include="src\include\ModelPlacer.h" />
     <ClInclude Include="src\include\RenderPass.h" />

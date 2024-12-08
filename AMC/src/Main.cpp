@@ -11,6 +11,7 @@
 #include<Scene.h>
 #include<RenderPass.h>
 #include<VulkanHelperClasses.h>
+#include<MemoryManager.h>
 
 // Render Passes
 #include "renderpass/TestPass.h"
@@ -24,7 +25,7 @@
 #pragma comment(lib,"glu32.lib")
 #pragma comment(lib,"OpenAL32.lib")
 #pragma	comment(lib,"ktx.lib")
-#pragma comment(lib,"vulkan-1.lib")
+#pragma comment(lib,"volk.lib")
 
 
 static AMC::RenderWindow* window;
@@ -115,6 +116,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	vkcontext = builder
 		.setAPIVersion(VK_API_VERSION_1_3)
 		.setRequiredQueueFlags(VK_QUEUE_COMPUTE_BIT)
+		.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME)
+		.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
 		.build();
 
 	InitRenderPasses();

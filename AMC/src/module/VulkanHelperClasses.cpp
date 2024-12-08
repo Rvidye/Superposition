@@ -73,6 +73,8 @@ namespace AMC {
 	VkContext* VkContext::Builder::build() {
 		VkContext* ctx = new VkContext();
 
+		volkInitialize();
+
 		//Instance Creation
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -96,6 +98,8 @@ namespace AMC {
 		instanceCI.ppEnabledLayerNames = instanceLayers.data();
 		CHECK_VULKAN_ERROR(vkCreateInstance(&instanceCI, nullptr, &ctx->instance));
 
+		volkLoadInstance(ctx->instance);
+
 		uint32_t devCount;
 		CHECK_VULKAN_ERROR(vkEnumeratePhysicalDevices(ctx->instance, &devCount, nullptr));
 		std::vector<VkPhysicalDevice> devList(devCount);
@@ -116,15 +120,14 @@ namespace AMC {
 		std::vector<VkQueueFamilyProperties> queueFamilyProps(queueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(ctx->physicalDevice, &queueFamilyCount, queueFamilyProps.data());
 
-		uint32_t queueFamilyIndex = 0;
 		for (uint32_t i = 0; i < queueFamilyCount; i++) {
 			if (queueFamilyProps[i].queueFlags & requestedQueueFlags) {
-				queueFamilyIndex = i;
+				ctx->queueFamilyIndex = i;
 				break;
 			}
 		}
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
+		queueCreateInfo.queueFamilyIndex = ctx->queueFamilyIndex;
 		queueCreateInfo.queueCount = 1;
 		queueCreateInfo.pQueuePriorities = &queuePriorities;
 
@@ -137,12 +140,14 @@ namespace AMC {
 		deviceCI.ppEnabledExtensionNames = deviceExtensions.data();
 		CHECK_VULKAN_ERROR(vkCreateDevice(ctx->physicalDevice, &deviceCI, nullptr, &ctx->device));
 	
-		vkGetDeviceQueue(ctx->device, queueFamilyIndex, 0, &ctx->queue);
+		volkLoadDevice(ctx->device);
+
+		vkGetDeviceQueue(ctx->device, ctx->queueFamilyIndex, 0, &ctx->queue);
 
 		VkCommandPoolCreateInfo commandPoolInfo{};
 		commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		commandPoolInfo.queueFamilyIndex = queueFamilyIndex;
+		commandPoolInfo.queueFamilyIndex = ctx->vkQueueFamilyIndex();
 		CHECK_VULKAN_ERROR(vkCreateCommandPool(ctx->device, &commandPoolInfo, nullptr, &ctx->commandPool));
 		
 		LOG_INFO(L"Vulkan: Context Successfully Initialized");
@@ -157,6 +162,7 @@ namespace AMC {
 		instance = VK_NULL_HANDLE;
 		physicalDevice = VK_NULL_HANDLE;
 		device = VK_NULL_HANDLE;
+		queueFamilyIndex = 0xffff;
 		queue = VK_NULL_HANDLE;
 		commandPool = VK_NULL_HANDLE;
 	}
@@ -201,16 +207,16 @@ namespace AMC {
 		VkDescriptorSetLayoutCreateInfo descSetLayoutCI{};
 		descSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 
-		std::unordered_map<VkDescriptorType, uint32_t> poolSizeMap{};
-		uint32_t maxSet = 0;
-		std::unordered_map<std::string, uint32_t> maxCountPerLayout;
+		std::unordered_map<VkDescriptorType, size_t> poolSizeMap{};
+		size_t maxSet = 0;
+		std::unordered_map<std::string, size_t> maxCountPerLayout;
 
 		for (auto& entry : descSetData) {
 			descSetMan->descriptorSet[entry.first] = {};
 
 			std::vector<VkDescriptorSetLayoutBinding> bindings{};
 
-			uint32_t temp = 0;
+			size_t temp = 0;
 			for (auto& bindingData : entry.second) {
 				VkDescriptorSetLayoutBinding descSetBinding{};
 				descSetBinding.binding = bindingData.binding;
@@ -227,7 +233,7 @@ namespace AMC {
 			maxCountPerLayout[entry.first] = temp;
 			maxSet += temp;
 
-			descSetLayoutCI.bindingCount = bindings.size();
+			descSetLayoutCI.bindingCount = static_cast<uint32_t>(bindings.size());
 			descSetLayoutCI.pBindings = bindings.data();
 			
 			vkCreateDescriptorSetLayout(ctx->vkDevice(), &descSetLayoutCI, nullptr, &descSetMan->descriptorSet[entry.first].first);
@@ -235,14 +241,14 @@ namespace AMC {
 
 		std::vector<VkDescriptorPoolSize> poolSizes{};
 		for (auto& poolEntry : poolSizeMap) {
-			poolSizes.push_back({poolEntry.first, poolEntry.second});
+			poolSizes.push_back({poolEntry.first, static_cast<uint32_t>(poolEntry.second)});
 		}
 
 		VkDescriptorPoolCreateInfo descPoolCI{};
 		descPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		descPoolCI.poolSizeCount = poolSizes.size();
+		descPoolCI.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		descPoolCI.pPoolSizes = poolSizes.data();
-		descPoolCI.maxSets = maxSet;
+		descPoolCI.maxSets = static_cast<uint32_t>(maxSet);
 		vkCreateDescriptorPool(ctx->vkDevice(), &descPoolCI, nullptr, &descSetMan->pool);
 
 		VkDescriptorSetAllocateInfo descSetAI{};
@@ -261,7 +267,7 @@ namespace AMC {
 		for (auto& entry : descSetMan->descriptorSet) {
 			std::vector<VkDescriptorSetLayout> layoutsArray(maxCountPerLayout[entry.first], entry.second.first);
 	
-			descSetAI.descriptorSetCount = layoutsArray.size();
+			descSetAI.descriptorSetCount = static_cast<uint32_t>(layoutsArray.size());
 			descSetAI.pSetLayouts = layoutsArray.data();
 			descSetMan->descriptorSet[entry.first].second.resize(descSetAI.descriptorSetCount);
 			vkAllocateDescriptorSets(ctx->vkDevice(), &descSetAI, descSetMan->descriptorSet[entry.first].second.data());
@@ -270,7 +276,7 @@ namespace AMC {
 				writeDescSet.descriptorType = layoutBinding.type;
 				writeDescSet.dstBinding = layoutBinding.binding;
 
-				for (int i = 0; i < maxCountPerLayout[entry.first]; i++) {
+				for (uint32_t i = 0; i < maxCountPerLayout[entry.first]; i++) {
 					writeDescSet.dstSet = descSetMan->descriptorSet[entry.first].second[i];
 					switch (layoutBinding.type) {
 					case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:

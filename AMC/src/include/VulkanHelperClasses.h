@@ -5,7 +5,8 @@
 #include<unordered_map>
 #include<variant>
 
-#include<vulkan/vulkan.h>
+#define VK_USE_PLATFORM_WIN32_KHR
+#include<volk.h>
 
 namespace AMC {
 	class VkContext
@@ -40,6 +41,7 @@ namespace AMC {
 		const VkPhysicalDevice& vkPhysicalDevice() const { return physicalDevice; }
 		const VkDevice& vkDevice() const { return device; }
 		const VkQueue& vkQueue() const { return queue; }
+		const uint32_t& vkQueueFamilyIndex() const { return queueFamilyIndex; }
 		const VkCommandPool& vkCommandPool() const { return commandPool; }
 
 		~VkContext();
@@ -49,6 +51,7 @@ namespace AMC {
 		VkPhysicalDevice physicalDevice;
 		VkDevice device;
 		VkQueue queue;
+		uint32_t queueFamilyIndex;
 		VkCommandPool commandPool;
 	};
 

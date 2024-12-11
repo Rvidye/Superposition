@@ -32,11 +32,13 @@ namespace AMC {
 				models.erase(name);
 			}
 
+			//TODO: Remove this, models is already a public variable
 			const std::unordered_map<std::string, RenderModel>& getModelList() const {
 				return models;
 			}
 
-			RenderModel* getRenderModel(const std::string& name) {
+			//Made this function const as it is a simple getter
+			const RenderModel* getRenderModel(const std::string& name) const {
 				auto it = models.find(name);
 				if (it != models.end()) {
 					return &it->second;
@@ -46,7 +48,6 @@ namespace AMC {
 
 			bool completed = false;
 			std::unordered_map<std::string, RenderModel> models;
-
 	};
 };
 

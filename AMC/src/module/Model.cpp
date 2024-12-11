@@ -829,7 +829,7 @@ namespace AMC {
 		}
 
 		if (!programGPUSkin) {
-			programGPUSkin = new ShaderProgram({ RESOURCE_PATH("shaders\\model\\SkinCompute.comp") });
+			programGPUSkin = new ShaderProgram({ RESOURCE_PATH("shaders\\model\\spv\\SkinCompute.comp.spv") });
 		}
 
 		//Print Info

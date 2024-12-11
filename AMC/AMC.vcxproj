@@ -207,8 +207,10 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClCompile Include="src\include\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="src\include\imgui\imgui_tables.cpp" />
     <ClCompile Include="src\include\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="src\module\LightManager.cpp" />
     <ClCompile Include="src\module\MemoryManager.cpp" />
     <ClCompile Include="src\module\ModelPlacer.cpp" />
+    <ClCompile Include="src\module\ShadowManager.cpp" />
     <ClCompile Include="src\module\SplineCameraAdjuster.cpp" />
     <ClCompile Include="src\module\BSpline.cpp" />
     <ClCompile Include="src\module\BSplineUtils.cpp" />
@@ -1009,6 +1011,8 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\include\ktx\KHR\khr_df.h" />
     <ClInclude Include="src\include\ktx\ktx.h" />
     <ClInclude Include="src\include\ktx\ktxvulkan.h" />
+    <ClInclude Include="src\include\Light.h" />
+    <ClInclude Include="src\include\LightManager.h" />
     <ClInclude Include="src\include\Log.h" />
     <ClInclude Include="src\include\MemoryManager.h" />
     <ClInclude Include="src\include\Model.h" />
@@ -1017,6 +1021,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\include\Scene.h" />
     <ClInclude Include="src\include\ShaderProgram.h" />
     <ClInclude Include="src\include\RenderWindow.h" />
+    <ClInclude Include="src\include\ShadowManager.h" />
     <ClInclude Include="src\include\SplineCameraAdjuster.h" />
     <ClInclude Include="src\include\stb_image.h" />
     <ClInclude Include="src\include\TextureManager.h" />

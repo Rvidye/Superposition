@@ -3,6 +3,7 @@
 #include<common.h>
 #include<Model.h>
 #include<Camera.h>
+#include<LightManager.h>
 
 namespace AMC {
 
@@ -46,7 +47,7 @@ namespace AMC {
 
 			bool completed = false;
 			std::unordered_map<std::string, RenderModel> models;
-
+			LightManager *lightManager  = nullptr;
 	};
 };
 

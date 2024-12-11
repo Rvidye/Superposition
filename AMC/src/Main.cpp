@@ -277,8 +277,10 @@ void keyboard(AMC::RenderWindow*, char key, UINT keycode)
 
 void mouse(AMC::RenderWindow*, int button, int action, int x, int y)
 {
-	if (gpDebugCamera)
+#ifdef _MYDEBUG
+	if ((!ImGui::GetIO().WantCaptureMouse) && (gpDebugCamera))
 		gpDebugCamera->mouse(button, action, x, y);
+#endif
 }
 
 void resize(AMC::RenderWindow*, UINT width, UINT height)
@@ -425,25 +427,6 @@ void InitScenes(void)
 	}
 	playNextScene();
 
-	// Setup All FBO's 
-
-	int renderWidth = 2048;  // 4K width
-	int renderHeight = 2048; // 4K height
-	int sampleCount = 4;     // 4x MSAA
-
-	glCreateFramebuffers(1, &msaaFBO);
-
-	glCreateRenderbuffers(1, &msaaColorBuffer);
-	glNamedRenderbufferStorageMultisample(msaaColorBuffer, sampleCount, GL_RGBA8, renderWidth, renderHeight);
-	glNamedFramebufferRenderbuffer(msaaFBO, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msaaColorBuffer);
-
-	glCreateRenderbuffers(1, &msaaDepthBuffer);
-	glNamedRenderbufferStorageMultisample(msaaDepthBuffer, sampleCount, GL_DEPTH24_STENCIL8, renderWidth, renderHeight);
-	glNamedFramebufferRenderbuffer(msaaFBO, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, msaaDepthBuffer);
-
-	if (glCheckNamedFramebufferStatus(msaaFBO, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		std::cout << "MSAA Framebuffer not complete!" << std::endl;
-	}
 }
 
 void playNextScene(void) {

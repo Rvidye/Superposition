@@ -68,6 +68,8 @@ void testScene::init()
 	moveEvent->easingFunction = nullptr;
 	moveEvent->updateFunction = [this](float t) { this->moveModel(t); };
 	events->AddEvent("MoveModelEvent", moveEvent);
+
+	lightManager = new AMC::LightManager(3, 3);
 }
 
 //void testScene::render()
@@ -110,7 +112,7 @@ void testScene::renderUI()
 			camAdjuster->renderUI();
 		break;
 		case AMC::LIGHT:
-			//lm->renderUI();
+			lightManager->renderUI();
 		break;
 		case AMC::SPLINE:
 		break;

@@ -12,7 +12,7 @@ layout(location = 0) uniform mat4 mvpMat;
 layout(location = 1) uniform mat4 nodeMat;
 layout(location = 2) uniform mat4 bMat[100];
 
-out vec2 oTex;
+layout(location = 0)out vec2 oTex;
 
 void main(void) 
 {  

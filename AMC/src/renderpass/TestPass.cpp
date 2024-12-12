@@ -3,7 +3,7 @@
 
 void TestPass::create(){
 
-	m_programTexturedDraw = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\model.vert"), RESOURCE_PATH("shaders\\model\\model.frag") });
+	m_programTexturedDraw = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\spv\\model.vert.spv"), RESOURCE_PATH("shaders\\model\\spv\\model.frag.spv") });
 }
 
 void TestPass::execute(const AMC::Scene* scene){

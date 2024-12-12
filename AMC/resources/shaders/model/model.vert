@@ -9,7 +9,7 @@ layout(location = 4)in vec3 vBitangent;
 layout(location = 0) uniform mat4 mvpMat;
 layout(location = 1) uniform mat4 nodeMat; 
 
-out vec2 oTex;
+layout(location = 0)out vec2 oTex;
 
 void main(void) 
 {

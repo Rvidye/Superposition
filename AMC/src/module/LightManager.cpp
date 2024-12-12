@@ -1,13 +1,38 @@
 #include<common.h>
 #include<LightManager.h>
+#include<Camera.h>
+#include<glm/gtc/matrix_transform.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include<glm/gtx/quaternion.hpp>
 
 namespace AMC {
+
+	ShaderProgram* LightManager::m_program = nullptr;
+	Model* LightManager::directional = nullptr;
+	Model* LightManager::spot = nullptr;
+	Model* LightManager::point = nullptr;
 
 	LightManager::LightManager(int maxShadowMaps, int maxPointShadowCubemaps)
 	{
 		shadowManager = new ShadowManager(maxShadowMaps, maxPointShadowCubemaps);
 		glCreateBuffers(1, &uboLights);
 		glNamedBufferData(uboLights, sizeof(LightBlock), nullptr, GL_DYNAMIC_DRAW);
+
+		if (!m_program) {
+			m_program = new ShaderProgram({ RESOURCE_PATH("shaders\\model\\model.vert"), RESOURCE_PATH("shaders\\color\\color.frag") });
+		}
+
+		if (!directional) {
+			directional = new AMC::Model(RESOURCE_PATH("models\\debug\\arrow.obj"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+		}
+
+		if (!spot) {
+			spot = new AMC::Model(RESOURCE_PATH("models\\debug\\cone.obj"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+		}
+
+		if (!point) {
+			point = new AMC::Model(RESOURCE_PATH("models\\debug\\point.obj"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+		}
 	}
 
 	void LightManager::addLight(const Light& l) {
@@ -100,6 +125,7 @@ namespace AMC {
 
 	void LightManager::renderUI()
 	{
+	#if defined(_MYDEBUG)
 		bool shouldUpdateBuffer = false;
 		// Display each light's properties
 		for (int i = 0; i < lights.size(); ++i) {
@@ -179,7 +205,7 @@ namespace AMC {
 			if (ImGui::Button("Add Light")) {
 				AMC::Light newLight; // Default new light
 				newLight.type = 0;
-				newLight.direction = glm::vec3(0.0f, -1.0f, -1.0f);
+				newLight.direction = glm::vec3(0.0f, 0.0f, -1.0f);
 				newLight.color = glm::vec3(1.0f, 1.0f, 1.0f);
 				newLight.intensity = 1.0f;
 				newLight.range = -1.0f; // if -1 then range is infinite, used in case of point and spot lights
@@ -211,9 +237,48 @@ namespace AMC {
 		if (shouldUpdateBuffer) {
 			updateUBO();
 		}
+	#endif
 	}
 
-	void LightManager::drawLights(GLuint shaderProgram)
-	{
+	void LightManager::drawLights(){
+
+		m_program->use();
+
+		for (const auto& light : lights) {
+
+			if (!light.active) continue;
+
+			glm::mat4 model = glm::mat4(1.0f);
+
+			if (light.type == LIGHT_TYPE_DIRECTIONAL) {
+				model = glm::translate(model, light.position);
+				glm::vec3 direction = glm::normalize(light.direction);
+				glm::quat rotation = glm::rotation(glm::vec3(0.0f, -1.0f, 0.0f), direction);
+				glm::mat4 rotMatrix = glm::toMat4(rotation);
+				model *= rotMatrix;
+			}
+			else if (light.type == LIGHT_TYPE_SPOT) {
+				model = glm::translate(model, light.position);
+				glm::vec3 direction = glm::normalize(light.direction);
+				glm::quat rotation = glm::rotation(glm::vec3(0.0f, -1.0f, 0.0f), direction);
+				glm::mat4 rotMatrix = glm::toMat4(rotation);
+				model *= rotMatrix;
+			}
+			else if (light.type == LIGHT_TYPE_POINT) {
+				model = glm::translate(model, light.position);
+			}
+
+			glUniformMatrix4fv(m_program->getUniformLocation("mvpMat"), 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * model));
+			glUniform4fv(m_program->getUniformLocation("color"), 1, glm::value_ptr(light.color));
+			if (light.type == LIGHT_TYPE_DIRECTIONAL) {
+				directional->draw(m_program, 1, false);
+			}
+			else if (light.type == LIGHT_TYPE_SPOT) {
+				spot->draw(m_program, 1, false);
+			}
+			else if (light.type == LIGHT_TYPE_POINT) {
+				point->draw(m_program, 1, false);
+			}
+		}
 	}
 };

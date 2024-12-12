@@ -4,10 +4,10 @@
 #include<string>
 #include<vector>
 #include<map>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <regex>
+#include<iostream>
+#include<fstream>
+#include<sstream>
+#include<regex>
 
 namespace AMC {
 	class ShaderProgram

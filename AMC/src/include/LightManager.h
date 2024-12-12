@@ -5,8 +5,9 @@
 #include<Log.h>
 #include<Light.h>
 #include<ShadowManager.h>
+#include<ShaderProgram.h>
+#include<Model.h>
 #include<glm/glm.hpp>
-
 
 namespace AMC {
 
@@ -43,12 +44,14 @@ namespace AMC {
 
             // For UI and debugging
             void renderUI();
-            void drawLights(GLuint shaderProgram);
+            void drawLights();
 
             std::vector<Light> lights;
         private:
             ShadowManager *shadowManager = nullptr;
             GLuint uboLights = 0;
+            static ShaderProgram* m_program;
+            static Model *directional, *spot, *point;
     };
 
 

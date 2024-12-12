@@ -92,6 +92,7 @@ void testScene::renderDebug()
 			camAdjuster->render();
 			break;
 		case AMC::LIGHT:
+			lightManager->drawLights();
 			break;
 		case AMC::SPLINE:
 			break;
@@ -102,6 +103,7 @@ void testScene::renderDebug()
 
 void testScene::renderUI()
 {
+	#if defined(_MYDEBUG)
 	ImGui::Text("Tutorial Scene ");
 	ImGui::Text("Scene Time : %0.1f", events->getCurrentTime());
 	switch (AMC::DEBUGMODE) {
@@ -119,6 +121,7 @@ void testScene::renderUI()
 		case AMC::NONE:
 		break;
 	}
+	#endif
 }
 
 void testScene::update()

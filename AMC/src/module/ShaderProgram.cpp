@@ -1,5 +1,6 @@
 #include<Log.h>
-#include <ShaderProgram.h>
+#include<ShaderProgram.h>
+#include<exception>
 
 namespace AMC {
 
@@ -38,6 +39,11 @@ namespace AMC {
 		std::filesystem::path fileName = std::filesystem::path(filePath).filename();
 		bool isSpv = fileName.extension() == ".spv";
 		if (isSpv) {
+			std::string renderer = std::string(reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
+			std::transform(renderer.begin(), renderer.end(), renderer.begin(), ::tolower);
+			if (renderer.find("intel", 0) != std::string::npos) {
+				throw std::runtime_error("Intel GPU's don't work for SPIR-V Shaders as of now.");
+			}
 			fileName = fileName.replace_extension();
 		}
 		shaderType = getShaderType(fileName);
@@ -66,7 +72,7 @@ namespace AMC {
 		// Compile shader
 		const char* sourceCStr = finalSource.c_str();
 		if (isSpv) {
-			glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V, shaderSource.c_str(), shaderSource.length());
+			glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V, shaderSource.c_str(), (GLsizei)shaderSource.length());
 			glSpecializeShader(shader, "main", 0, nullptr, nullptr);
 		}
 		else {

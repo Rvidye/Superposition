@@ -85,5 +85,22 @@ namespace AMC {
 		std::unordered_map<std::string, std::pair<VkDescriptorSetLayout, std::vector<VkDescriptorSet>>> descriptorSet;
 		VkDescriptorPool pool;
 	};
+
+	class VkCommandBufferManager {
+	public:
+		static constexpr uint32_t kFreeAll = UINT32_MAX;
+		VkCommandBufferManager(const VkContext* ctx);
+		void allocate(uint32_t count = 1);
+		VkCommandBuffer get(uint32_t index = 0) const;
+		VkResult submit(uint32_t index = 0);
+		VkResult begin(uint32_t index = 0);
+		VkResult end(uint32_t index = 0);
+		void free(uint32_t count = kFreeAll);
+	private:
+		const VkContext* vkctx;
+		std::vector<VkCommandBuffer> commandBufferList{};
+	};
+
+	VkShaderModule loadShaderModule(const VkContext* ctx, std::string fileName);
 }
 

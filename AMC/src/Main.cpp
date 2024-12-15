@@ -15,9 +15,11 @@
 
 // Render Passes
 #include "renderpass/TestPass.h"
+#include "renderpass/RTPass.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
+#include "scenes/rtdemo/rtscene.h"
 
 // Libraries
 #pragma comment(lib,"glew32.lib")
@@ -411,6 +413,7 @@ void InitRenderPasses()
 
 	// Add passes here
 	gpRenderer->addPass(new TestPass());
+	gpRenderer->addPass(new RTPass(vkcontext));
 
 	// Create Resouces for all passes
 	gpRenderer->initPasses();
@@ -418,7 +421,8 @@ void InitRenderPasses()
 
 void InitScenes(void)
 {
-	sceneQueue.push_back(new testScene());
+	//sceneQueue.push_back(new testScene());
+	sceneQueue.push_back(new rtscene());
 
 	for (auto* scene : sceneQueue) {
 		scene->init();

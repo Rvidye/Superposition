@@ -1,5 +1,6 @@
 #include "VulkanHelperClasses.h"
 #include "Log.h"
+#include<fstream>
 
 static VkResult result;
 
@@ -111,7 +112,7 @@ namespace AMC {
 		vkGetPhysicalDeviceProperties(ctx->physicalDevice, &props);
 
 		LOG_WARNING(L"Vulkan: Using %s device. Ensure OpenGL is running on the same device.", CString(props.deviceName));
-	
+
 		VkDeviceQueueCreateInfo queueCreateInfo{};
 		const float queuePriorities = 1.0f;
 
@@ -139,7 +140,7 @@ namespace AMC {
 		deviceCI.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
 		deviceCI.ppEnabledExtensionNames = deviceExtensions.data();
 		CHECK_VULKAN_ERROR(vkCreateDevice(ctx->physicalDevice, &deviceCI, nullptr, &ctx->device));
-	
+
 		volkLoadDevice(ctx->device);
 
 		vkGetDeviceQueue(ctx->device, ctx->queueFamilyIndex, 0, &ctx->queue);
@@ -149,7 +150,7 @@ namespace AMC {
 		commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		commandPoolInfo.queueFamilyIndex = ctx->vkQueueFamilyIndex();
 		CHECK_VULKAN_ERROR(vkCreateCommandPool(ctx->device, &commandPoolInfo, nullptr, &ctx->commandPool));
-		
+
 		LOG_INFO(L"Vulkan: Context Successfully Initialized");
 		return ctx;
 	}
@@ -235,13 +236,13 @@ namespace AMC {
 
 			descSetLayoutCI.bindingCount = static_cast<uint32_t>(bindings.size());
 			descSetLayoutCI.pBindings = bindings.data();
-			
+
 			vkCreateDescriptorSetLayout(ctx->vkDevice(), &descSetLayoutCI, nullptr, &descSetMan->descriptorSet[entry.first].first);
 		}
 
 		std::vector<VkDescriptorPoolSize> poolSizes{};
 		for (auto& poolEntry : poolSizeMap) {
-			poolSizes.push_back({poolEntry.first, static_cast<uint32_t>(poolEntry.second)});
+			poolSizes.push_back({ poolEntry.first, static_cast<uint32_t>(poolEntry.second) });
 		}
 
 		VkDescriptorPoolCreateInfo descPoolCI{};
@@ -266,7 +267,7 @@ namespace AMC {
 
 		for (auto& entry : descSetMan->descriptorSet) {
 			std::vector<VkDescriptorSetLayout> layoutsArray(maxCountPerLayout[entry.first], entry.second.first);
-	
+
 			descSetAI.descriptorSetCount = static_cast<uint32_t>(layoutsArray.size());
 			descSetAI.pSetLayouts = layoutsArray.data();
 			descSetMan->descriptorSet[entry.first].second.resize(descSetAI.descriptorSetCount);
@@ -292,5 +293,76 @@ namespace AMC {
 		}
 
 		return descSetMan;
+	}
+
+#define CHECK_OUT_OF_INDEX(x) \
+if (index >= commandBufferList.size()) {\
+	LOG_ERROR(L"Command Buffer Index out of range in %s", CString(__FUNCTION__));\
+	return x;\
+}
+
+	VkCommandBufferManager::VkCommandBufferManager(const VkContext* ctx) : vkctx(ctx), commandBufferList() {}
+
+	void VkCommandBufferManager::allocate(uint32_t count) {
+		VkCommandBufferAllocateInfo commandBufferAI{};
+		commandBufferAI.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		commandBufferAI.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		commandBufferAI.commandPool = vkctx->vkCommandPool();
+		commandBufferAI.commandBufferCount = count;
+		commandBufferList.resize(count);
+		vkAllocateCommandBuffers(vkctx->vkDevice(), &commandBufferAI, commandBufferList.data());
+	}
+
+	VkCommandBuffer VkCommandBufferManager::get(uint32_t index) const {
+		CHECK_OUT_OF_INDEX(VK_NULL_HANDLE)
+			return commandBufferList.at(index);
+	}
+
+	VkResult VkCommandBufferManager::submit(uint32_t index) {
+		CHECK_OUT_OF_INDEX(VK_ERROR_UNKNOWN);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBufferList.at(index);
+		return vkQueueSubmit(vkctx->vkQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+	}
+
+	VkResult VkCommandBufferManager::begin(uint32_t index) {
+		CHECK_OUT_OF_INDEX(VK_ERROR_UNKNOWN);
+		VkCommandBufferBeginInfo commandBufferBI{};
+		commandBufferBI.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		return vkBeginCommandBuffer(commandBufferList[index], &commandBufferBI);
+	}
+
+	VkResult VkCommandBufferManager::end(uint32_t index) {
+		CHECK_OUT_OF_INDEX(VK_ERROR_UNKNOWN);
+		return vkEndCommandBuffer(commandBufferList[index]);
+	}
+
+	void VkCommandBufferManager::free(uint32_t count) {
+		count = std::min(count, static_cast<uint32_t>(commandBufferList.size()));
+		vkFreeCommandBuffers(vkctx->vkDevice(), vkctx->vkCommandPool(), count, commandBufferList.data());
+		commandBufferList.erase(commandBufferList.begin(), commandBufferList.begin() + count);
+	}
+
+	VkShaderModule loadShaderModule(const VkContext* ctx, std::string fileName) {
+		std::ifstream shaderFile(fileName, std::ios::ate | std::ios::binary | std::ios::in);
+		if (!shaderFile.is_open()) {
+			LOG_ERROR(L"Couldn't Open Shader File: %s", CString(fileName.c_str()));
+			return VK_NULL_HANDLE;
+		}
+		size_t codeSize = shaderFile.tellg();
+		shaderFile.seekg(std::ios::beg);
+		char* shaderCode = new char[codeSize];
+		shaderFile.read(shaderCode, codeSize);
+		VkShaderModuleCreateInfo shaderModuleCI{};
+		shaderModuleCI.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		shaderModuleCI.codeSize = codeSize;
+		shaderModuleCI.pCode = reinterpret_cast<uint32_t*>(shaderCode);
+		VkShaderModule shaderModule;
+		CHECK_VULKAN_ERROR(vkCreateShaderModule(ctx->vkDevice(), &shaderModuleCI, nullptr, &shaderModule));
+		delete[] shaderCode;
+		return shaderModule;
 	}
 }

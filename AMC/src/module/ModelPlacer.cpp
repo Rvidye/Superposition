@@ -91,6 +91,7 @@ namespace AMC {
     }
 
     void ModelPlacer::renderUI() {
+    #if defined(_MYDEBUG)
         ImGui::Text("Select Mode:");
         if (ImGui::RadioButton("TRANSLATE", mode == TRANSLATE)) { mode = TRANSLATE; }
         ImGui::SameLine();
@@ -130,6 +131,7 @@ namespace AMC {
         ImGui::Text("To Move Selected Path Point");
         ImGui::Text("I/K = Z axis\nL/J = X axis\nO/U = Y axis");
         ImGui::Text("Multiplier: %.3f", multiplier);
+    #endif
     }
 
     std::ostream& operator<<(std::ostream& out, ModelPlacer* m) {

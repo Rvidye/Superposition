@@ -34,7 +34,7 @@ namespace AMC {
 	}
 
 	void SplineCameraAdjuster::renderUI() {
-		
+	#if defined(_MYDEBUG)
 		ImGui::Text("Active Spline: %s", m_activespline == ACTIVESPLINE::POSITION ? "Position" : "Front");
 		
 		if (ImGui::Button("Toggle Active Spline")) {
@@ -59,7 +59,7 @@ namespace AMC {
 				m_frontAdjuster->renderUI();
 			}
 		}
-
+	#endif
 	}
 
 	void SplineCameraAdjuster::keyboardfunc(char keyPressed, UINT keycode){

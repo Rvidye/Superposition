@@ -8,6 +8,9 @@ void TestPass::create(){
 
 void TestPass::execute(const AMC::Scene* scene){
 
+	AMC::Renderer::resetFBO();
+	AMC::ShadowManager* sm = scene->lightManager->getShadowMapManager();
+	
 	m_programTexturedDraw->use();
 
 	for (const auto& [name, obj] : scene->models) {
@@ -16,6 +19,7 @@ void TestPass::execute(const AMC::Scene* scene){
 			continue;
 
 		glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * obj.matrix));
+		scene->lightManager->bindUBO(m_programTexturedDraw->getProgramObject());
 		obj.model->draw(m_programTexturedDraw);
 	}
 }

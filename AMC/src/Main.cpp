@@ -15,6 +15,7 @@
 
 // Render Passes
 #include "renderpass/TestPass.h"
+#include "renderpass/ShadowMapPass.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -36,7 +37,7 @@ BOOL AMC::ANIMATING = FALSE;
 BOOL AMC::DEBUGCAM = TRUE;
 BOOL AMC::MUTE = FALSE;
 UINT AMC::DEBUGMODE = AMC::DEBUGMODES::NONE;
-std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Spline" ,"PostProcess"};
+std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Shadow","Spline" ,"PostProcess"};
 AMC::Camera* AMC::currentCamera;
 
 void keyboard(AMC::RenderWindow* , char key, UINT keycode);
@@ -62,6 +63,8 @@ std::vector<AMC::Scene*> sceneQueue;
 AMC::Scene* currentScene = nullptr;
 
 AMC::Renderer* gpRenderer;
+GLsizei AMC::Renderer::width = 0;
+GLsizei AMC::Renderer::height = 0;
 
 DOUBLE fps = 0.0;
 BOOL bPlayAudio = TRUE;
@@ -111,7 +114,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	window->SetMouseFunc(mouse);
 	window->SetResizeFunc(resize);
 	resize(window,720, 480);
-
 	AMC::VkContext::Builder builder;
 	vkcontext = builder
 		.setAPIVersion(VK_API_VERSION_1_3)
@@ -277,8 +279,10 @@ void keyboard(AMC::RenderWindow*, char key, UINT keycode)
 
 void mouse(AMC::RenderWindow*, int button, int action, int x, int y)
 {
-	if (gpDebugCamera)
+#ifdef _MYDEBUG
+	if ((!ImGui::GetIO().WantCaptureMouse) && (gpDebugCamera))
 		gpDebugCamera->mouse(button, action, x, y);
+#endif
 }
 
 void resize(AMC::RenderWindow*, UINT width, UINT height)
@@ -293,6 +297,8 @@ void resize(AMC::RenderWindow*, UINT width, UINT height)
 	if (AMC::currentCamera) {
 		AMC::currentCamera->setPerspectiveParameters(45.0f, window->AspectRatio());
 	}
+	AMC::Renderer::width = (GLsizei)width;
+	AMC::Renderer::height = (GLsizei) height;
 }
 
 void RenderFrame(void)
@@ -410,6 +416,7 @@ void InitRenderPasses()
 	gpRenderer = new AMC::Renderer();
 
 	// Add passes here
+	gpRenderer->addPass(new ShadowMapPass());
 	gpRenderer->addPass(new TestPass());
 
 	// Create Resouces for all passes
@@ -425,25 +432,6 @@ void InitScenes(void)
 	}
 	playNextScene();
 
-	// Setup All FBO's 
-
-	int renderWidth = 2048;  // 4K width
-	int renderHeight = 2048; // 4K height
-	int sampleCount = 4;     // 4x MSAA
-
-	glCreateFramebuffers(1, &msaaFBO);
-
-	glCreateRenderbuffers(1, &msaaColorBuffer);
-	glNamedRenderbufferStorageMultisample(msaaColorBuffer, sampleCount, GL_RGBA8, renderWidth, renderHeight);
-	glNamedFramebufferRenderbuffer(msaaFBO, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, msaaColorBuffer);
-
-	glCreateRenderbuffers(1, &msaaDepthBuffer);
-	glNamedRenderbufferStorageMultisample(msaaDepthBuffer, sampleCount, GL_DEPTH24_STENCIL8, renderWidth, renderHeight);
-	glNamedFramebufferRenderbuffer(msaaFBO, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, msaaDepthBuffer);
-
-	if (glCheckNamedFramebufferStatus(msaaFBO, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		std::cout << "MSAA Framebuffer not complete!" << std::endl;
-	}
 }
 
 void playNextScene(void) {

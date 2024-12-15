@@ -21,7 +21,7 @@ namespace AMC {
 			void use() const;
 
 			GLint getUniformLocation(const std::string& name) const;
-
+			GLuint getProgramObject();
 		private:
 			GLuint program;
 			std::map<std::string, GLint> uniforms;

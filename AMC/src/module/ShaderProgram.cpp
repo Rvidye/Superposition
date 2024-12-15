@@ -34,11 +34,21 @@ namespace AMC {
 		//const std::string& filePath;
 		//LOG_INFO(L"Loading Shader : %s\n", filePath);
 
-		GLenum shaderType = getShaderType(filePath);
+		GLenum shaderType;
+		std::filesystem::path fileName = std::filesystem::path(filePath).filename();
+		bool isSpv = fileName.extension() == ".spv";
+		if (isSpv) {
+			fileName = fileName.replace_extension();
+		}
+		shaderType = getShaderType(fileName);
+
 		GLuint shader = glCreateShader(shaderType);
 
 		// Read shader source from file
-		std::ifstream shaderFile(filePath);
+		std::ios_base::openmode openFlags = 0;
+		if (isSpv)
+			openFlags = std::ios::binary;
+		std::ifstream shaderFile(filePath, openFlags);
 		if (!shaderFile) 
 		{
 			LOG(AMC::LogLevel::LOG_ERROR);
@@ -55,9 +65,14 @@ namespace AMC {
 
 		// Compile shader
 		const char* sourceCStr = finalSource.c_str();
-		glShaderSource(shader, 1, &sourceCStr, nullptr);
-		glCompileShader(shader);
-
+		if (isSpv) {
+			glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V, shaderSource.c_str(), shaderSource.length());
+			glSpecializeShader(shader, "main", 0, nullptr, nullptr);
+		}
+		else {
+			glShaderSource(shader, 1, &sourceCStr, nullptr);
+			glCompileShader(shader);
+		}
 		// Check compilation status
 		GLint compileStatus;
 		glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
@@ -114,29 +129,29 @@ namespace AMC {
 		return result;
 	}
 
-	GLenum ShaderProgram::getShaderType(const std::string& filePath) 
+	GLenum ShaderProgram::getShaderType(const std::filesystem::path& filePath) 
 	{
-		std::string extension = filePath.substr(filePath.find_last_of('.') + 1);
-		if (extension == "vert") {
+		const std::filesystem::path extension = filePath.extension();
+		if (extension == ".vert") {
 			return GL_VERTEX_SHADER;
 		}
-		else if (extension == "frag") {
+		else if (extension == ".frag") {
 			return GL_FRAGMENT_SHADER;
 		}
-		else if (extension == "geom") {
+		else if (extension == ".geom") {
 			return GL_GEOMETRY_SHADER;
 		}
-		else if (extension == "tesc") {
+		else if (extension == ".tesc") {
 			return GL_TESS_CONTROL_SHADER;
 		}
-		else if (extension == "tese") {
+		else if (extension == ".tese") {
 			return GL_TESS_EVALUATION_SHADER;
 		}
-		else if (extension == "comp") {
+		else if (extension == ".comp") {
 			return GL_COMPUTE_SHADER;
 		}
 		else {
-			throw std::runtime_error("Unsupported shader type in file: " + filePath);
+			throw std::runtime_error("Unsupported shader type in file: " + filePath.string());
 		}
 	}
 

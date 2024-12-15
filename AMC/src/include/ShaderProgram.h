@@ -4,10 +4,11 @@
 #include<string>
 #include<vector>
 #include<map>
-#include<iostream>
-#include<fstream>
-#include<sstream>
-#include<regex>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <regex>
+#include <filesystem>
 
 namespace AMC {
 	class ShaderProgram
@@ -27,7 +28,8 @@ namespace AMC {
 
 			GLuint compileShader(const std::string& filePath);
 			std::string resolveIncludes(const std::string& src);
-			GLenum getShaderType(const std::string& filePath);
+			//TODO: Look into making it a constexpr for a faster and simpler code path
+			GLenum getShaderType(const std::filesystem::path& filePath);
 
 			void linkProgram();
 			void queryUniforms();

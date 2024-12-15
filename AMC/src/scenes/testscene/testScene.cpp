@@ -70,6 +70,45 @@ void testScene::init()
 	events->AddEvent("MoveModelEvent", moveEvent);
 
 	lightManager = new AMC::LightManager(3, 3);
+
+	AMC::Light directional;
+	directional.direction = glm::vec3(0.50f, -0.7071f, -0.50f);
+	directional.color = glm::vec3(1.0f, 1.0f, 1.0f);
+	directional.intensity = 1.0f;
+	directional.range = -1.0f; // if 0.0 then range is infinite, used in case of point and spot lights
+	directional.spotAngle = 1.0f; // for spot lights
+	directional.spotExponent = 0.7071f; // for spot lights
+	directional.position = glm::vec3(0.0f, 0.0f, 0.0f); // for point and spot lights
+	directional.active = 1; // need to activate light here
+	directional.shadows = true;
+	directional.type = AMC::LIGHT_TYPE_DIRECTIONAL; // need to let shader know what type of light is this
+
+	AMC::Light point;
+	point.direction = glm::vec3(-0.50f, 0.7071f, 0.50f); // doesn't matter in case of point lights
+	point.color = glm::vec3(1.0f, 1.0f, 1.0f);
+	point.intensity = 0.5f;
+	point.range = -1.0f; // range decides the square fall of distance or attenuation of light
+	point.spotAngle = 1.0f; // for spot lights
+	point.spotExponent = 0.7071f; // for spot lights
+	point.position = glm::vec3(0.0f, 0.0f, 0.0f); // for point and spot lights
+	point.active = 1; // need to activate light here
+	point.shadows = true;
+	point.type = AMC::LIGHT_TYPE_POINT; // need to let shader know what type of light is this
+
+	AMC::Light spot;
+	spot.direction = glm::vec3(0.0f, 0.0f, -1.0f);
+	spot.color = glm::vec3(0.0f, 1.0f, 0.0f);
+	spot.intensity = 0.5f;
+	spot.range = 10.0f;
+	spot.spotAngle = glm::cos(glm::radians(0.0f)); // requrie a cos(radians) doing here just saves computatiaon of GPU
+	spot.spotExponent = glm::cos(glm::radians(45.0f)); // requrie a cos(radians) doing here just saves computatiaon of GPU
+	spot.position = glm::vec3(0.0f, 0.0f, 5.0f); // for point and spot lights
+	spot.active = 1; // need to activate light here
+	spot.type = AMC::LIGHT_TYPE_SPOT; // need to let shader know what type of light is this
+
+	lightManager->addLight(directional);
+	lightManager->addLight(spot);
+	lightManager->addLight(point);
 }
 
 //void testScene::render()
@@ -115,6 +154,9 @@ void testScene::renderUI()
 		break;
 		case AMC::LIGHT:
 			lightManager->renderUI();
+		break;
+		case AMC::SHADOW:
+			lightManager->getShadowMapManager()->renderUI();
 		break;
 		case AMC::SPLINE:
 		break;

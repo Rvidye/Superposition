@@ -13,7 +13,7 @@ namespace AMC {
 	class Renderer {
 
 		public:
-
+			static GLsizei width, height;
 			void addPass(RenderPass* pass) {
 				passes.push_back(pass);
 			}
@@ -28,6 +28,12 @@ namespace AMC {
 				for (auto pass : passes) {
 					pass->execute(scene);
 				}
+			}
+
+			static void resetFBO() {
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				glViewport(0, 0, width, height);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			}
 
 		private:

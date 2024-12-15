@@ -49,9 +49,11 @@ namespace AMC {
 		this->updateUBO();
 	}
 
-	void LightManager::removeLight(int index)
-	{
+	void LightManager::removeLight(int index) {
 		if (index >= 0 && index < lights.size()) {
+			if (lights[index].shadows) {
+				shadowManager->removeShadowMapForLight(lights[index]);
+			}
 			lights.erase(lights.begin() + index);
 			this->updateUBO();
 		}
@@ -80,11 +82,13 @@ namespace AMC {
 	void LightManager::toggleLightShadow(Light& light, bool enable) {
 		if (enable && !light.shadows) {
 			shadowManager->createShadowMapForLight(light);
-			light.shadows = true;
+			//light.shadows = true;
+			updateUBO();
 		}
 		else if (!enable && light.shadows) {
 			shadowManager->removeShadowMapForLight(light);
-			light.shadows = false;
+			//light.shadows = false;
+			updateUBO();
 		}
 	}
 
@@ -213,6 +217,8 @@ namespace AMC {
 				newLight.spotExponent = 0.0f; // for spot lights
 				newLight.position = glm::vec3(0.0f, 0.0f, 0.0f); // for point and spot lights
 				newLight.active = 1; // need to activate light here
+				newLight.shadows = false;
+				newLight.shadowIndex = -1;
 				newLight.type = LightType::LIGHT_TYPE_DIRECTIONAL; // need to let shader know what type of light is this
 				addLight(newLight);
 				//shouldUpdateBuffer = true;

@@ -8,6 +8,9 @@ void TestPass::create(){
 
 void TestPass::execute(const AMC::Scene* scene){
 
+	AMC::Renderer::resetFBO();
+	AMC::ShadowManager* sm = scene->lightManager->getShadowMapManager();
+	
 	m_programTexturedDraw->use();
 
 	for (const auto& [name, obj] : scene->models) {

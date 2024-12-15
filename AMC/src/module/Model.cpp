@@ -885,7 +885,7 @@ namespace AMC {
 		glm::mat4 globalTransform = parentTransform * node.globalTransform;
 
 		//TODO:  set Node matrix here
-		glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(globalTransform));
+		glUniformMatrix4fv(program->getUniformLocation("nodeMat"), 1, GL_FALSE, glm::value_ptr(globalTransform));
 		for (UINT meshIndex : node.meshIndices) {
 			Mesh* mesh = meshes[meshIndex];
 

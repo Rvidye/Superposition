@@ -15,6 +15,7 @@
 
 // Render Passes
 #include "renderpass/TestPass.h"
+#include "renderpass/ShadowMapPass.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -36,7 +37,7 @@ BOOL AMC::ANIMATING = FALSE;
 BOOL AMC::DEBUGCAM = TRUE;
 BOOL AMC::MUTE = FALSE;
 UINT AMC::DEBUGMODE = AMC::DEBUGMODES::NONE;
-std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Spline" ,"PostProcess"};
+std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Shadow","Spline" ,"PostProcess"};
 AMC::Camera* AMC::currentCamera;
 
 void keyboard(AMC::RenderWindow* , char key, UINT keycode);
@@ -62,6 +63,8 @@ std::vector<AMC::Scene*> sceneQueue;
 AMC::Scene* currentScene = nullptr;
 
 AMC::Renderer* gpRenderer;
+GLsizei AMC::Renderer::width = 0;
+GLsizei AMC::Renderer::height = 0;
 
 DOUBLE fps = 0.0;
 BOOL bPlayAudio = TRUE;
@@ -111,7 +114,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	window->SetMouseFunc(mouse);
 	window->SetResizeFunc(resize);
 	resize(window,720, 480);
-
 	AMC::VkContext::Builder builder;
 	vkcontext = builder
 		.setAPIVersion(VK_API_VERSION_1_3)
@@ -295,6 +297,8 @@ void resize(AMC::RenderWindow*, UINT width, UINT height)
 	if (AMC::currentCamera) {
 		AMC::currentCamera->setPerspectiveParameters(45.0f, window->AspectRatio());
 	}
+	AMC::Renderer::width = (GLsizei)width;
+	AMC::Renderer::height = (GLsizei) height;
 }
 
 void RenderFrame(void)
@@ -412,6 +416,7 @@ void InitRenderPasses()
 	gpRenderer = new AMC::Renderer();
 
 	// Add passes here
+	gpRenderer->addPass(new ShadowMapPass());
 	gpRenderer->addPass(new TestPass());
 
 	// Create Resouces for all passes

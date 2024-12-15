@@ -78,6 +78,7 @@ namespace AMC {
 		CAMERA,
 		MODEL,
 		LIGHT,
+		SHADOW,
 		SPLINE,
 		POSTPROCESS
 	};

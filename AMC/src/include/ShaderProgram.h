@@ -31,7 +31,7 @@ namespace AMC {
 			//TODO: Look into making it a constexpr for a faster and simpler code path
 			GLenum getShaderType(const std::filesystem::path& filePath);
 
-			void linkProgram();
+			void linkProgram(const std::string& shaderCombination);
 			void queryUniforms();
 	};
 };

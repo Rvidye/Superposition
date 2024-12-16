@@ -17,7 +17,12 @@ namespace AMC {
 			}
 		}
 
-		linkProgram();
+		std::string shaderCombination;
+		for (const auto& filepath : shaderFilePaths) {
+			shaderCombination += std::filesystem::path(filepath).filename().string() + " ";
+		}
+
+		linkProgram(shaderCombination);
 		queryUniforms();
 	}
 
@@ -161,7 +166,7 @@ namespace AMC {
 		}
 	}
 
-	void ShaderProgram::linkProgram() 
+	void ShaderProgram::linkProgram(const std::string& shaderCombination)
 	{
 		glLinkProgram(program);
 
@@ -178,7 +183,7 @@ namespace AMC {
 				glGetProgramInfoLog(program, infoLogLength, nullptr, infoLog.data());
 				//LOG_ERROR(L"Program link error:\n : %s\n", infoLog.data());
 				LOG(AMC::LogLevel::LOG_ERROR);
-				std::cout << "Program link error:\n" << infoLog.data() << std::endl;
+				std::cout << "Program link error:\n" << infoLog.data() << "\n" << "Shaders used in program: " << shaderCombination << std::endl;
 			}
 		}
 	}

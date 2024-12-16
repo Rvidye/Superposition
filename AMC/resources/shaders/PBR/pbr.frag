@@ -113,8 +113,9 @@ uniform MaterialInfo materialInfo;
 in vec3 oNor;
 in vec2 oTex;
 in vec3 oWorldPos;
-in mat3 oTbn;
 
+out vec3 oTangent;
+out vec3 oBitanget;
 
 float ndfGGX(float cosLh, float roughness)
 {
@@ -171,7 +172,8 @@ void main()
     if (bool(materialInfo.textureFlag & (1<<1)))
     {
         vec3 normalMap = normalize(texture(texNormal, oTex).rgb * 2.0 - 1.0);
-        normal = normalize(vec3(oTbn * normalMap));
+        mat3 tbn = mat3(oTangent,oBitanget,oNor);
+        normal = normalize(vec3(tbn * normalMap));
         //normal = normalMap;
     }
     

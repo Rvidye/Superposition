@@ -2,7 +2,7 @@
 
 layout(location = 0) in vec4 vPos;
 
-uniform mat4 mvpMatrix; 
+layout(location = 0) uniform mat4 mvpMatrix; 
 
 void main(void) {
     gl_Position = mvpMatrix * vPos;

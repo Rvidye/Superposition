@@ -5,6 +5,7 @@ x64/
 *.filters
 AMCLog.txt
 *.wav
+*.spv
 #*.glb
 #*.gltf
 #*.bin

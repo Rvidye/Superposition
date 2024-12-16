@@ -226,6 +226,7 @@ namespace AMC {
     }
 
     void SplineAdjuster::renderUI() {
+    #if defined(_MYDEBUG)
         ImGui::Text("Spline Adjuster Controls");
         ImGui::Checkbox("Render Path", &isRenderPath);
         if (ImGui::Button("Toogle Point Rendering")) {
@@ -248,6 +249,7 @@ namespace AMC {
         ImGui::Text("To Move Selected Path Point");
         ImGui::Text("I/K = Z path point\nL/J = X path point\nO/U = Y path point");
         ImGui::Separator();
+    #endif
     }
 
     inline BsplineInterpolator* SplineAdjuster::getSpline()

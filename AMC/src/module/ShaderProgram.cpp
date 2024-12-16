@@ -91,6 +91,7 @@ namespace AMC {
 			glGetShaderInfoLog(shader, infoLogLength, nullptr, infoLog.data());
 			LOG(AMC::LogLevel::LOG_ERROR);
 			std::cout << "Shader compilation error in " << filePath << ":\n" << infoLog.data() << std::endl;
+			LOG(AMC::LogLevel::LOG_INFO);
 			glDeleteShader(shader);
 			return 0;
 		}
@@ -117,6 +118,7 @@ namespace AMC {
 				std::cout << "Error opening include file: " << includePath << std::endl;
 				// Remove the include directive to prevent infinite loop
 				result.replace(match.position(0), match.length(0), "");
+				LOG(AMC::LogLevel::LOG_INFO);
 				continue;
 			}
 
@@ -217,6 +219,11 @@ namespace AMC {
 			std::cout << "Warning: Uniform '" << name << "' not found." << std::endl;
 			return -1;
 		}
+	}
+
+	GLuint ShaderProgram::getProgramObject()
+	{
+		return program;
 	}
 
 };

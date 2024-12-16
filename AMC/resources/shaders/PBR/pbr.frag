@@ -161,13 +161,18 @@ vec3 lerp(vec3 start,vec3 end,float t)
 void main()
 {
  
-    vec3 tAlbedo = texture(texDiffuseColor,oTex).rgb; 
-    
+    vec3 tAlbedo = materialInfo.albedo; 
+    if (bool(materialInfo.textureFlag & (1)))
+    {
+        tAlbedo = texture(texDiffuseColor,oTex).rgb; 
+    }
+
     vec3 normal = normalize(oNor);
     if (bool(materialInfo.textureFlag & (1<<1)))
     {
         vec3 normalMap = normalize(texture(texNormal, oTex).rgb * 2.0 - 1.0);
         normal = normalize(vec3(oTbn * normalMap));
+        //normal = normalMap;
     }
     
     float tMetallic = materialInfo.metallic;
@@ -250,7 +255,7 @@ void main()
         emissive *= texture(texEmission,oTex).rgb;
     }
 
-    float ao = 1.0;
+    float ao = materialInfo.ao;
     if (bool(materialInfo.textureFlag & (1 << 4)))
     {
         ao = texture(texAmbientOcclusion, oTex).r;

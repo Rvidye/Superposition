@@ -3,10 +3,10 @@
 #include<RenderPass.h>
 #include<ShaderProgram.h>
 
-class PBRPass: public AMC::RenderPass {
+class PBRPass : public AMC::RenderPass {
 
-	public:
-		void create() override;
-		void execute(const AMC::Scene* scene) override;
-		AMC::ShaderProgram* m_programTexturedDraw;
+public:
+    void create() override;
+    void execute(const AMC::Scene* scene) override;
+    AMC::ShaderProgram* m_programTexturedDraw;
 };

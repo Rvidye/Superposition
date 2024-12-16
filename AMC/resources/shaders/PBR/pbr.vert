@@ -24,9 +24,9 @@ void main(void)
     oWorldPos = vec3(mMat * vec4(vPos,1.0f));
     oTex = vTex;
 
-    vec3 tN = normalize(vec3(mMat * vec4(vNor,1.0f)));
-	vec3 tT = normalize(vec3(mMat * vec4(vTangent,1.0f)));
-	vec3 tB = normalize(vec3(mMat * vec4(vBitangent,1.0f)));
+    vec3 tN = normalize(vec3(mMat * nodeMat * vec4(vNor,1.0f)));
+	vec3 tT = normalize(vec3(mMat * nodeMat  * vec4(vTangent,1.0f)));
+	vec3 tB = normalize(vec3(mMat * nodeMat * vec4(vBitangent,1.0f)));
 	mat3 tbn = mat3(tT,tB,tN);
     oTbn = tbn;
 }

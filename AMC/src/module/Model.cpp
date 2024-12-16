@@ -763,13 +763,13 @@ namespace AMC {
 				break;
 			}
 		}
-		glUniform3fv(program->getUniformLocation("material.albedo"), 1, glm::value_ptr(albedo));
-		glUniform1f(program->getUniformLocation("material.metallic"), metallic);
-		glUniform1f(program->getUniformLocation("material.roughness"), roughness);
-		glUniform1f(program->getUniformLocation("material.ao"), ao);
-		glUniform3fv(program->getUniformLocation("material.emission"), 1, glm::value_ptr(emission));
-		glUniform1f(program->getUniformLocation("material.alpha"), alpha);
-		glUniform1i(program->getUniformLocation("material.textureFlag"), textureFlag);
+		glUniform3fv(program->getUniformLocation("materialInfo.albedo"), 1, glm::value_ptr(albedo));
+		glUniform1f(program->getUniformLocation("materialInfo.metallic"), metallic);
+		glUniform1f(program->getUniformLocation("materialInfo.roughness"), roughness);
+		glUniform1f(program->getUniformLocation("materialInfo.ao"), ao);
+		glUniform3fv(program->getUniformLocation("materialInfo.emission"), 1, glm::value_ptr(emission));
+		glUniform1f(program->getUniformLocation("materialInfo.alpha"), alpha);
+		glUniform1i(program->getUniformLocation("materialInfo.textureFlag"), textureFlag);
 
 
 

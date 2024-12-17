@@ -17,14 +17,3 @@ layout(std140, binding = 2) uniform VoxelizerDataUBO
     vec3 GridMax;
     float _pad1;
 } voxelizerDataUBO;
-
-layout(std140, binding = 3) uniform GBufferDataUBO
-{
-    sampler2D AlbedoAlpha;
-    sampler2D Normal;
-    sampler2D MetallicRoughness;
-    sampler2D Emissive;
-    sampler2D Velocity;
-    sampler2D Depth;
-} gBufferDataUBO;
-

@@ -755,6 +755,16 @@ namespace AMC {
 	void Material::Apply(ShaderProgram* program)
 	{
 		// Upload Material Data Here
+
+		glUniform3fv(program->getUniformLocation("material.albedo"), 1, glm::value_ptr(albedo));
+		glUniform3fv(program->getUniformLocation("material.emissive"), 1, glm::value_ptr(albedo));
+		glUniform1f(program->getUniformLocation("material.metallicFactor"), metallic);
+		glUniform1f(program->getUniformLocation("material.roughnessFactor"), roughness);
+		glUniform1f(program->getUniformLocation("material.emissiveFactor"), emissiveFactor);
+		glUniform1f(program->getUniformLocation("material.alpha"), alpha);
+		glUniform1ui(program->getUniformLocation("material.textureFlag"), textureFlag);
+
+		//bind all textures
 		for (auto t : textures) {
 			switch (t.type){
 				case TextureTypeDiffuse:

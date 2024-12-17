@@ -80,6 +80,7 @@ namespace AMC {
 		LIGHT,
 		SHADOW,
 		SPLINE,
+		GBUFFER,
 		POSTPROCESS
 	};
 

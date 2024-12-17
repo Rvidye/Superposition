@@ -16,6 +16,7 @@
 // Render Passes
 #include "renderpass/TestPass/TestPass.h"
 #include "renderpass/Shadows/ShadowMapPass.h"
+#include "renderpass//GBuffer/GBufferPass.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -37,7 +38,7 @@ BOOL AMC::ANIMATING = FALSE;
 BOOL AMC::DEBUGCAM = TRUE;
 BOOL AMC::MUTE = FALSE;
 UINT AMC::DEBUGMODE = AMC::DEBUGMODES::NONE;
-std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Shadow","Spline" ,"PostProcess"};
+std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Shadow","Spline", "GBuffer", "PostProcess"};
 AMC::Camera* AMC::currentCamera;
 
 void keyboard(AMC::RenderWindow* , char key, UINT keycode);
@@ -70,6 +71,7 @@ DOUBLE fps = 0.0;
 BOOL bPlayAudio = TRUE;
 
 GLuint perframeUBO;
+GBufferPass* gpass;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow) {
 	WNDCLASSEX wc;
@@ -402,6 +404,8 @@ void RenderFrame(void)
 
 	if (currentScene) currentScene->renderUI();
 
+	if (AMC::DEBUGMODE == AMC::GBUFFER) gpass->debugGBuffer();
+
 	ImGui::End();
 	ImGui::EndFrame();
 	ImGui::Render();
@@ -439,8 +443,11 @@ void InitRenderPasses()
 
 	gpRenderer = new AMC::Renderer();
 
+	gpass = new GBufferPass();
+
 	// Add passes here
 	gpRenderer->addPass(new ShadowMapPass());
+	gpRenderer->addPass(gpass);
 	gpRenderer->addPass(new TestPass());
 
 	// Create Resouces for all passes

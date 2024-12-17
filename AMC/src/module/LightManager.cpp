@@ -272,7 +272,7 @@ namespace AMC {
 				model = glm::translate(model, light.position);
 			}
 
-			glUniformMatrix4fv(m_program->getUniformLocation("mvpMat"), 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * model));
+			glUniformMatrix4fv(m_program->getUniformLocation("modelMat"), 1, GL_FALSE, glm::value_ptr(model));
 			glUniform4fv(m_program->getUniformLocation("color"), 1, glm::value_ptr(light.color));
 			if (light.type == LIGHT_TYPE_DIRECTIONAL) {
 				directional->draw(m_program, 1, false);

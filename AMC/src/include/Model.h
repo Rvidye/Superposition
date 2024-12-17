@@ -15,9 +15,9 @@ namespace AMC {
 		TextureTypeDiffuse = 0,
 		TextureTypeNormalMap,
 		TextureTypeMetallicRoughnessMap,
+		TextureTypeEmissive,
 		TextureTypeSpecularMap,
 		TextureTypeAmbient,
-		TextureTypeEmissive,
 		TextureTypeEnd
 	};
 

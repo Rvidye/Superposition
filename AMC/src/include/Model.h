@@ -42,7 +42,7 @@ namespace AMC {
 			glm::vec3 albedo;
 			float metallic;
 			float roughness;
-			float ao;
+			float emissiveFactor;
 			glm::vec3 emission;
 			float alpha;
 			GLuint textureFlag;

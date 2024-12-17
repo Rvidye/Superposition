@@ -122,9 +122,7 @@ namespace AMC {
 
 	void LightManager::bindUBO(GLuint program)
 	{
-		GLuint blockIndex = glGetUniformBlockIndex(program, "LightBlock");
-		glUniformBlockBinding(program, blockIndex, 0);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboLights);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 1, uboLights);
 	}
 
 	void LightManager::renderUI()

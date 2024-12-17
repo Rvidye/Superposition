@@ -123,6 +123,7 @@ namespace AMC {
 			material->albedo = glm::vec3(albedo.r, albedo.g, albedo.b);
 			material->metallic = metallic;
 			material->roughness = roughness;
+			material->emissiveFactor = emissiveIntensity;
 			material->emission = glm::vec3(emission.r, emission.g, emission.b);
 			material->alpha = alpha;
 			material->textureFlag = textureFlag;
@@ -745,7 +746,7 @@ namespace AMC {
 		albedo = glm::vec3(0.0f);
 		metallic = 0.0f;
 		roughness = 0.0f;
-		ao = 0.0f;
+		emissiveFactor = 0.0f;
 		emission = glm::vec3(0.0f);
 		alpha = 0.0f;
 		textureFlag = 0;

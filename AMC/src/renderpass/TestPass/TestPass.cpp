@@ -3,7 +3,7 @@
 
 void TestPass::create(){
 
-	m_programTexturedDraw = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\spv\\model.vert.spv"), RESOURCE_PATH("shaders\\model\\spv\\model.frag.spv") });
+	m_programTexturedDraw = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\model.vert"), RESOURCE_PATH("shaders\\model\\model.frag") });
 }
 
 void TestPass::execute(const AMC::Scene* scene){
@@ -18,7 +18,7 @@ void TestPass::execute(const AMC::Scene* scene){
 		if (!obj.visible)
 			continue;
 
-		glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * obj.matrix));
+		glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(obj.matrix));
 		scene->lightManager->bindUBO(m_programTexturedDraw->getProgramObject());
 		obj.model->draw(m_programTexturedDraw);
 	}

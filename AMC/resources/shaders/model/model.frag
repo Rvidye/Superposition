@@ -1,6 +1,6 @@
 #version 460 core 
-
-#include"lighting.glsl"
+#extension GL_ARB_bindless_texture : require
+#include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
 
 layout (binding = 0)uniform sampler2D texSampler; 
 layout (location = 0)out vec4 FragColor;

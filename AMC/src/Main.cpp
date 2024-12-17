@@ -14,8 +14,8 @@
 #include<MemoryManager.h>
 
 // Render Passes
-#include "renderpass/TestPass.h"
-#include "renderpass/ShadowMapPass.h"
+#include "renderpass/TestPass/TestPass.h"
+#include "renderpass/Shadows/ShadowMapPass.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -68,6 +68,8 @@ GLsizei AMC::Renderer::height = 0;
 
 DOUBLE fps = 0.0;
 BOOL bPlayAudio = TRUE;
+
+GLuint perframeUBO;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow) {
 	WNDCLASSEX wc;
@@ -303,6 +305,8 @@ void resize(AMC::RenderWindow*, UINT width, UINT height)
 
 void RenderFrame(void)
 {
+	AMC::PerFrameData data = {};
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (currentScene) {
@@ -315,6 +319,22 @@ void RenderFrame(void)
 		if (!AMC::currentCamera) { 
 			AMC::currentCamera = gpDebugCamera; // just  in case someone fucks up and getCamera returns null we'll fallback to debugcam
 		}
+
+		glm::mat4 view = AMC::currentCamera->getViewMatrix();
+		glm::mat4 projection = AMC::currentCamera->getProjectionMatrix();
+		glm::mat4 projView = projection * view;
+
+		data.View = view;
+		data.Projection = projection;
+		data.ProjView = projection * view;
+		data.InvView = glm::inverse(view);
+		data.InvProjection = glm::inverse(projection);
+		data.InvProjView = glm::inverse(projView);
+		data.NearPlane = AMC::currentCamera->getNearPlane();
+		data.FarPlane = AMC::currentCamera->getFarPlane();
+		data.ViewPos = AMC::currentCamera->getViewPosition();
+
+		glNamedBufferSubData(perframeUBO, 0, sizeof(AMC::PerFrameData), &data);
 
 		gpRenderer->render(currentScene);
 		//currentScene->render();
@@ -409,6 +429,10 @@ void InitRenderPasses()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_MULTISAMPLE);
+
+	glCreateBuffers(1, &perframeUBO);
+	glNamedBufferData(perframeUBO, sizeof(AMC::PerFrameData), nullptr, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, perframeUBO);
 
 	gpDebugCamera = new AMC::DebugCamera();
 	gpAudioPlayer = new AMC::AudioPlayer();

@@ -30,7 +30,7 @@ void DeferredPass::execute(const AMC::Scene* scene, AMC::RenderContext& context)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	glViewport(0, 0, context.width, context.height);
-	glm::vec4 clearcolor = glm::vec4(0.0f);
+	glm::vec4 clearcolor = glm::vec4(0.0, 0.5, 0.5f, 1.0f);
 	glClearNamedFramebufferfv(m_FBO, GL_COLOR, 0, glm::value_ptr(clearcolor));
 
 	m_ProgramDeferredLighting->use();
@@ -40,6 +40,7 @@ void DeferredPass::execute(const AMC::Scene* scene, AMC::RenderContext& context)
 	glBindTextureUnit(2, context.textureGBuffer[2]);
 	glBindTextureUnit(3, context.textureGBuffer[3]);
 	glBindTextureUnit(4, context.textureGBuffer[4]);
+	glBindTextureUnit(5, context.textureSSAOResult);
 	scene->lightManager->bindUBO();
 	glBindVertexArray(context.emptyVAO);
 	glDrawArrays(GL_TRIANGLES,0,3);

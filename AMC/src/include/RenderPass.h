@@ -9,6 +9,7 @@ namespace AMC {
 		//GBuffer
 		GLuint textureGBuffer[5]; // albedo, normal, metalroughness, emissive, depth
 		GLuint textureDeferredResult;
+		GLuint textureSSAOResult;
 		GLuint emptyVAO;
 	};
 

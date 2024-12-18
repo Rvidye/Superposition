@@ -17,6 +17,7 @@
 #include "renderpass/TestPass/TestPass.h"
 #include "renderpass/Shadows/ShadowMapPass.h"
 #include "renderpass/GBuffer/GBufferPass.h"
+#include "renderpass/SSAO/SSAOPass.h"
 #include "renderpass/DeferredLight/DeferredLightPass.h"
 #include "renderpass/BlitPass/BlitPass.h"
 
@@ -458,6 +459,7 @@ void InitRenderPasses()
 	// Add passes here
 	gpRenderer->addPass(new ShadowMapPass());
 	gpRenderer->addPass(gpass);
+	gpRenderer->addPass(new SSAO());
 	gpRenderer->addPass(defferedPass);
 	//gpRenderer->addPass(new BlitPass());
 	//gpRenderer->addPass(new TestPass());

@@ -13,6 +13,8 @@ layout(binding = 1) uniform sampler2D gNormal;
 layout(binding = 2) uniform sampler2D gMetallicRoughness;
 layout(binding = 3) uniform sampler2D gEmissive;
 layout(binding = 4) uniform sampler2D gDepth;
+layout(binding = 5) uniform sampler2D SamplerAO;
+layout(binding = 6) uniform sampler2D SamplerIndirectLighting;
 
 vec3 EvaluateLighting(Light light, Surface surface, vec3 fragPos, vec3 viewPos, float ambientOcclusion);
 //float Visibility(vec3 normal, vec3 lightToSample);
@@ -51,7 +53,7 @@ void main()
     float metallic = metallicRoughness.r;
     float roughness = metallicRoughness.g;
     vec3 emissive = texelFetch(gEmissive, imgCoord, 0).rgb;
-    float ambientOcclusion = 0.1;
+    float ambientOcclusion = 1.0 - texelFetch(SamplerAO, imgCoord, 0).r;
 
     Surface surface = GetDefaultSurface();
     surface.Albedo = albedo;

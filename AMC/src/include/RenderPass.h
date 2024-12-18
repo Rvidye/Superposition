@@ -3,30 +3,42 @@
 #include <Scene.h>
 
 namespace AMC {
+	// Store Extra Data that can be accesses by all render passes
+	struct RenderContext {
+		GLsizei width = 4096, height = 4096;
+		//GBuffer
+		GLuint textureGBuffer[5]; // albedo, normal, metalroughness, emissive, depth
+		GLuint textureDeferredResult;
+		GLuint emptyVAO;
+	};
+
 	class RenderPass {
 		public:
 			virtual ~RenderPass() = default;
-			virtual void create() = 0;
-			virtual void execute(const Scene* scene) = 0;
+			virtual void create(RenderContext& context) = 0;
+			virtual void execute(const Scene* scene, RenderContext &context) = 0;
 	};
+
 
 	class Renderer {
 
 		public:
 			static GLsizei width, height;
+			static RenderContext context;
+
 			void addPass(RenderPass* pass) {
 				passes.push_back(pass);
 			}
 
 			void initPasses() {
 				for (auto pass : passes) {
-					pass->create();
+					pass->create(context);
 				}
 			}
 
 			void render(const Scene* scene) {
 				for (auto pass : passes) {
-					pass->execute(scene);
+					pass->execute(scene, context);
 				}
 			}
 

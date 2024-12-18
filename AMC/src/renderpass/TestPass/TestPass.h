@@ -6,7 +6,7 @@
 class TestPass : public AMC::RenderPass {
 
 	public:
-		void create() override;
-		void execute(const AMC::Scene* scene) override;
+		void create(AMC::RenderContext& context) override;
+		void execute(const AMC::Scene* scene, AMC::RenderContext& context) override;
 		AMC::ShaderProgram* m_programTexturedDraw;
 };

@@ -16,7 +16,9 @@
 // Render Passes
 #include "renderpass/TestPass/TestPass.h"
 #include "renderpass/Shadows/ShadowMapPass.h"
-#include "renderpass//GBuffer/GBufferPass.h"
+#include "renderpass/GBuffer/GBufferPass.h"
+#include "renderpass/DeferredLight/DeferredLightPass.h"
+#include "renderpass/BlitPass/BlitPass.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -66,12 +68,15 @@ AMC::Scene* currentScene = nullptr;
 AMC::Renderer* gpRenderer;
 GLsizei AMC::Renderer::width = 0;
 GLsizei AMC::Renderer::height = 0;
+AMC::RenderContext AMC::Renderer::context;
 
 DOUBLE fps = 0.0;
 BOOL bPlayAudio = TRUE;
 
 GLuint perframeUBO;
 GBufferPass* gpass;
+DeferredPass* defferedPass;
+BlitPass* finalpass;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow) {
 	WNDCLASSEX wc;
@@ -347,6 +352,8 @@ void RenderFrame(void)
 	if (currentScene)
 		currentScene->renderDebug();
 
+	finalpass->execute(currentScene, gpRenderer->context);
+
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
@@ -442,16 +449,22 @@ void InitRenderPasses()
 	gpAudioPlayer = new AMC::AudioPlayer();
 
 	gpRenderer = new AMC::Renderer();
+	glCreateVertexArrays(1,&AMC::Renderer::context.emptyVAO);
 
 	gpass = new GBufferPass();
+	defferedPass = new DeferredPass();
+	finalpass = new BlitPass();
 
 	// Add passes here
 	gpRenderer->addPass(new ShadowMapPass());
 	gpRenderer->addPass(gpass);
-	gpRenderer->addPass(new TestPass());
+	gpRenderer->addPass(defferedPass);
+	//gpRenderer->addPass(new BlitPass());
+	//gpRenderer->addPass(new TestPass());
 
 	// Create Resouces for all passes
 	gpRenderer->initPasses();
+	finalpass->create(gpRenderer->context);
 }
 
 void InitScenes(void)

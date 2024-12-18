@@ -1,7 +1,7 @@
 #include<common.h>
 #include "Voxelizer.h"
 
-void Voxelizer::create(){
+void Voxelizer::create(AMC::RenderContext& context){
 
 	m_ProgramClearTexture = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\spv\\model.vert.spv"), RESOURCE_PATH("shaders\\model\\spv\\model.frag.spv") });
 	m_ProgramVoxelize = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\spv\\model.vert.spv"), RESOURCE_PATH("shaders\\model\\spv\\model.frag.spv") });
@@ -12,7 +12,7 @@ void Voxelizer::create(){
 	SetGridSize(glm::vec3(-28.0f, -3.0f, -17.0f), glm::vec3(28.0f, 20.0f, 17.0f));
 }
 
-void Voxelizer::execute(const AMC::Scene* scene){
+void Voxelizer::execute(const AMC::Scene* scene, AMC::RenderContext& context){
 	ClearTextures();
 	Voxelize(scene);
 	MipMap();

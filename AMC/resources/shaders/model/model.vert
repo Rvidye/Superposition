@@ -1,4 +1,6 @@
 #version 460 core 
+
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
 #include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
 
 layout(location = 0)in vec3 vPos;

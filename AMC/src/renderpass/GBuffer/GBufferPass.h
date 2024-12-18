@@ -6,8 +6,8 @@
 class GBufferPass : public AMC::RenderPass {
 
 public:
-	void create() override;
-	void execute(const AMC::Scene* scene) override;
+	void create(AMC::RenderContext& context) override;
+	void execute(const AMC::Scene* scene, AMC::RenderContext& context) override;
 	void debugGBuffer();
 	AMC::ShaderProgram* m_ProgramGBuffer;
 

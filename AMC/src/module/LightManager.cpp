@@ -120,7 +120,7 @@ namespace AMC {
 		glNamedBufferSubData(uboLights, 0, sizeof(LightBlock), &lb);
 	}
 
-	void LightManager::bindUBO(GLuint program)
+	void LightManager::bindUBO()
 	{
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, uboLights);
 	}

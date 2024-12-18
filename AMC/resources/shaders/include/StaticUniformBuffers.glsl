@@ -1,4 +1,4 @@
-#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+
 layout(std140, binding = 0) uniform PerFrameDataUBO
 {
     PerFrameData perFrameDataUBO;

@@ -7,8 +7,8 @@ class Voxelizer : public AMC::RenderPass {
 
 	public:
 
-		void create() override;
-		void execute(const AMC::Scene* scene) override;
+		void create(AMC::RenderContext& context) override;
+		void execute(const AMC::Scene* scene, AMC::RenderContext& context) override;
 		void SetSize(int width, int height, int depth);
 		void SetGridSize(glm::vec3 min, glm::vec3 max);
 		void ClearTextures();

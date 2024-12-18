@@ -40,7 +40,7 @@ namespace AMC {
             ShadowManager* getShadowMapManager();
             void toggleLightShadow(Light& light, bool enable);
             void updateUBO();
-            void bindUBO(GLuint program);
+            void bindUBO();
 
             // For UI and debugging
             void renderUI();

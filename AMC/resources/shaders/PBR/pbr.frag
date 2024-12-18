@@ -100,7 +100,7 @@ vec3 getLighIntensity(Light light, vec3 pointToLight)
     return rangeAttenuation * spotAttenuation * light.intensity * light.color;
 }
 
-const int lightCount=1;
+const int lightCount = 1;
 
 //Output
 layout(location = 0)out vec4 FragColor;
@@ -169,6 +169,7 @@ void main()
     }
 
     vec3 normal = normalize(oNor);
+/*
     if (bool(materialInfo.textureFlag & (1<<1)))
     {
         vec3 normalMap = normalize(texture(texNormal, oTex).rgb * 2.0 - 1.0);
@@ -176,7 +177,7 @@ void main()
         normal = normalize(vec3(tbn * normalMap));
         //normal = normalMap;
     }
-    
+  */  
     float tMetallic = materialInfo.metallic;
     float tRoughness = materialInfo.roughness;
     if (bool(materialInfo.textureFlag & (1 << 2)))
@@ -190,6 +191,8 @@ void main()
     tMetallic = clamp(tMetallic,0.0,1.0);
 
     vec3 Lo = normalize(camPos.xyz - oWorldPos.xyz);
+    vec3 r = reflect(-Lo,normal);
+
     float cosLo = max(0.0, dot(normal, Lo));
     vec3 Lr = 2.0 * cosLo * normal - Lo;
     vec3 F0 = lerp(Fdielectric, tAlbedo, tMetallic);
@@ -206,11 +209,11 @@ void main()
         vec3 pointToLight;
         if (light.type != LightType_Directional)
         {
-            pointToLight = light.position - oWorldPos;
+            pointToLight = normalize(light.position - oWorldPos);
         }
         else
         {
-            pointToLight = -light.direction;
+            pointToLight = normalize(-light.direction);
         }
         
         vec3 Li = -light.direction;
@@ -248,13 +251,13 @@ void main()
         vec3 specularIrradiance = texture(texEnvSpecular, Lr).rgb;
         vec2 specularBRDF = texture(texBRDF, vec2(cosLo, tRoughness)).rg;
         vec3 specularIBL = (F0 * specularBRDF.x + specularBRDF.y) * specularIrradiance;
-        indirectLight = 0.5f * (diffuseIBL + specularIBL);
+        indirectLight = 1.0f * (diffuseIBL + specularIBL);
     }
 
     vec3 emissive = vec3(materialInfo.emission);
     if (bool(materialInfo.textureFlag & (1 << 3)))
     {
-        emissive *= texture(texEmission,oTex).rgb;
+        emissive = texture(texEmission,oTex).rgb;
     }
 
     float ao = materialInfo.ao;
@@ -263,11 +266,11 @@ void main()
         ao = texture(texAmbientOcclusion, oTex).r;
     }
     
-    vec3 color = (directLight + indirectLight + emissive) * (ao);
-    
+   vec3 color = (directLight + indirectLight + emissive) * (ao);
+   // vec3 color = (directLight  + emissive) * (ao);
+ //  color = texture(texEnvDiffuse, normal).rgb;
     //finalColor += emissive;
-    FragColor =  vec4(color, materialInfo.alpha); //(albedoTexture.Sample(SamplerLinear, input.texcoord).rgb, alpha);
-
-//    FragColor =texture(texDiffuseColor,oTex);
+    FragColor =  vec4(color, materialInfo.alpha);
+   // FragColor = texture(texEmission,oTex);
 };
 

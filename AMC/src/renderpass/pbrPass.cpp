@@ -30,7 +30,7 @@ void PBRPass::execute(const AMC::Scene* scene) {
 
     m_programTexturedDraw->use();
 
-    Light light = { glm::vec3(1.0f,-1.0f,0.0f),2000,glm::vec3(1.0f,1.0f,1.0f),10.0f,glm::vec3(-100.0f,100.0f,0.0f),0.0f,0.0f,LightType_Directional };
+    Light light = { glm::vec3(1.0f,-1.0f,0.0f),2000,glm::vec3(1.0f,1.0f,1.0f),1.0f,glm::vec3(-100.0f,100.0f,0.0f),0.0f,0.0f,LightType_Directional };
     AMC::TextureManager texManager;
 
     GLuint brdfTex = texManager.LoadTexture("..\\..\\..\\resources\\textures\\brdf.png");

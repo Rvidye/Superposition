@@ -22,13 +22,15 @@ out vec3 oBitanget;
 void main(void)
 {
     gl_Position = pMat * vMat * mMat * nodeMat * vec4(vPos,1.0);
-    oNor = vec3(mat3(mMat) * mat3(nodeMat) * vNor);;
-    oWorldPos = vec3(mMat * vec4(vPos,1.0f));
+    oWorldPos = vec3(mMat * nodeMat * vec4(vPos,1.0f));
     oTex = vTex;
 
+    mat3 normalMat = mat3(mMat);
     //oNormal = normalize(vec3(mMat * nodeMat * vec4(vNor,1.0f)));
-	oTangent = normalize(vec3(mMat * nodeMat  * vec4(vTangent,1.0f)));
-	oBitanget = normalize(vec3(mMat * nodeMat * vec4(vBitangent,1.0f)));
+	oTangent = normalize(normalMat * vTangent);
+	oBitanget = normalize(normalMat *  vBitangent);
+    oNor = vec3(normalMat  * vNor);;
+
 	//mat3 tbn = mat3(tT,tB,tN);
     //oTbn = tbn;
 }

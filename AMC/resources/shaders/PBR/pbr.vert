@@ -15,9 +15,9 @@ uniform mat4 pMat;
 out vec3 oNor;
 out vec3 oWorldPos;
 out vec2 oTex;
-//out mat3 oTbn;
-out vec3 oTangent;
-out vec3 oBitanget;
+out mat3 oTbn;
+//out vec3 oTangent;
+//out vec3 oBitanget;
 
 void main(void)
 {
@@ -27,10 +27,10 @@ void main(void)
 
     mat3 normalMat = mat3(mMat);
     //oNormal = normalize(vec3(mMat * nodeMat * vec4(vNor,1.0f)));
-	oTangent = normalize(normalMat * vTangent);
-	oBitanget = normalize(normalMat *  vBitangent);
-    oNor = vec3(normalMat  * vNor);;
+	vec3 tT = normalize(vec3(mMat * vec4(vTangent,0.0)));
+	vec3 tB = normalize(vec3(mMat *  vec4(vBitangent,0.0)));
+    oNor =normalize( vec3(mMat  * vec4(vNor,0.0)));
 
-	//mat3 tbn = mat3(tT,tB,tN);
-    //oTbn = tbn;
+	mat3 tbn = mat3(tT,tB,oNor);
+    oTbn = tbn;
 }

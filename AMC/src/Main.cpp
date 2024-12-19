@@ -24,6 +24,7 @@
 #include "renderpass/AtmosphericScattering/AtmosphericScatter.h"
 #include "renderpass/Skybox/SkyBoxPass.h"
 #include "renderpass/Bloom/Bloom.h"
+#include "renderpass/Tonemap/Tonemap.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -79,9 +80,9 @@ DOUBLE fps = 0.0;
 BOOL bPlayAudio = TRUE;
 
 GLuint perframeUBO;
-GBufferPass* gpass;
-DeferredPass* defferedPass;
-BlitPass* finalpass;
+//GBufferPass* gpass;
+//DeferredPass* defferedPass;
+//BlitPass* finalpass;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow) {
 	WNDCLASSEX wc;
@@ -418,7 +419,7 @@ void RenderFrame(void)
 
 	if (currentScene) currentScene->renderUI();
 
-	if (AMC::DEBUGMODE == AMC::GBUFFER) gpass->debugGBuffer();
+	//if (AMC::DEBUGMODE == AMC::GBUFFER) gpass->debugGBuffer();
 
 	ImGui::End();
 	ImGui::EndFrame();
@@ -459,19 +460,20 @@ void InitRenderPasses()
 	gpRenderer = new AMC::Renderer();
 	glCreateVertexArrays(1,&AMC::Renderer::context.emptyVAO);
 
-	gpass = new GBufferPass();
-	defferedPass = new DeferredPass();
-	finalpass = new BlitPass();
+	//gpass = new GBufferPass();
+	//defferedPass = new DeferredPass();
+	//finalpass = new BlitPass();
 
 	// Add passes here
 	gpRenderer->addPass(new ShadowMapPass());
-	gpRenderer->addPass(gpass);
+	gpRenderer->addPass(new GBufferPass());
 	gpRenderer->addPass(new SSAO());
-	gpRenderer->addPass(defferedPass);
+	gpRenderer->addPass(new DeferredPass());
 	gpRenderer->addPass(new AtmosphericScatterer());
 	gpRenderer->addPass(new SkyBoxPass());
 	gpRenderer->addPass(new SSR());
 	gpRenderer->addPass(new Bloom());
+	gpRenderer->addPass(new Tonemap());
 	gpRenderer->addPass(new BlitPass());
 
 	//gpRenderer->addPass(new TestPass());

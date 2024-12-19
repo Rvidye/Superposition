@@ -9,12 +9,15 @@ namespace AMC {
 		GLsizei screenWidth, screenHeight;
 		//GBuffer
 		GLuint textureGBuffer[5]; // albedo, normal, metalroughness, emissive, depth
-		GLuint textureDeferredResult;
-		GLuint textureSSAOResult;
-		GLuint textureSSRResult;
-		GLuint textureAtmosphere;
-		GLuint fboPostDeferred; // seems like a hack but fuck it
-		GLuint emptyVAO;
+		GLuint textureDeferredResult = 0;
+		GLuint textureSSAOResult = 0;
+		GLuint textureSSRResult = 0;
+		GLuint textureVolumetricResult = 0;
+		GLuint textureBloomResult = 0;
+		GLuint textureTonemapResult = 0;
+		GLuint textureAtmosphere = 0;
+		GLuint fboPostDeferred = 0; // seems like a hack but fuck it
+		GLuint emptyVAO = 0;
 	};
 
 	class RenderPass {

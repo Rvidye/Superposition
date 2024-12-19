@@ -10,7 +10,7 @@ void BlitPass::execute(const AMC::Scene* scene, AMC::RenderContext& context)
 {
 	AMC::Renderer::resetFBO();
 	m_ProgramBlit->use();
-	glBindTextureUnit(10, context.textureDeferredResult);
+	glBindTextureUnit(10, context.textureTonemapResult);
 	glBindVertexArray(context.emptyVAO);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	glBindVertexArray(0);

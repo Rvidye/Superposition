@@ -39,6 +39,8 @@ void Bloom::create(AMC::RenderContext& context) {
 	glTextureParameteri(textureUpsample, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(textureUpsample, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTextureStorage2D(textureUpsample, levels - 1, GL_RGBA16F, texWidth, texHeight);
+
+    context.textureBloomResult = textureUpsample;
 }
 
 void Bloom::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
@@ -60,11 +62,11 @@ void Bloom::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
         currentWriteLod++;
     }
 
+    glBindTextureUnit(0, textureDownsample);
     // Additional downsample levels
     for (; currentWriteLod < levels; currentWriteLod++) {
         glBindImageTexture(0, textureDownsample, currentWriteLod, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
         glUniform1i(0, currentWriteLod - 1);
-        glUniform1i(1, 0);
         glm::ivec3 mipLevelSize = GetMipmapLevelSize(texWidth, texHeight, 1, currentWriteLod);
         glDispatchCompute((mipLevelSize.x + 8 - 1) / 8, (mipLevelSize.y + 8 - 1) / 8, 1);
         glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
@@ -73,7 +75,7 @@ void Bloom::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
     // Upsampling stage
     currentWriteLod = levels - 2;
     {
-        glBindTextureUnit(0, textureDownsample);
+        glBindTextureUnit(1, textureDownsample);
         glBindImageTexture(0, textureUpsample, currentWriteLod, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
         glUniform1i(0, currentWriteLod + 1);
         glUniform1i(1, 1); // 1 for Upsample stage
@@ -83,6 +85,7 @@ void Bloom::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
         currentWriteLod--;
     }
 
+    glBindTextureUnit(1, textureUpsample);
     for (; currentWriteLod >= 0; currentWriteLod--) {
         glBindImageTexture(0, textureUpsample, currentWriteLod, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
         glUniform1i(0, currentWriteLod + 1);

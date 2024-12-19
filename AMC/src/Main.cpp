@@ -18,6 +18,7 @@
 #include "renderpass/Shadows/ShadowMapPass.h"
 #include "renderpass/GBuffer/GBufferPass.h"
 #include "renderpass/SSAO/SSAOPass.h"
+#include "renderpass/SSR/SSR.h"
 #include "renderpass/DeferredLight/DeferredLightPass.h"
 #include "renderpass/BlitPass/BlitPass.h"
 #include "renderpass/AtmosphericScattering/AtmosphericScatter.h"
@@ -466,6 +467,7 @@ void InitRenderPasses()
 	gpRenderer->addPass(defferedPass);
 	gpRenderer->addPass(new AtmosphericScatterer());
 	gpRenderer->addPass(new SkyBoxPass());
+	gpRenderer->addPass(new SSR());
 	gpRenderer->addPass(new BlitPass());
 	//gpRenderer->addPass(new TestPass());
 

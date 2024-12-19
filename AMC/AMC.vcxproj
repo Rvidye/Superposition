@@ -230,6 +230,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClCompile Include="src\renderpass\Shadows\ShadowMapPass.cpp" />
     <ClCompile Include="src\renderpass\Skybox\SkyBoxPass.cpp" />
     <ClCompile Include="src\renderpass\SSAO\SSAOPass.cpp" />
+    <ClCompile Include="src\renderpass\SSR\SSR.cpp" />
     <ClCompile Include="src\renderpass\TestPass\TestPass.cpp" />
     <ClCompile Include="src\renderpass\VXGI\Voxelizer.cpp" />
     <ClCompile Include="src\scenes\testscene\testScene.cpp" />
@@ -1040,6 +1041,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\renderpass\Shadows\ShadowMapPass.h" />
     <ClInclude Include="src\renderpass\Skybox\SkyBoxPass.h" />
     <ClInclude Include="src\renderpass\SSAO\SSAOPass.h" />
+    <ClInclude Include="src\renderpass\SSR\SSR.h" />
     <ClInclude Include="src\renderpass\TestPass\TestPass.h" />
     <ClInclude Include="src\renderpass\VXGI\Voxelizer.h" />
     <ClInclude Include="src\scenes\testscene\testScene.h" />

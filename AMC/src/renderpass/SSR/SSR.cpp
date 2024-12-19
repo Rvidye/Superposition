@@ -3,6 +3,7 @@
 
 void SSR::create(AMC::RenderContext& context) {
 	m_ProgramSSR = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\SSR\\SSR.comp")});
+	m_ProgramMergeTextures = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\mergetextures\\merge.comp") });
 	glCreateTextures(GL_TEXTURE_2D, 1, &textureSSR);
 	glTextureParameteri(textureSSR, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTextureParameteri(textureSSR, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -27,6 +28,16 @@ void SSR::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
 	glUniform1f(m_ProgramSSR->getUniformLocation("MaxDist"), 50.0f);
 	GLuint workGroupSizeX = (context.width + 8 - 1) / 8;
 	GLuint workGroupSizeY = (context.height + 8 - 1) / 8;
+	glDispatchCompute(workGroupSizeX, workGroupSizeY, 1);
+	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+
+	// Perform merge texture just in case
+	glBindImageTexture(0, context.textureDeferredResult, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F); // ImgResult
+	glBindTextureUnit(0, context.textureDeferredResult); // first
+	glBindTextureUnit(1, textureSSR); // second
+	m_ProgramMergeTextures->use();
+	workGroupSizeX = (context.width + 8 - 1) / 8;
+	workGroupSizeY = (context.height + 8 - 1) / 8;
 	glDispatchCompute(workGroupSizeX, workGroupSizeY, 1);
 	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
 }

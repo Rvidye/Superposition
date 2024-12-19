@@ -47,3 +47,14 @@ void DeferredPass::execute(const AMC::Scene* scene, AMC::RenderContext& context)
 	glBindVertexArray(0);
 	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+
+const char* DeferredPass::getName() const
+{
+	return "Deferred Pass";
+}
+
+void DeferredPass::renderUI()
+{
+#ifdef _MYDEBUG
+#endif
+}

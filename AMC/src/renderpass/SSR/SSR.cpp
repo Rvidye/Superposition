@@ -14,7 +14,7 @@ void SSR::create(AMC::RenderContext& context) {
 }
 
 void SSR::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
-
+	if (!enableSSR) return;
 	glBindTextureUnit(0, context.textureGBuffer[0]); // albedo
 	glBindTextureUnit(1, context.textureGBuffer[1]); // normal
 	glBindTextureUnit(2, context.textureGBuffer[2]); // metal-roughness
@@ -40,4 +40,23 @@ void SSR::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
 	workGroupSizeY = (context.height + 8 - 1) / 8;
 	glDispatchCompute(workGroupSizeX, workGroupSizeY, 1);
 	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+}
+
+const char* SSR::getName() const
+{
+	return "SSR Pass";
+}
+
+void SSR::renderUI()
+{
+#ifdef _MYDEBUG
+	ImGui::Checkbox("Enable SSR", &enableSSR);
+	ImGui::SliderInt("Samples", &SampleCount, 1, 100);
+	ImGui::SliderInt("Binary Seach Samples", &BinarySearchCount, 0, 40);
+	ImGui::SliderFloat("Max Dist", &MaxDist, 1, 100);
+
+	if (ImGui::CollapsingHeader("SSR Texture")) {
+		ImGui::Image((void*)(intptr_t)textureSSR, ImVec2(256, 256));
+	}
+#endif
 }

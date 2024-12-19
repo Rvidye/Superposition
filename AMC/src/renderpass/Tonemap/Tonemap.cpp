@@ -32,3 +32,16 @@ void Tonemap::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
 	glDispatchCompute(workGroupSizeX, workGroupSizeY, 1);
 	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
 }
+
+const char* Tonemap::getName() const
+{
+	return "Tonemap Pass";
+}
+
+void Tonemap::renderUI()
+{
+#ifdef _MYDEBUG
+	ImGui::SliderFloat("Exposure", &Exposure, 0.0f, 8.0f);
+	ImGui::SliderFloat("Saturation", &Saturation, 0.0f, 1.5f);
+#endif
+}

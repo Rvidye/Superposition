@@ -79,9 +79,14 @@ void GBufferPass::execute(const AMC::Scene* scene, AMC::RenderContext& context)
     //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void GBufferPass::debugGBuffer()
+const char* GBufferPass::getName() const
 {
-#if defined(_MYDEBUG)
+    return "G-Buffer Pass";
+}
+
+void GBufferPass::renderUI()
+{
+#ifdef _MYDEBUG
     ImGui::Begin("GBuffer Debug");
     ImGui::Text("Albedo");
     ImGui::Image((void*)(intptr_t)m_textureAlbedoAlpha, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));

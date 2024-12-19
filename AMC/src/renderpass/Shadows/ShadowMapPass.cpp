@@ -12,3 +12,14 @@ void ShadowMapPass::execute(const AMC::Scene* scene, AMC::RenderContext& context
 	sm->renderShadowMaps(m_programShadowMap, scene);
 	sm->renderPointShadowMaps(m_programPointShadowMap, scene);
 }
+
+const char* ShadowMapPass::getName() const
+{
+	return "Shadowmap Pass";
+}
+
+void ShadowMapPass::renderUI()
+{
+#ifdef _MYDEBUG
+#endif
+}

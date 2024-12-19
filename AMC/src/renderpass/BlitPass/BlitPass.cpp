@@ -15,3 +15,14 @@ void BlitPass::execute(const AMC::Scene* scene, AMC::RenderContext& context)
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	glBindVertexArray(0);
 }
+
+const char* BlitPass::getName() const
+{
+	return "##";
+}
+
+void BlitPass::renderUI()
+{
+#ifdef _MYDEBUG
+#endif
+}

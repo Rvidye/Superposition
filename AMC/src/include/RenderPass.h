@@ -25,6 +25,8 @@ namespace AMC {
 			virtual ~RenderPass() = default;
 			virtual void create(RenderContext& context) = 0;
 			virtual void execute(const Scene* scene, RenderContext &context) = 0;
+			virtual const char* getName() const = 0;
+			virtual void renderUI() = 0;
 	};
 
 
@@ -55,6 +57,8 @@ namespace AMC {
 				glViewport(0, 0, width, height);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			}
+
+			const std::vector<RenderPass*>& getPasses() const { return passes; }
 
 		private:
 			std::vector<RenderPass*> passes;

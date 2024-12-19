@@ -8,7 +8,8 @@ class GBufferPass : public AMC::RenderPass {
 public:
 	void create(AMC::RenderContext& context) override;
 	void execute(const AMC::Scene* scene, AMC::RenderContext& context) override;
-	void debugGBuffer();
+	const char* getName() const override;
+	void renderUI() override;
 	AMC::ShaderProgram* m_ProgramGBuffer;
 
 	GLuint gbuffer;

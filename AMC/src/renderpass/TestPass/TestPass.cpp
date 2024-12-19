@@ -23,3 +23,14 @@ void TestPass::execute(const AMC::Scene* scene, AMC::RenderContext& context){
 		obj.model->draw(m_programTexturedDraw);
 	}
 }
+
+const char* TestPass::getName() const
+{
+	return "nullptr";
+}
+
+void TestPass::renderUI()
+{
+#ifdef _MYDEBUG
+#endif
+}

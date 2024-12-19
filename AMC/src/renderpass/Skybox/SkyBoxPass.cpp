@@ -34,3 +34,14 @@ void SkyBoxPass::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
 	glDrawArrays(GL_TRIANGLES,0,36);
 	glDepthMask(GL_TRUE);
 }
+
+const char* SkyBoxPass::getName() const
+{
+	return "Skybox Pass";
+}
+
+void SkyBoxPass::renderUI()
+{
+#ifdef _MYDEBUG
+#endif
+}

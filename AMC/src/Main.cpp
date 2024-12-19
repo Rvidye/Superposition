@@ -419,7 +419,30 @@ void RenderFrame(void)
 
 	if (currentScene) currentScene->renderUI();
 
-	//if (AMC::DEBUGMODE == AMC::GBUFFER) gpass->debugGBuffer();
+	ImGui::Separator();
+	static int selectedPassIndex = -1;
+	const std::vector<AMC::RenderPass*>& passes = gpRenderer->getPasses();
+
+	if (ImGui::BeginCombo("Render Pass",
+		(selectedPassIndex >= 0 && selectedPassIndex < passes.size()) ?
+		passes[selectedPassIndex]->getName() : "None")) {
+
+		for (int i = 0; i < passes.size(); i++) {
+			bool isSelected = (i == selectedPassIndex);
+			if (ImGui::Selectable(passes[i]->getName(), isSelected)) {
+				selectedPassIndex = i;
+			}
+			if (isSelected) {
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	if (selectedPassIndex >= 0 && selectedPassIndex < passes.size()) {
+		ImGui::Separator();
+		passes[selectedPassIndex]->renderUI();
+	}
 
 	ImGui::End();
 	ImGui::EndFrame();

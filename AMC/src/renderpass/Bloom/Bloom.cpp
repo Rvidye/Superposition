@@ -44,7 +44,7 @@ void Bloom::create(AMC::RenderContext& context) {
 }
 
 void Bloom::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
-
+    if (!enableBloom) return;
 	m_ProgramBloom->use();
 
     int currentWriteLod = 0;
@@ -94,4 +94,25 @@ void Bloom::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
         glDispatchCompute((mipLevelSize.x + 8 - 1) / 8, (mipLevelSize.y + 8 - 1) / 8, 1);
         glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
     }
+}
+
+const char* Bloom::getName() const
+{
+    return "Bloom Pass";
+}
+
+void Bloom::renderUI()
+{
+#ifdef _MYDEBUG
+    ImGui::Checkbox("Enable Bloom", &enableBloom);
+    ImGui::SliderFloat("Threshold", &threshold, 0.0f, 10.0f);
+    ImGui::SliderFloat("MaxColor", &maxColor, 0.0f, 20.0f);
+    int temp = minusLods;
+    if (ImGui::SliderInt("MinusLods", &temp, 0, 10)) {
+        minusLods = temp;
+    }
+    if (ImGui::CollapsingHeader("Bloom Texture")) {
+        ImGui::Image((void*)(intptr_t)textureUpsample, ImVec2(256, 256));
+    }
+#endif
 }

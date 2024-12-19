@@ -10,6 +10,8 @@ namespace AMC {
 		GLuint textureGBuffer[5]; // albedo, normal, metalroughness, emissive, depth
 		GLuint textureDeferredResult;
 		GLuint textureSSAOResult;
+		GLuint textureAtmosphere;
+		GLuint fboPostDeferred; // seems like a hack but fuck it
 		GLuint emptyVAO;
 	};
 

@@ -22,10 +22,10 @@ void testScene::init()
 	mp = new AMC::ModelPlacer(glm::vec3(0.0, 0.0, -10.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1.0f);
 
 	// Models Setup
-	AMC::RenderModel cubeobj;
-	cubeobj.model = new AMC::Model(RESOURCE_PATH("models\\BoxAnimated.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
-	cubeobj.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, -10.0f));
-	addModel("cube", cubeobj);
+	//AMC::RenderModel cubeobj;
+	//cubeobj.model = new AMC::Model(RESOURCE_PATH("models\\BoxAnimated.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	//cubeobj.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, -10.0f));
+	//addModel("cube", cubeobj);
 
 	AMC::RenderModel animman;
 	animman.model = new AMC::Model(RESOURCE_PATH("models\\DamagedHelmet\\DamagedHelmet.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
@@ -169,7 +169,7 @@ void testScene::renderUI()
 void testScene::update()
 {
 	events->update();
-	models["cube"].model->update((float)AMC::deltaTime);
+	//models["cube"].model->update((float)AMC::deltaTime);
 	models["man"].model->update((float)AMC::deltaTime);
 	models["man"].matrix = mp->getModelMatrix();
 	//modelAnim->update((float)AMC::deltaTime);

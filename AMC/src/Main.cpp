@@ -20,6 +20,8 @@
 #include "renderpass/SSAO/SSAOPass.h"
 #include "renderpass/DeferredLight/DeferredLightPass.h"
 #include "renderpass/BlitPass/BlitPass.h"
+#include "renderpass/AtmosphericScattering/AtmosphericScatter.h"
+#include "renderpass/Skybox/SkyBoxPass.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -353,7 +355,7 @@ void RenderFrame(void)
 	if (currentScene)
 		currentScene->renderDebug();
 
-	finalpass->execute(currentScene, gpRenderer->context);
+	//finalpass->execute(currentScene, gpRenderer->context);
 
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplWin32_NewFrame();
@@ -441,6 +443,7 @@ void InitRenderPasses()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_MULTISAMPLE);
+	//glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 	glCreateBuffers(1, &perframeUBO);
 	glNamedBufferData(perframeUBO, sizeof(AMC::PerFrameData), nullptr, GL_DYNAMIC_DRAW);
@@ -461,12 +464,14 @@ void InitRenderPasses()
 	gpRenderer->addPass(gpass);
 	gpRenderer->addPass(new SSAO());
 	gpRenderer->addPass(defferedPass);
-	//gpRenderer->addPass(new BlitPass());
+	gpRenderer->addPass(new AtmosphericScatterer());
+	gpRenderer->addPass(new SkyBoxPass());
+	gpRenderer->addPass(new BlitPass());
 	//gpRenderer->addPass(new TestPass());
 
 	// Create Resouces for all passes
 	gpRenderer->initPasses();
-	finalpass->create(gpRenderer->context);
+	//finalpass->create(gpRenderer->context);
 }
 
 void InitScenes(void)

@@ -23,6 +23,7 @@
 #include "renderpass/BlitPass/BlitPass.h"
 #include "renderpass/AtmosphericScattering/AtmosphericScatter.h"
 #include "renderpass/Skybox/SkyBoxPass.h"
+#include "renderpass/Bloom/Bloom.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -312,6 +313,8 @@ void resize(AMC::RenderWindow*, UINT width, UINT height)
 	}
 	AMC::Renderer::width = (GLsizei)width;
 	AMC::Renderer::height = (GLsizei) height;
+	AMC::Renderer::context.screenWidth = (GLsizei)width;
+	AMC::Renderer::context.screenHeight = (GLsizei)height;
 }
 
 void RenderFrame(void)
@@ -468,7 +471,9 @@ void InitRenderPasses()
 	gpRenderer->addPass(new AtmosphericScatterer());
 	gpRenderer->addPass(new SkyBoxPass());
 	gpRenderer->addPass(new SSR());
+	gpRenderer->addPass(new Bloom());
 	gpRenderer->addPass(new BlitPass());
+
 	//gpRenderer->addPass(new TestPass());
 
 	// Create Resouces for all passes

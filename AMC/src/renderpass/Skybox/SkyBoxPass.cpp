@@ -26,6 +26,9 @@ void SkyBoxPass::create(AMC::RenderContext& context) {
 
 void SkyBoxPass::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 
+	//glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
 	glBindFramebuffer(GL_FRAMEBUFFER, context.fboPostDeferred);
 	glDepthMask(GL_FALSE);
 	m_ProgramSkybox->use();

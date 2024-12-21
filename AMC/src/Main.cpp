@@ -47,7 +47,7 @@ BOOL AMC::ANIMATING = FALSE;
 BOOL AMC::DEBUGCAM = TRUE;
 BOOL AMC::MUTE = FALSE;
 UINT AMC::DEBUGMODE = AMC::DEBUGMODES::NONE;
-std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Shadow","Spline", "GBuffer", "PostProcess"};
+std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Spline", "PostProcess"};
 AMC::Camera* AMC::currentCamera;
 
 void keyboard(AMC::RenderWindow* , char key, UINT keycode);
@@ -465,9 +465,12 @@ void InitRenderPasses()
 {
 	glClearDepth(1.0f);
 	glClearColor(0.0, 0.5, 0.5f, 1.0f);
+	glDisable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
-	glEnable(GL_MULTISAMPLE);
+	glDepthFunc(GL_LESS);
+	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+	//glEnable(GL_MULTISAMPLE);
 	//glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 	glCreateBuffers(1, &perframeUBO);

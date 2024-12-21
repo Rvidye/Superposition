@@ -64,6 +64,10 @@ void GBufferPass::create(AMC::RenderContext& context)
 
 void GBufferPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 {
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glCullFace(GL_BACK);
     glm::vec4 clear_color = glm::vec4(0.0);
     float depth = 1.0f;
     glViewport(0, 0, context.width, context.height);

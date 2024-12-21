@@ -1,22 +1,24 @@
 #version 460 core 
 layout (triangles) in;
-layout (triangle_strip, max_vertices= 3) out;
-layout(invocations = 6) in;
+layout (triangle_strip, max_vertices=18) out;
 
-layout(location = 2) uniform mat4 viewProj[6];
+layout(location = 2)uniform float far_plane;
+layout(location = 3)uniform vec3 lightPos;
+layout(location = 4) uniform mat4 viewProj[6];
+
+out vec4 FragPos;
 
 void main(void) 
 {
-    gl_Layer = gl_InvocationID;
-
-    gl_Position = viewProj[gl_InvocationID] * gl_in[0].gl_Position;
-    EmitVertex();
-
-    gl_Position = viewProj[gl_InvocationID] * gl_in[1].gl_Position;
-    EmitVertex();
-
-    gl_Position = viewProj[gl_InvocationID] * gl_in[2].gl_Position;
-    EmitVertex();
-
-    EndPrimitive();
+    for(int face = 0; face < 6; ++face)
+    {
+        gl_Layer = face;
+        for(int i = 0; i < 3; ++i)
+        {
+            FragPos = gl_in[i].gl_Position;
+            gl_Position = viewProj[face] * FragPos;
+            EmitVertex();
+        }    
+        EndPrimitive();
+    }
 };

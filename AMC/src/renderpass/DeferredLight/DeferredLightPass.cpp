@@ -28,6 +28,8 @@ void DeferredPass::create(AMC::RenderContext& context)
 
 void DeferredPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 {
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	glViewport(0, 0, context.width, context.height);
 	glm::vec4 clearcolor = glm::vec4(0.0, 0.5, 0.5f, 1.0f);

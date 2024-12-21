@@ -21,6 +21,7 @@ layout(binding = 8) uniform samplerCubeShadow SamplerPointShadowmap;
 
 vec3 EvaluateLighting(Light light, Surface surface, vec3 fragPos, vec3 viewPos, float ambientOcclusion);
 float Visibility(Light light, vec3 normal, vec3 lightToSample);
+//float Visibility(Light light, vec3 fragPos);
 float GetLightSpaceDepth(Light light, vec3 lightSpaceSamplePos);
 
 layout(location = 1) uniform bool IsVXGI;
@@ -70,9 +71,12 @@ void main()
     for (int i = 0; i < u_LightCount; i++)
     {
         Light light = u_Lights[i];
+        if(light.isactive == 0) 
+            continue;
+            
         vec3 contribution = EvaluateLighting(light, surface, fragPos, perFrameDataUBO.ViewPos, ambientOcclusion);
 
-        if (contribution != vec3(0.0))
+        if (light.shadows == 1)
         {
             float shadow = 0.0;
             if (light.shadowMapIndex == -1)
@@ -136,7 +140,6 @@ float Visibility(Light light, vec3 normal, vec3 lightToSample)
         vec3( 1.0,  0.0,  1.0 ), vec3( -1.0,  0.0,  1.0 ), vec3(  1.0,  0.0, -1.0 ), vec3( -1.0,  0.0, -1.0 ),
         vec3( 0.0,  1.0,  1.0 ), vec3(  0.0, -1.0,  1.0 ), vec3(  0.0, -1.0, -1.0 ), vec3(  0.0,  1.0, -1.0 )
     };
-    
     const float bias = 0.018;
     const float sampleDiskRadius = 0.04;
 
@@ -151,6 +154,34 @@ float Visibility(Light light, vec3 normal, vec3 lightToSample)
 
     return visibilityFactor;
 }
+
+// float Visibility(Light light, vec3 fragPos)
+// {
+//     const vec3 gridSamplingDisk[20] = vec3[]
+//     (
+//     vec3(1, 1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1, 1,  1), 
+//     vec3(1, 1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+//     vec3(1, 1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1, 1,  0),
+//     vec3(1, 0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1, 0, -1),
+//     vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
+//     );
+//     vec3 fragToLight = fragPos - light.position;
+//     float currentDepth = length(fragToLight);
+//     float shadow = 0.0;
+//     float bias = 0.15;
+//     int samples = 20;
+//     float viewDistance = length(perFrameDataUBO.ViewPos - fragPos);
+//     float diskRadius = (1.0 + (viewDistance / 60.0)) / 25.0;
+//     for(int i = 0; i < samples; ++i)
+//     {
+//         float closestDepth = texture(SamplerPointShadowmap, fragToLight + gridSamplingDisk[i] * diskRadius).r;
+//         closestDepth *= 60.0;   // undo mapping [0;1]
+//         if(currentDepth - bias > closestDepth)
+//             shadow += 1.0;
+//     }
+//     shadow /= float(samples);
+//     return shadow;
+// }
 
 float GetLightSpaceDepth(Light light, vec3 lightSpaceSamplePos)
 {

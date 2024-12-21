@@ -22,14 +22,14 @@ namespace AMC {
 
         // Create cube map array for point lights
         glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &pointShadowCubemap);
-        glTextureStorage2D(pointShadowCubemap, 1, GL_DEPTH_COMPONENT32, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
-        glTextureParameteri(pointShadowCubemap, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTextureParameteri(pointShadowCubemap, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTextureStorage2D(pointShadowCubemap, 1, GL_DEPTH_COMPONENT32F, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
+        glTextureParameteri(pointShadowCubemap, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTextureParameteri(pointShadowCubemap, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTextureParameteri(pointShadowCubemap, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTextureParameteri(pointShadowCubemap, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTextureParameteri(pointShadowCubemap, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-        glTextureParameteri(pointShadowCubemap, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-        glTextureParameteri(pointShadowCubemap, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+        //glTextureParameteri(pointShadowCubemap, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+        //glTextureParameteri(pointShadowCubemap, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
         glCreateFramebuffers(1, &shadowmapFBO);
         glNamedFramebufferTexture(shadowmapFBO, GL_DEPTH_ATTACHMENT, shadowmap, 0);
@@ -196,18 +196,19 @@ namespace AMC {
             if (!light->shadows) continue;
             if (light->type != LIGHT_TYPE_POINT) continue;
 
-            glm::mat4 lightProj = glm::perspective(glm::radians(90.0), 1.0, 0.15, 60.0);
+            glm::mat4 lightProj = glm::perspective(glm::radians(90.0f), 1.0f, 1.0f, 60.0f);
 
             std::vector<glm::mat4> shadowTransforms;
-            shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
-            shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
-            shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
-            shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
-            shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
-            shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
+            shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+            shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+            shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+            shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
+            shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+            shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
 
             glUniformMatrix4fv(program->getUniformLocation("viewProj[0]"), 6, GL_FALSE, glm::value_ptr(shadowTransforms[0]));
-
+            glUniform1f(program->getUniformLocation("far_plane"), 60.0f);
+            glUniform3fv(program->getUniformLocation("lightPos"),1,glm::value_ptr(light->position));
             for (const auto& [name, obj] : scene->models) {
 
                 if (!obj.visible)
@@ -216,6 +217,7 @@ namespace AMC {
                 obj.model->draw(program, obj.numInstance, false);
             }
         }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
     void ShadowManager::renderUI()
     {

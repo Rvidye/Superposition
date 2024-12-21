@@ -150,6 +150,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PreprocessorDefinitions>_MYDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -223,8 +224,19 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClCompile Include="src\module\RenderWindow.cpp" />
     <ClCompile Include="src\module\ShaderProgram.cpp" />
     <ClCompile Include="src\module\TextureManager.cpp" />
-    <ClCompile Include="src\renderpass\ShadowMapPass.cpp" />
-    <ClCompile Include="src\renderpass\TestPass.cpp" />
+    <ClCompile Include="src\renderpass\AtmosphericScattering\AtmosphericScatter.cpp" />
+    <ClCompile Include="src\renderpass\BlitPass\BlitPass.cpp" />
+    <ClCompile Include="src\renderpass\Bloom\Bloom.cpp" />
+    <ClCompile Include="src\renderpass\DebugPass\DebugDrawPass.cpp" />
+    <ClCompile Include="src\renderpass\DeferredLight\DeferredLightPass.cpp" />
+    <ClCompile Include="src\renderpass\GBuffer\GBufferPass.cpp" />
+    <ClCompile Include="src\renderpass\Shadows\ShadowMapPass.cpp" />
+    <ClCompile Include="src\renderpass\Skybox\SkyBoxPass.cpp" />
+    <ClCompile Include="src\renderpass\SSAO\SSAOPass.cpp" />
+    <ClCompile Include="src\renderpass\SSR\SSR.cpp" />
+    <ClCompile Include="src\renderpass\TestPass\TestPass.cpp" />
+    <ClCompile Include="src\renderpass\Tonemap\Tonemap.cpp" />
+    <ClCompile Include="src\renderpass\VXGI\Voxelizer.cpp" />
     <ClCompile Include="src\scenes\testscene\testScene.cpp" />
     <ClCompile Include="src\module\VulkanHelperClasses.cpp" />
   </ItemGroup>
@@ -1026,8 +1038,19 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\include\SplineCameraAdjuster.h" />
     <ClInclude Include="src\include\stb_image.h" />
     <ClInclude Include="src\include\TextureManager.h" />
-    <ClInclude Include="src\renderpass\ShadowMapPass.h" />
-    <ClInclude Include="src\renderpass\TestPass.h" />
+    <ClInclude Include="src\renderpass\AtmosphericScattering\AtmosphericScatter.h" />
+    <ClInclude Include="src\renderpass\BlitPass\BlitPass.h" />
+    <ClInclude Include="src\renderpass\Bloom\Bloom.h" />
+    <ClInclude Include="src\renderpass\DebugPass\DebugDrawPass.h" />
+    <ClInclude Include="src\renderpass\DeferredLight\DeferredLightPass.h" />
+    <ClInclude Include="src\renderpass\GBuffer\GBufferPass.h" />
+    <ClInclude Include="src\renderpass\Shadows\ShadowMapPass.h" />
+    <ClInclude Include="src\renderpass\Skybox\SkyBoxPass.h" />
+    <ClInclude Include="src\renderpass\SSAO\SSAOPass.h" />
+    <ClInclude Include="src\renderpass\SSR\SSR.h" />
+    <ClInclude Include="src\renderpass\TestPass\TestPass.h" />
+    <ClInclude Include="src\renderpass\Tonemap\Tonemap.h" />
+    <ClInclude Include="src\renderpass\VXGI\Voxelizer.h" />
     <ClInclude Include="src\scenes\testscene\testScene.h" />
     <ClInclude Include="src\include\VulkanHelperClasses.h" />
   </ItemGroup>

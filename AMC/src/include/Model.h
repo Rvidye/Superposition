@@ -15,9 +15,9 @@ namespace AMC {
 		TextureTypeDiffuse = 0,
 		TextureTypeNormalMap,
 		TextureTypeMetallicRoughnessMap,
+		TextureTypeEmissive,
 		TextureTypeSpecularMap,
 		TextureTypeAmbient,
-		TextureTypeEmissive,
 		TextureTypeEnd
 	};
 
@@ -42,7 +42,7 @@ namespace AMC {
 			glm::vec3 albedo;
 			float metallic;
 			float roughness;
-			float ao;
+			float emissiveFactor;
 			glm::vec3 emission;
 			float alpha;
 			GLuint textureFlag;
@@ -50,6 +50,7 @@ namespace AMC {
 
 			Material();
 			void Apply(ShaderProgram* program);
+			void ReleseTextures();
 			void LoadMaterialTexturesFromFile(const std::string& path, TextureType type);
 			void LoadMaterialTexturesFromMemory(const aiTexture* t, TextureType type);
 			//void Bind(ShaderProgram* program);

@@ -9,3 +9,4 @@ AMCLog.txt
 #*.glb
 #*.gltf
 #*.bin
+/AMC/resources/models

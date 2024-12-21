@@ -123,6 +123,7 @@ namespace AMC {
 			material->albedo = glm::vec3(albedo.r, albedo.g, albedo.b);
 			material->metallic = metallic;
 			material->roughness = roughness;
+			material->emissiveFactor = emissiveIntensity;
 			material->emission = glm::vec3(emission.r, emission.g, emission.b);
 			material->alpha = alpha;
 			material->textureFlag = textureFlag;
@@ -745,7 +746,7 @@ namespace AMC {
 		albedo = glm::vec3(0.0f);
 		metallic = 0.0f;
 		roughness = 0.0f;
-		ao = 0.0f;
+		emissiveFactor = 0.0f;
 		emission = glm::vec3(0.0f);
 		alpha = 0.0f;
 		textureFlag = 0;
@@ -754,6 +755,16 @@ namespace AMC {
 	void Material::Apply(ShaderProgram* program)
 	{
 		// Upload Material Data Here
+
+		glUniform3fv(program->getUniformLocation("material.albedo"), 1, glm::value_ptr(albedo));
+		glUniform3fv(program->getUniformLocation("material.emissive"), 1, glm::value_ptr(albedo));
+		glUniform1f(program->getUniformLocation("material.metallicFactor"), metallic);
+		glUniform1f(program->getUniformLocation("material.roughnessFactor"), roughness);
+		glUniform1f(program->getUniformLocation("material.emissiveFactor"), emissiveFactor);
+		glUniform1f(program->getUniformLocation("material.alpha"), alpha);
+		glUniform1ui(program->getUniformLocation("material.textureFlag"), textureFlag);
+
+		//bind all textures
 		for (auto t : textures) {
 			switch (t.type){
 				case TextureTypeDiffuse:
@@ -777,11 +788,22 @@ namespace AMC {
 		}
 	}
 
+	void Material::ReleseTextures()
+	{
+		glBindTextureUnit(TextureTypeDiffuse,0);
+		glBindTextureUnit(TextureTypeNormalMap, 0);
+		glBindTextureUnit(TextureTypeMetallicRoughnessMap, 0);
+		glBindTextureUnit(TextureTypeEmissive, 0);
+		glBindTextureUnit(TextureTypeAmbient, 0);
+	}
+
 	void Material::LoadMaterialTexturesFromFile(const std::string& path, TextureType type)
 	{
 		ModelTexture tex;
 		tex.type = type;
-		tex.texture = AMC::TextureManager::LoadTexture(path);
+		std::filesystem::path fileName = std::filesystem::path(path).filename();
+		bool isKTX = fileName.extension() == ".ktx2";
+		tex.texture = isKTX ? AMC::TextureManager::LoadKTX2Texture(path) : AMC::TextureManager::LoadTexture(path);
 		this->textures.push_back(tex);
 	}
 
@@ -895,6 +917,8 @@ namespace AMC {
 			glBindVertexArray(mesh->vao);
 			glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, mesh->mTriangleCount, GL_UNSIGNED_INT, 0, iNumInstance, 0, 0);
 			//glDrawArrays(GL_TRIANGLES, 0, mesh->mVertexCount);
+			if (iUseMaterial)
+				materials[mesh->mMaterial]->ReleseTextures();
 		}
 
 		// Recursively draw all child nodes

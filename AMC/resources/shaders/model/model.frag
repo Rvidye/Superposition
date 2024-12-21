@@ -1,6 +1,7 @@
 #version 460 core 
 
-#include"lighting.glsl"
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+#include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
 
 layout (binding = 0)uniform sampler2D texSampler; 
 layout (location = 0)out vec4 FragColor;

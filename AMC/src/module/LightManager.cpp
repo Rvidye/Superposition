@@ -99,7 +99,7 @@ namespace AMC {
 		int count = 0; // Instead of just pushing all lights, we only push the active ones.
 		for (int i = 0; i < (int)lights.size(); ++i) {
 			const Light& src = lights[i];
-			if (!src.active) continue; // skip inactive lights
+			//if (!src.active) continue; // skip inactive lights
 
 			GpuLight& dst = lb.u_Lights[i];
 			dst.position = src.position;
@@ -120,11 +120,9 @@ namespace AMC {
 		glNamedBufferSubData(uboLights, 0, sizeof(LightBlock), &lb);
 	}
 
-	void LightManager::bindUBO(GLuint program)
+	void LightManager::bindUBO()
 	{
-		GLuint blockIndex = glGetUniformBlockIndex(program, "LightBlock");
-		glUniformBlockBinding(program, blockIndex, 0);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboLights);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 1, uboLights);
 	}
 
 	void LightManager::renderUI()
@@ -182,15 +180,13 @@ namespace AMC {
 				// Cone angles (only for Spot lights)
 				if (light.type == LIGHT_TYPE_SPOT) {
 
-					float innerConeAngleDegrees = glm::degrees(glm::acos(light.spotAngle));
-					if (ImGui::SliderFloat("Inner Cone Cosine", &innerConeAngleDegrees, 0.0f, 45.0f)) {
-						light.spotAngle = glm::cos(glm::radians(innerConeAngleDegrees));
+					if (ImGui::SliderFloat("Inner Cone Cosine", &light.spotAngle, 0.0f, 45.0f)) {
+						//light.spotAngle = glm::cos(glm::radians(innerConeAngleDegrees));
 						shouldUpdateBuffer = true;
 					}
 
-					float outerConeAngleDegrees = glm::degrees(glm::acos(light.spotExponent));
-					if (ImGui::SliderFloat("Outer Cone Cosine", &outerConeAngleDegrees, 0.0f, 45.0f)) {
-						light.spotExponent = glm::cos(glm::radians(outerConeAngleDegrees));
+					if (ImGui::SliderFloat("Outer Cone Cosine", &light.spotExponent, 0.0f, 45.0f)) {
+						//light.spotExponent = glm::cos(glm::radians(outerConeAngleDegrees));
 						shouldUpdateBuffer = true;
 					}
 				}
@@ -274,7 +270,7 @@ namespace AMC {
 				model = glm::translate(model, light.position);
 			}
 
-			glUniformMatrix4fv(m_program->getUniformLocation("mvpMat"), 1, GL_FALSE, glm::value_ptr(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * model));
+			glUniformMatrix4fv(m_program->getUniformLocation("modelMat"), 1, GL_FALSE, glm::value_ptr(model));
 			glUniform4fv(m_program->getUniformLocation("color"), 1, glm::value_ptr(light.color));
 			if (light.type == LIGHT_TYPE_DIRECTIONAL) {
 				directional->draw(m_program, 1, false);

@@ -221,7 +221,7 @@ namespace AMC {
 		else 
 		{
 			//LOG_WARNING(L"Uniform '%s' not found.\n",name.c_str());
-			std::cout << "Warning: Uniform '" << name << "' not found." << std::endl;
+			//std::cout << "Warning: Uniform '" << name << "' not found." << std::endl;
 			return -1;
 		}
 	}

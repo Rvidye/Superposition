@@ -16,9 +16,9 @@ namespace AMC {
         glm::vec3 direction; float range;
         glm::vec3 color; float spotAngle;
         float spotExponent;
-        int type;
-        int shadows;
-        int shadowMapIndex;
+        int type = 2;
+        int shadows = 0;
+        int shadowMapIndex = -1;
         int active;
         float pad;
     };
@@ -40,7 +40,7 @@ namespace AMC {
             ShadowManager* getShadowMapManager();
             void toggleLightShadow(Light& light, bool enable);
             void updateUBO();
-            void bindUBO(GLuint program);
+            void bindUBO();
 
             // For UI and debugging
             void renderUI();

@@ -5,7 +5,7 @@
 namespace AMC {
 	// Store Extra Data that can be accesses by all render passes
 	struct RenderContext {
-		GLsizei width = 4096, height = 4096;
+		GLsizei width = 2048, height = 2048;
 		GLsizei screenWidth, screenHeight;
 		//GBuffer
 		GLuint textureGBuffer[5]; // albedo, normal, metalroughness, emissive, depth

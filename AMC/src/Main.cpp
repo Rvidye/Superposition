@@ -470,7 +470,7 @@ void InitRenderPasses()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
-	//glEnable(GL_MULTISAMPLE);
+	glEnable(GL_MULTISAMPLE);
 	//glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 	glCreateBuffers(1, &perframeUBO);

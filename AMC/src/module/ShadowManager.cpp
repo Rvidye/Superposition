@@ -4,7 +4,7 @@
 #include<ShaderProgram.h>
 #include<Scene.h>
 
-static const int SHADOWMAP_SIZE = 2048;
+static const int SHADOWMAP_SIZE = 1024;
 
 namespace AMC {
 

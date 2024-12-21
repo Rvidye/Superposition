@@ -28,7 +28,7 @@ void testScene::init()
 	//addModel("cube", cubeobj);
 
 	AMC::RenderModel animman;
-	animman.model = new AMC::Model(RESOURCE_PATH("models\\Sponza\\Sponza.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	animman.model = new AMC::Model(RESOURCE_PATH("models\\Yash\\Rip1.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 	animman.matrix = mp->getModelMatrix();
 	addModel("man", animman);
 
@@ -104,7 +104,7 @@ void testScene::init()
 	spot.spotExponent = 45.0f; // requrie a cos(radians) doing here just saves computatiaon of GPU
 	spot.position = glm::vec3(0.0f, 10.0f, -10.0f); // for point and spot lights
 	spot.active = 1; // need to activate light here
-	spot.shadows = true;
+	spot.shadows = false;
 	spot.type = AMC::LIGHT_TYPE_POINT; // need to let shader know what type of light is this
 
 	//lightManager->addLight(directional);

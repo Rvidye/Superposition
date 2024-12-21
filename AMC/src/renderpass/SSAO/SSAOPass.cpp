@@ -14,7 +14,7 @@ void SSAO::create(AMC::RenderContext& context) {
 	context.textureSSAOResult = m_textureResult;
 }
 
-void SSAO::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
+void SSAO::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	if (!enableSSAO) return;
 	glBindTextureUnit(0, context.textureGBuffer[1]);
 	glBindTextureUnit(1, context.textureGBuffer[4]);

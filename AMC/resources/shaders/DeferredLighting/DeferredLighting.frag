@@ -16,9 +16,12 @@ layout(binding = 4) uniform sampler2D gDepth;
 layout(binding = 5) uniform sampler2D SamplerAO;
 layout(binding = 6) uniform sampler2D SamplerIndirectLighting;
 
+//layout(binding = 7) uniform sampler2DArrayShadow SamplerShadowMap;
+layout(binding = 8) uniform samplerCubeShadow SamplerPointShadowmap;
+
 vec3 EvaluateLighting(Light light, Surface surface, vec3 fragPos, vec3 viewPos, float ambientOcclusion);
-//float Visibility(vec3 normal, vec3 lightToSample);
-//float GetLightSpaceDepth(vec3 lightSpaceSamplePos);
+float Visibility(Light light, vec3 normal, vec3 lightToSample);
+float GetLightSpaceDepth(Light light, vec3 lightSpaceSamplePos);
 
 layout(location = 1) uniform bool IsVXGI;
 
@@ -43,6 +46,7 @@ void main()
 
     vec3 ndc = vec3(uv * 2.0 - 1.0, depth);
     vec3 fragPos = PerspectiveTransform(ndc, perFrameDataUBO.InvProjView);
+    vec3 unjitteredFragPos = PerspectiveTransform(vec3(ndc.xy, ndc.z), perFrameDataUBO.InvProjView);
 
     vec4 albedoAlpha = texelFetch(gAlbedoAlpha, imgCoord, 0);
     vec3 albedo = albedoAlpha.rgb;
@@ -60,6 +64,7 @@ void main()
     surface.Normal = normal;
     surface.Metallic = metallic;
     surface.Roughness = roughness;
+    surface.IOR = 1.0;
 
     vec3 directLighting = vec3(0.0);
     for (int i = 0; i < u_LightCount; i++)
@@ -67,26 +72,19 @@ void main()
         Light light = u_Lights[i];
         vec3 contribution = EvaluateLighting(light, surface, fragPos, perFrameDataUBO.ViewPos, ambientOcclusion);
 
-        // if (contribution != vec3(0.0))
-        // {
-        //     float shadow = 0.0;
-        //     if (light.PointShadowIndex == -1)
-        //     {
-        //         shadow = 0.0;
-        //     }
-        //     else if (ShadowMode == SHADOW_MODE_PCF_SHADOW_MAP)
-        //     {
-        //         GpuPointShadow pointShadow = shadowsUBO.PointShadows[light.PointShadowIndex];
-        //         vec3 lightToSample = unjitteredFragPos - light.Position;
-        //         shadow = 1.0 - Visibility(pointShadow, normal, lightToSample);
-        //     }
-        //     else if (ShadowMode == SHADOW_MODE_RAY_TRACED)
-        //     {
-        //         GpuPointShadow pointShadow = shadowsUBO.PointShadows[light.PointShadowIndex];
-        //         shadow = imageLoad(image2D(pointShadow.RayTracedShadowMapImage), imgCoord).r;
-        //     }
-        //     contribution *= (1.0 - shadow);
-        // }
+        if (contribution != vec3(0.0))
+        {
+            float shadow = 0.0;
+            if (light.shadowMapIndex == -1)
+            {
+                shadow = 0.0;
+            }
+            else{
+                vec3 lightToSample = unjitteredFragPos - light.position;
+                shadow = 1.0 - Visibility(light, normal, lightToSample);
+            }
+            contribution *= (1.0 - shadow);
+        }
         directLighting += contribution;
     }
 
@@ -106,51 +104,26 @@ void main()
 
 vec3 EvaluateLighting(Light light, Surface surface, vec3 fragPos, vec3 viewPos, float ambientOcclusion)
 {
+    vec3 surfaceToLight = light.position - fragPos;
     vec3 dirSurfaceToCam = normalize(viewPos - fragPos);
-    vec3 dirSurfaceToLight;
+    vec3 dirSurfaceToLight = normalize(surfaceToLight);
+    
+    float distSq = dot(surfaceToLight, surfaceToLight);
+    float attenuation = GetAttenuationFactor(distSq, light.range);
 
-    float cosTheta = 0.0;
-    float attenuation = 1.0;
-    if (light.type == 0) {
-        dirSurfaceToLight = normalize(-light.direction); 
-        attenuation = 1.0; 
-        cosTheta = max(dot(surface.Normal, dirSurfaceToLight), 0.0);
-    } else if (light.type == 2) {
-        // Point Light
-        vec3 surfaceToLight = (light.position - fragPos);
-        float distSq = dot(surfaceToLight, surfaceToLight);
-        dirSurfaceToLight = normalize(surfaceToLight);
-        attenuation = GetAttenuationFactor(distSq, light.range);
-        cosTheta = max(dot(surface.Normal, dirSurfaceToLight), 0.0);
-    }else if (light.type == 1) {
-        vec3 surfaceToLight = light.position - fragPos;
-        float distSq = dot(surfaceToLight, surfaceToLight);
-        dirSurfaceToLight = normalize(surfaceToLight);
-        attenuation = GetAttenuationFactor(distSq, light.range);
-        // Compute spot effect
-        float spotCos = max(dot(dirSurfaceToLight, normalize(-light.direction)), 0.0);
-        float spotThreshold = cos(radians(light.spotAngle * 0.5)); 
-        if (spotCos < spotThreshold) {
-            // Outside the spot cone, no lighting
-            return vec3(0.0);
-        }
-        // Smooth the edges using the spotExponent
-        float spotFalloff = pow(spotCos, light.spotExponent);
-        attenuation *= spotFalloff;
-
-        cosTheta = max(dot(surface.Normal, dirSurfaceToLight), 0.0);
-    }
-
-    // Compute BRDF (specular + diffuse)
+    
     const float prevIor = 1.0;
     vec3 fresnelTerm;
     vec3 specularBrdf = GGXBrdf(surface, dirSurfaceToCam, dirSurfaceToLight, prevIor, fresnelTerm);
     vec3 diffuseBrdf = surface.Albedo * ambientOcclusion;
+    
     vec3 combinedBrdf = specularBrdf + diffuseBrdf * (vec3(1.0) - fresnelTerm) * (1.0 - surface.Metallic); 
+
+    float cosTheta = clamp(dot(surface.Normal, dirSurfaceToLight), 0.0, 1.0);
     return combinedBrdf * attenuation * cosTheta * light.color;
 }
-/*
-float Visibility(vec3 normal, vec3 lightToSample)
+
+float Visibility(Light light, vec3 normal, vec3 lightToSample)
 {
     // TODO: Use overall better sampling method
     // Source: https://learnopengl.com/Advanced-Lighting/Shadows/Point-Shadows
@@ -163,7 +136,7 @@ float Visibility(vec3 normal, vec3 lightToSample)
         vec3( 1.0,  0.0,  1.0 ), vec3( -1.0,  0.0,  1.0 ), vec3(  1.0,  0.0, -1.0 ), vec3( -1.0,  0.0, -1.0 ),
         vec3( 0.0,  1.0,  1.0 ), vec3(  0.0, -1.0,  1.0 ), vec3(  0.0, -1.0, -1.0 ), vec3(  0.0,  1.0, -1.0 )
     };
-
+    
     const float bias = 0.018;
     const float sampleDiskRadius = 0.04;
 
@@ -171,18 +144,17 @@ float Visibility(vec3 normal, vec3 lightToSample)
     for (int i = 0; i < ShadowSampleOffsets.length(); i++)
     {
         vec3 samplePos = (lightToSample + ShadowSampleOffsets[i] * sampleDiskRadius);
-        float depth = GetLightSpaceDepth(pointShadow, samplePos * (1.0 - bias));
-        visibilityFactor += texture(pointShadow.PcfShadowTexture, vec4(samplePos, depth));
+        float depth = GetLightSpaceDepth(light, samplePos * (1.0 - bias));
+        visibilityFactor += texture(SamplerPointShadowmap, vec4(samplePos, depth));
     }
     visibilityFactor /= ShadowSampleOffsets.length();
 
     return visibilityFactor;
 }
 
-float GetLightSpaceDepth(vec3 lightSpaceSamplePos)
+float GetLightSpaceDepth(Light light, vec3 lightSpaceSamplePos)
 {
     float dist = max(abs(lightSpaceSamplePos.x), max(abs(lightSpaceSamplePos.y), abs(lightSpaceSamplePos.z)));
-    float depth = GetLogarithmicDepth(pointShadow.NearPlane, pointShadow.FarPlane, dist);
+    float depth = GetLogarithmicDepth(0.15, 60.0, dist);
     return depth;
 }
-*/

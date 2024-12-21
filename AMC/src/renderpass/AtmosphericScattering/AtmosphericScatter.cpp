@@ -17,7 +17,7 @@ void AtmosphericScatterer::create(AMC::RenderContext& context) {
 	context.textureAtmosphere = textureAtmosphericResult;
 }
 
-void AtmosphericScatterer::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
+void AtmosphericScatterer::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 
 	// Compute Atmospheric Scattering
 	glBindImageTexture(0, textureAtmosphericResult, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);

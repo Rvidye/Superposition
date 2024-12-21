@@ -29,9 +29,9 @@ void main(void)
 {
 
     vec4 albedo = vec4(material.albedo, material.alpha);
-    vec3 emissive = material.emissive;
-    vec3 normal = vec3(0.0);
+    vec3 emissive = material.emissive * material.emissiveFactor;
     float metallic = material.metallicFactor;
+    vec3 sampledNormal = inData.Normal;
     float roughness = material.roughnessFactor;
 
     if ((material.textureFlag & (1u << 0)) != 0u) {
@@ -39,9 +39,8 @@ void main(void)
     }
 
     if ((material.textureFlag & (1u << 1)) != 0u) {
-        vec3 sampledNormal = texture(NormalMap, inData.TexCoord).rgb;
+        sampledNormal = texture(NormalMap, inData.TexCoord).rgb;
         sampledNormal = normalize(sampledNormal * 2.0 - 1.0);
-        normal = normalize(sampledNormal);
     }
 
     // Sample metallicRoughness map if enabled (Bit 2)
@@ -53,7 +52,7 @@ void main(void)
 
     // Sample emissive map if enabled (Bit 3)
     if ((material.textureFlag & (1u << 3)) != 0u) { // Bit 3 for emissiveMap
-        emissive *= texture(EmissiveMap, inData.TexCoord).rgb;
+        emissive += texture(EmissiveMap, inData.TexCoord).rgb;
     }
     
     float alphaCutoff = 0.5; // Set to 0.0 if not using alpha blending
@@ -65,11 +64,12 @@ void main(void)
     vec3 interpTangent = normalize(inData.Tangent);
     vec3 interpNormal = normalize(inData.Normal);
     mat3 tbn = GetTBN(interpTangent,interpNormal);
-    normal = tbn * normal;
+    sampledNormal = tbn * sampledNormal;
+    //sampledNormal = normalize(mix(interpNormal, sampledNormal,0.0));
 
     // Output to GBuffer
     OutAlbedoAlpha = albedo;
-    OutNormal = normal;
+    OutNormal = sampledNormal;
     OutMetallicRoughness = vec2(metallic, roughness);
     OutEmissive = emissive;
 }

@@ -43,7 +43,7 @@ void Bloom::create(AMC::RenderContext& context) {
     context.textureBloomResult = textureUpsample;
 }
 
-void Bloom::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
+void Bloom::execute(AMC::Scene* scene, AMC::RenderContext& context) {
     if (!enableBloom) return;
 	m_ProgramBloom->use();
 

@@ -6,7 +6,7 @@ void BlitPass::create(AMC::RenderContext& context)
 	m_ProgramBlit = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\ToScreen\\FullScreen.vert"), RESOURCE_PATH("shaders\\ToScreen\\FullScreen.frag") });
 }
 
-void BlitPass::execute(const AMC::Scene* scene, AMC::RenderContext& context)
+void BlitPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 {
 	AMC::Renderer::resetFBO();
 	m_ProgramBlit->use();

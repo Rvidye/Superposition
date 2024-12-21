@@ -24,7 +24,7 @@ namespace AMC {
 		public:
 			virtual ~RenderPass() = default;
 			virtual void create(RenderContext& context) = 0;
-			virtual void execute(const Scene* scene, RenderContext &context) = 0;
+			virtual void execute(Scene* scene, RenderContext &context) = 0;
 			virtual const char* getName() const = 0;
 			virtual void renderUI() = 0;
 	};
@@ -46,7 +46,7 @@ namespace AMC {
 				}
 			}
 
-			void render(const Scene* scene) {
+			void render(Scene* scene) {
 				for (auto pass : passes) {
 					pass->execute(scene, context);
 				}

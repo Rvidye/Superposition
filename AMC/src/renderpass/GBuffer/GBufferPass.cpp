@@ -62,11 +62,17 @@ void GBufferPass::create(AMC::RenderContext& context)
     context.textureGBuffer[4] = m_textureDepth;
 }
 
-void GBufferPass::execute(const AMC::Scene* scene, AMC::RenderContext& context)
+void GBufferPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, gbuffer);
+    glm::vec4 clear_color = glm::vec4(0.0);
+    float depth = 1.0f;
     glViewport(0, 0, context.width, context.height);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearNamedFramebufferfv(gbuffer, GL_COLOR, 0, glm::value_ptr(clear_color));
+    glClearNamedFramebufferfv(gbuffer, GL_COLOR, 1, glm::value_ptr(clear_color));
+    glClearNamedFramebufferfv(gbuffer, GL_COLOR, 2, glm::value_ptr(clear_color));
+    glClearNamedFramebufferfv(gbuffer, GL_COLOR, 3, glm::value_ptr(clear_color));
+    glClearNamedFramebufferfv(gbuffer, GL_DEPTH, 0, &depth);
+    glBindFramebuffer(GL_FRAMEBUFFER, gbuffer);
 
     m_ProgramGBuffer->use();
     for (const auto& [name, obj] : scene->models) {

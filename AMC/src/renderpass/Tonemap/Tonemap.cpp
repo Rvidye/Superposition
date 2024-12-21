@@ -14,7 +14,7 @@ void Tonemap::create(AMC::RenderContext& context) {
 	context.textureTonemapResult = textureTonemapResult;
 }
 
-void Tonemap::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
+void Tonemap::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 
 	glBindImageTexture(0, textureTonemapResult, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
 	glBindTextureUnit(0, context.textureDeferredResult); // Rasterier Result

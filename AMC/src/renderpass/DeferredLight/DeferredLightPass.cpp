@@ -26,7 +26,7 @@ void DeferredPass::create(AMC::RenderContext& context)
 	context.textureDeferredResult = m_TextureResult;
 }
 
-void DeferredPass::execute(const AMC::Scene* scene, AMC::RenderContext& context)
+void DeferredPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	glViewport(0, 0, context.width, context.height);
@@ -41,6 +41,8 @@ void DeferredPass::execute(const AMC::Scene* scene, AMC::RenderContext& context)
 	glBindTextureUnit(3, context.textureGBuffer[3]);
 	glBindTextureUnit(4, context.textureGBuffer[4]);
 	glBindTextureUnit(5, context.textureSSAOResult);
+	//glBindTextureUnit(7, scene->lightManager->getShadowMapManager()->getShadowMapTexture());
+	glBindTextureUnit(8, scene->lightManager->getShadowMapManager()->getPointShadowCubemap());
 	scene->lightManager->bindUBO();
 	glBindVertexArray(context.emptyVAO);
 	glDrawArrays(GL_TRIANGLES,0,3);

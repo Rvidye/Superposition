@@ -50,6 +50,7 @@ namespace AMC {
 
 			Material();
 			void Apply(ShaderProgram* program);
+			void ReleseTextures();
 			void LoadMaterialTexturesFromFile(const std::string& path, TextureType type);
 			void LoadMaterialTexturesFromMemory(const aiTexture* t, TextureType type);
 			//void Bind(ShaderProgram* program);

@@ -788,11 +788,22 @@ namespace AMC {
 		}
 	}
 
+	void Material::ReleseTextures()
+	{
+		glBindTextureUnit(TextureTypeDiffuse,0);
+		glBindTextureUnit(TextureTypeNormalMap, 0);
+		glBindTextureUnit(TextureTypeMetallicRoughnessMap, 0);
+		glBindTextureUnit(TextureTypeEmissive, 0);
+		glBindTextureUnit(TextureTypeAmbient, 0);
+	}
+
 	void Material::LoadMaterialTexturesFromFile(const std::string& path, TextureType type)
 	{
 		ModelTexture tex;
 		tex.type = type;
-		tex.texture = AMC::TextureManager::LoadTexture(path);
+		std::filesystem::path fileName = std::filesystem::path(path).filename();
+		bool isKTX = fileName.extension() == ".ktx2";
+		tex.texture = isKTX ? AMC::TextureManager::LoadKTX2Texture(path) : AMC::TextureManager::LoadTexture(path);
 		this->textures.push_back(tex);
 	}
 
@@ -906,6 +917,8 @@ namespace AMC {
 			glBindVertexArray(mesh->vao);
 			glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, mesh->mTriangleCount, GL_UNSIGNED_INT, 0, iNumInstance, 0, 0);
 			//glDrawArrays(GL_TRIANGLES, 0, mesh->mVertexCount);
+			if (iUseMaterial)
+				materials[mesh->mMaterial]->ReleseTextures();
 		}
 
 		// Recursively draw all child nodes

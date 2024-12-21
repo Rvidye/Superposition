@@ -99,7 +99,7 @@ namespace AMC {
 		int count = 0; // Instead of just pushing all lights, we only push the active ones.
 		for (int i = 0; i < (int)lights.size(); ++i) {
 			const Light& src = lights[i];
-			if (!src.active) continue; // skip inactive lights
+			//if (!src.active) continue; // skip inactive lights
 
 			GpuLight& dst = lb.u_Lights[i];
 			dst.position = src.position;
@@ -180,15 +180,13 @@ namespace AMC {
 				// Cone angles (only for Spot lights)
 				if (light.type == LIGHT_TYPE_SPOT) {
 
-					float innerConeAngleDegrees = glm::degrees(glm::acos(light.spotAngle));
-					if (ImGui::SliderFloat("Inner Cone Cosine", &innerConeAngleDegrees, 0.0f, 45.0f)) {
-						light.spotAngle = glm::cos(glm::radians(innerConeAngleDegrees));
+					if (ImGui::SliderFloat("Inner Cone Cosine", &light.spotAngle, 0.0f, 45.0f)) {
+						//light.spotAngle = glm::cos(glm::radians(innerConeAngleDegrees));
 						shouldUpdateBuffer = true;
 					}
 
-					float outerConeAngleDegrees = glm::degrees(glm::acos(light.spotExponent));
-					if (ImGui::SliderFloat("Outer Cone Cosine", &outerConeAngleDegrees, 0.0f, 45.0f)) {
-						light.spotExponent = glm::cos(glm::radians(outerConeAngleDegrees));
+					if (ImGui::SliderFloat("Outer Cone Cosine", &light.spotExponent, 0.0f, 45.0f)) {
+						//light.spotExponent = glm::cos(glm::radians(outerConeAngleDegrees));
 						shouldUpdateBuffer = true;
 					}
 				}

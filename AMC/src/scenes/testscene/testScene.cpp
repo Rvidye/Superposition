@@ -19,7 +19,7 @@ void testScene::init()
 	programModelAnim = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\spv\\modelAnim.vert.spv"),RESOURCE_PATH("shaders\\model\\spv\\model.frag.spv") });
 
 	// ModelPlacer
-	mp = new AMC::ModelPlacer(glm::vec3(0.0, 0.0, -10.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1.0f);
+	mp = new AMC::ModelPlacer(glm::vec3(0.0, 0.0, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 0.1f);
 
 	// Models Setup
 	//AMC::RenderModel cubeobj;
@@ -28,7 +28,7 @@ void testScene::init()
 	//addModel("cube", cubeobj);
 
 	AMC::RenderModel animman;
-	animman.model = new AMC::Model(RESOURCE_PATH("models\\DamagedHelmet\\DamagedHelmet.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	animman.model = new AMC::Model(RESOURCE_PATH("models\\Sponza\\Sponza.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 	animman.matrix = mp->getModelMatrix();
 	addModel("man", animman);
 
@@ -87,10 +87,10 @@ void testScene::init()
 	point.direction = glm::vec3(-0.50f, 0.7071f, 0.50f); // doesn't matter in case of point lights
 	point.color = glm::vec3(1.0f, 1.0f, 1.0f);
 	point.intensity = 0.5f;
-	point.range = -1.0f; // range decides the square fall of distance or attenuation of light
+	point.range = 20.0f; // range decides the square fall of distance or attenuation of light
 	point.spotAngle = 1.0f; // for spot lights
 	point.spotExponent = 0.7071f; // for spot lights
-	point.position = glm::vec3(0.0f, 0.0f, 0.0f); // for point and spot lights
+	point.position = glm::vec3(0.0f, 10.0f, 10.0f); // for point and spot lights
 	point.active = 1; // need to activate light here
 	point.shadows = true;
 	point.type = AMC::LIGHT_TYPE_POINT; // need to let shader know what type of light is this
@@ -100,14 +100,14 @@ void testScene::init()
 	spot.color = glm::vec3(0.0f, 1.0f, 0.0f);
 	spot.intensity = 0.5f;
 	spot.range = 10.0f;
-	spot.spotAngle = glm::cos(glm::radians(0.0f)); // requrie a cos(radians) doing here just saves computatiaon of GPU
-	spot.spotExponent = glm::cos(glm::radians(45.0f)); // requrie a cos(radians) doing here just saves computatiaon of GPU
+	spot.spotAngle = 0.0f; // requrie a cos(radians) doing here just saves computatiaon of GPU
+	spot.spotExponent = 45.0f; // requrie a cos(radians) doing here just saves computatiaon of GPU
 	spot.position = glm::vec3(0.0f, 0.0f, 5.0f); // for point and spot lights
 	spot.active = 1; // need to activate light here
 	spot.type = AMC::LIGHT_TYPE_SPOT; // need to let shader know what type of light is this
 
-	lightManager->addLight(directional);
-	lightManager->addLight(spot);
+	//lightManager->addLight(directional);
+	//lightManager->addLight(spot);
 	lightManager->addLight(point);
 }
 
@@ -172,6 +172,7 @@ void testScene::update()
 	//models["cube"].model->update((float)AMC::deltaTime);
 	models["man"].model->update((float)AMC::deltaTime);
 	models["man"].matrix = mp->getModelMatrix();
+	reCalculateSceneAABB(); // cannot find better way to do it for now
 	//modelAnim->update((float)AMC::deltaTime);
 }
 

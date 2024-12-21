@@ -74,8 +74,7 @@ vec3 GGXBrdf(Surface surface, vec3 V, vec3 L, float prevIor, out vec3 F)
 
     surface.Roughness *= surface.Roughness; // just a convention to make roughness feel more linear perceptually
 
-    vec3 dielectricF0 = vec3(0.04); // Fixed value for non-metals
-    vec3 f0 = BaseReflectivity(surface.Albedo, surface.Metallic, prevIor, 0.04);
+    vec3 f0 = BaseReflectivity(surface.Albedo, surface.Metallic, prevIor, surface.IOR);
     vec3 f90 = vec3(1.0);
 
     vec3 H = normalize(V + L);

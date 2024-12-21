@@ -13,7 +13,7 @@ void SSR::create(AMC::RenderContext& context) {
 	context.textureSSRResult = textureSSR;
 }
 
-void SSR::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
+void SSR::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	if (!enableSSR) return;
 	glBindTextureUnit(0, context.textureGBuffer[0]); // albedo
 	glBindTextureUnit(1, context.textureGBuffer[1]); // normal

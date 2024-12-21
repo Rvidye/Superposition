@@ -17,6 +17,7 @@
 #include "renderpass/TestPass/TestPass.h"
 #include "renderpass/Shadows/ShadowMapPass.h"
 #include "renderpass/GBuffer/GBufferPass.h"
+#include "renderpass/DebugPass/DebugDrawPass.h"
 #include "renderpass/SSAO/SSAOPass.h"
 #include "renderpass/SSR/SSR.h"
 #include "renderpass/DeferredLight/DeferredLightPass.h"
@@ -334,7 +335,7 @@ void RenderFrame(void)
 		if (!AMC::currentCamera) { 
 			AMC::currentCamera = gpDebugCamera; // just  in case someone fucks up and getCamera returns null we'll fallback to debugcam
 		}
-
+		//AMC::currentCamera->setNearFarPlane();
 		glm::mat4 view = AMC::currentCamera->getViewMatrix();
 		glm::mat4 projection = AMC::currentCamera->getProjectionMatrix();
 		glm::mat4 projView = projection * view;
@@ -356,10 +357,6 @@ void RenderFrame(void)
 	}
 
 #ifdef _MYDEBUG
-
-	if (currentScene)
-		currentScene->renderDebug();
-
 	//finalpass->execute(currentScene, gpRenderer->context);
 
 	ImGui_ImplOpenGL3_NewFrame();
@@ -490,6 +487,9 @@ void InitRenderPasses()
 	// Add passes here
 	gpRenderer->addPass(new ShadowMapPass());
 	gpRenderer->addPass(new GBufferPass());
+#ifdef _MYDEBUG
+	gpRenderer->addPass(new DebugDrawPass());
+#endif
 	gpRenderer->addPass(new SSAO());
 	gpRenderer->addPass(new DeferredPass());
 	gpRenderer->addPass(new AtmosphericScatterer());

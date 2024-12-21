@@ -6,7 +6,7 @@ void TestPass::create(AMC::RenderContext& context){
 	m_programTexturedDraw = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\model.vert"), RESOURCE_PATH("shaders\\model\\model.frag") });
 }
 
-void TestPass::execute(const AMC::Scene* scene, AMC::RenderContext& context){
+void TestPass::execute(AMC::Scene* scene, AMC::RenderContext& context){
 
 	AMC::Renderer::resetFBO();
 	AMC::ShadowManager* sm = scene->lightManager->getShadowMapManager();

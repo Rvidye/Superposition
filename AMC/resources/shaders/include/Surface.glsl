@@ -5,6 +5,8 @@ struct Surface {
     float Metallic;
     float Roughness;
     float Alpha;
+    float Transmission;
+    float IOR;
 };
 
 Surface GetDefaultSurface()
@@ -17,6 +19,8 @@ Surface GetDefaultSurface()
     surface.Normal = vec3(0.0);
     surface.Emissive = vec3(0.0);
     surface.Metallic = 0.0;
-    surface.Roughness = 0.0;    
+    surface.Roughness = 0.0;
+    surface.Transmission = 0.0;
+    surface.IOR = 1.50;   
     return surface;
 }

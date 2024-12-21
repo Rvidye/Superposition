@@ -12,7 +12,7 @@ void Voxelizer::create(AMC::RenderContext& context){
 	SetGridSize(glm::vec3(-28.0f, -3.0f, -17.0f), glm::vec3(28.0f, 20.0f, 17.0f));
 }
 
-void Voxelizer::execute(const AMC::Scene* scene, AMC::RenderContext& context){
+void Voxelizer::execute(AMC::Scene* scene, AMC::RenderContext& context){
 	ClearTextures();
 	Voxelize(scene);
 	MipMap();

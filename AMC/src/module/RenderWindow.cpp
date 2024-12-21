@@ -190,7 +190,7 @@ namespace AMC {
 			strcpy_s(debugType, "Undefined behavior");
 			break;
 		case GL_DEBUG_TYPE_PORTABILITY:
-			strcpy_s(debugType, "Portability");
+			//strcpy_s(debugType, "Portability");
 			break;
 		case GL_DEBUG_TYPE_PERFORMANCE:
 			strcpy_s(debugType, "Performance");

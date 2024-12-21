@@ -24,7 +24,7 @@ void SkyBoxPass::create(AMC::RenderContext& context) {
 	}
 }
 
-void SkyBoxPass::execute(const AMC::Scene* scene, AMC::RenderContext& context) {
+void SkyBoxPass::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 
 	glBindFramebuffer(GL_FRAMEBUFFER, context.fboPostDeferred);
 	glDepthMask(GL_FALSE);

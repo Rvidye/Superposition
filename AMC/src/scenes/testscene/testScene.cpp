@@ -96,18 +96,19 @@ void testScene::init()
 	point.type = AMC::LIGHT_TYPE_POINT; // need to let shader know what type of light is this
 
 	AMC::Light spot;
-	spot.direction = glm::vec3(0.0f, 0.0f, -1.0f);
-	spot.color = glm::vec3(0.0f, 1.0f, 0.0f);
+	spot.direction = glm::vec3(0.0f, 0.0f, 0.0f);
+	spot.color = glm::vec3(1.0f, 0.0f, 0.0f);
 	spot.intensity = 0.5f;
-	spot.range = 10.0f;
+	spot.range = 15.0f;
 	spot.spotAngle = 0.0f; // requrie a cos(radians) doing here just saves computatiaon of GPU
 	spot.spotExponent = 45.0f; // requrie a cos(radians) doing here just saves computatiaon of GPU
-	spot.position = glm::vec3(0.0f, 0.0f, 5.0f); // for point and spot lights
+	spot.position = glm::vec3(0.0f, 10.0f, -10.0f); // for point and spot lights
 	spot.active = 1; // need to activate light here
-	spot.type = AMC::LIGHT_TYPE_SPOT; // need to let shader know what type of light is this
+	spot.shadows = true;
+	spot.type = AMC::LIGHT_TYPE_POINT; // need to let shader know what type of light is this
 
 	//lightManager->addLight(directional);
-	//lightManager->addLight(spot);
+	lightManager->addLight(spot);
 	lightManager->addLight(point);
 }
 

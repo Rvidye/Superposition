@@ -17,7 +17,7 @@ layout(binding = 5) uniform sampler2D SamplerAO;
 layout(binding = 6) uniform sampler2D SamplerIndirectLighting;
 
 //layout(binding = 7) uniform sampler2DArrayShadow SamplerShadowMap;
-layout(binding = 8) uniform samplerCubeShadow SamplerPointShadowmap;
+layout(binding = 8) uniform samplerCubeArray SamplerPointShadowmap;
 
 vec3 EvaluateLighting(Light light, Surface surface, vec3 fragPos, vec3 viewPos, float ambientOcclusion);
 float Visibility(Light light, vec3 normal, vec3 lightToSample);
@@ -148,7 +148,7 @@ float Visibility(Light light, vec3 normal, vec3 lightToSample)
     {
         vec3 samplePos = (lightToSample + ShadowSampleOffsets[i] * sampleDiskRadius);
         float depth = GetLightSpaceDepth(light, samplePos * (1.0 - bias));
-        visibilityFactor += texture(SamplerPointShadowmap, vec4(samplePos, depth));
+        visibilityFactor += texture(SamplerPointShadowmap, vec4(samplePos, light.shadowMapIndex)).r;
     }
     visibilityFactor /= ShadowSampleOffsets.length();
 

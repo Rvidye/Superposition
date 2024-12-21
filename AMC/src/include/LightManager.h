@@ -16,9 +16,9 @@ namespace AMC {
         glm::vec3 direction; float range;
         glm::vec3 color; float spotAngle;
         float spotExponent;
-        int type;
-        int shadows;
-        int shadowMapIndex;
+        int type = 2;
+        int shadows = 0;
+        int shadowMapIndex = -1;
         int active;
         float pad;
     };

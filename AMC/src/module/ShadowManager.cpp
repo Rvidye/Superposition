@@ -21,8 +21,8 @@ namespace AMC {
         //glTextureParameteri(shadowmap, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
 
         // Create cube map array for point lights
-        glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &pointShadowCubemap);
-        glTextureStorage2D(pointShadowCubemap, 1, GL_DEPTH_COMPONENT32F, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
+        glCreateTextures(GL_TEXTURE_CUBE_MAP_ARRAY, 1, &pointShadowCubemap);
+        glTextureStorage3D(pointShadowCubemap, 1, GL_DEPTH_COMPONENT32F, SHADOWMAP_SIZE, SHADOWMAP_SIZE, 6 * 3);
         glTextureParameteri(pointShadowCubemap, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTextureParameteri(pointShadowCubemap, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTextureParameteri(pointShadowCubemap, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -64,10 +64,10 @@ namespace AMC {
 
         if (debugcubemapFaceViews.empty())
         {
-            debugcubemapFaceViews.resize(6);
-            glGenTextures(6 * 1, debugcubemapFaceViews.data());
+            debugcubemapFaceViews.resize(6 * maxPointShadowcubemaps);
+            glGenTextures(6 * maxPointShadowcubemaps, debugcubemapFaceViews.data());
 
-            for (int i = 0; i < 1; ++i)
+            for (int i = 0; i < maxPointShadowcubemaps; ++i)
             {
                 for (int face = 0; face < 6; ++face)
                 {
@@ -196,7 +196,7 @@ namespace AMC {
             if (!light->shadows) continue;
             if (light->type != LIGHT_TYPE_POINT) continue;
 
-            glm::mat4 lightProj = glm::perspective(glm::radians(90.0f), 1.0f, 1.0f, 60.0f);
+            glm::mat4 lightProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.15f, 60.0f);
 
             std::vector<glm::mat4> shadowTransforms;
             shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
@@ -207,6 +207,7 @@ namespace AMC {
             shadowTransforms.push_back(lightProj * glm::lookAt(light->position, light->position + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
 
             glUniformMatrix4fv(program->getUniformLocation("viewProj[0]"), 6, GL_FALSE, glm::value_ptr(shadowTransforms[0]));
+            glUniform1i(program->getUniformLocation("lightIndex"), light->shadowIndex);
             glUniform1f(program->getUniformLocation("far_plane"), 60.0f);
             glUniform3fv(program->getUniformLocation("lightPos"),1,glm::value_ptr(light->position));
             for (const auto& [name, obj] : scene->models) {
@@ -225,28 +226,24 @@ namespace AMC {
         ImGui::Begin("Shadow Debug");
 
         // Render Directional and Spot Light Shadow Maps
-        ImGui::CollapsingHeader("Directional/Spot Shadow Maps");
-        ImGui::Text("Max Shadows: %d", maxShadowmaps);
-        ImGui::Text("Current Shadows: %d", currentShadowmaps);
-        for (int i = 0; i <= currentShadowmaps; ++i)
+        if (ImGui::CollapsingHeader("Directional/Spot Shadow Maps"))
         {
-            std::string label = "Shadow Map Layer " + std::to_string(i);
+            ImGui::SliderInt("ShadowMap Index", &currentShadowmaps, 0, maxShadowmaps);
+            std::string label = "Shadow Map Layer " + std::to_string(currentShadowmaps);
             ImGui::Text("%s", label.c_str());
             // Render a layer of the 2D array shadow map
             ImGui::Image((void*)(intptr_t)shadowmap, ImVec2(256, 256));
         }
 
         // Render Point Light Shadow Maps
-        ImGui::CollapsingHeader("Point Light Shadow Maps");
-        ImGui::Text("Max Point Shadows: %d", maxPointShadowcubemaps);
-        ImGui::Text("Current Point Shadows: %d", currentPointShadowcubemaps);
-        for (int i = 0; i <= currentPointShadowcubemaps; ++i)
+        if(ImGui::CollapsingHeader("Point Light Shadow Maps"))
         {
+            ImGui::SliderInt("Cubemap Index", &currentPointShadowcubemaps, 0, maxPointShadowcubemaps);
             for (int face = 0; face < 6; ++face)
             {
-                std::string label = "Cubemap " + std::to_string(i) + " Face " + std::to_string(face);
+                std::string label = "Cubemap " + std::to_string(currentPointShadowcubemaps) + " Face " + std::to_string(face);
                 ImGui::Text("%s", label.c_str());
-                int index = i * 6 + face;
+                int index = currentPointShadowcubemaps * 6 + face;
                 ImGui::Image((void*)(intptr_t)debugcubemapFaceViews[index], ImVec2(256, 256));
             }
         }

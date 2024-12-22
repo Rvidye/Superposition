@@ -26,6 +26,7 @@
 #include "renderpass/Skybox/SkyBoxPass.h"
 #include "renderpass/Bloom/Bloom.h"
 #include "renderpass/Tonemap/Tonemap.h"
+#include "renderpass/VXGI/Voxelizer.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -124,6 +125,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 
 	window->InitializeWindow();
 	window->InitializeGL();
+	if(!glewIsSupported("GL_NV_geometry_shader_passthrough"))
+		LOG_ERROR(L"GL_NV_geometry_shader_passthrough Not Supported");
+	if (!glewIsSupported("GL_NV_viewport_swizzle"))
+		LOG_ERROR(L"GL_NV_viewport_swizzle Not Supported");
+
+	const GLubyte* renderer = glGetString(GL_RENDERER);
+	const GLubyte* vendor = glGetString(GL_VENDOR);
+	const GLubyte* version = glGetString(GL_VERSION);
+	const GLubyte* glslVer = glGetString(GL_SHADING_LANGUAGE_VERSION);
+	GLint major = 0, minor = 0;
+	glGetIntegerv(GL_MAJOR_VERSION, &major);
+	glGetIntegerv(GL_MINOR_VERSION, &minor);
+	LOG(AMC::LogLevel::LOG_WARNING);
+	std::cout << "GPU Renderer   : " << renderer << std::endl;
+	std::cout << "Vendor		 : " << vendor << std::endl;
+	std::cout << "OpenGL Version : " << version << std::endl;
+	std::cout << "GLSL Version   : " << glslVer << std::endl;
+	std::cout << "OpenGL Version : " << major << "." << minor << std::endl;
+	LOG(AMC::LogLevel::LOG_INFO);
 
 	// Setup Input Handling system
 	window->SetKeyboardFunc(keyboard);
@@ -488,14 +508,15 @@ void InitRenderPasses()
 	//finalpass = new BlitPass();
 
 	// Add passes here
+	gpRenderer->addPass(new AtmosphericScatterer());
 	gpRenderer->addPass(new ShadowMapPass());
+	gpRenderer->addPass(new Voxelizer());
 	gpRenderer->addPass(new GBufferPass());
 #ifdef _MYDEBUG
 	gpRenderer->addPass(new DebugDrawPass());
 #endif
 	gpRenderer->addPass(new SSAO());
 	gpRenderer->addPass(new DeferredPass());
-	gpRenderer->addPass(new AtmosphericScatterer());
 	gpRenderer->addPass(new SkyBoxPass());
 	gpRenderer->addPass(new SSR());
 	gpRenderer->addPass(new Bloom());

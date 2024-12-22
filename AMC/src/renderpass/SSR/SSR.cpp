@@ -56,7 +56,7 @@ void SSR::renderUI()
 	ImGui::SliderFloat("Max Dist", &MaxDist, 1, 100);
 
 	if (ImGui::CollapsingHeader("SSR Texture")) {
-		ImGui::Image((void*)(intptr_t)textureSSR, ImVec2(256, 256));
+		ImGui::Image((void*)(intptr_t)textureSSR, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
 	}
 #endif
 }

@@ -332,6 +332,12 @@ namespace AMC {
 			wglMakeCurrent(mHDC, mHGLRC);
 		}
 
+		glewExperimental = GL_TRUE; // Ensure GLEW uses modern techniques for managing OpenGL functionality
+		GLenum glewStatus = glewInit();
+		if (glewStatus != GLEW_OK) {
+			LOG_ERROR(L"GLEW initialization failed for actual context");
+		}
+
 #ifdef _MYDEBUG
 
 		glEnable(GL_DEBUG_OUTPUT);

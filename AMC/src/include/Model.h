@@ -5,7 +5,7 @@
 #include<assimp/scene.h>
 #include<assimp/postprocess.h>
 
-#define MAX_BONE_COUNT 100
+#define MAX_BONE_COUNT 125
 #define MAX_BONE_INFLUENCE 4
 
 namespace AMC {

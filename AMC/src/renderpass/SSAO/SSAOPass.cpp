@@ -43,7 +43,7 @@ void SSAO::renderUI()
 	ImGui::SliderFloat("Stength", &stength, 0.0f, 10.0f);
 
 	if (ImGui::CollapsingHeader("SSAO Texture")) {
-		ImGui::Image((void*)(intptr_t)m_textureResult, ImVec2(256, 256));
+		ImGui::Image((void*)(intptr_t)m_textureResult, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
 	}
 #endif
 }

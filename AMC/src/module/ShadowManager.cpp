@@ -192,7 +192,7 @@ namespace AMC {
         auto lights = scene->lightManager->getShadowCastingLights();
 
         for (auto* light : lights) {
-
+            if (!light->active) continue;
             if (!light->shadows) continue;
             if (light->type != LIGHT_TYPE_POINT) continue;
 
@@ -232,7 +232,7 @@ namespace AMC {
             std::string label = "Shadow Map Layer " + std::to_string(currentShadowmaps);
             ImGui::Text("%s", label.c_str());
             // Render a layer of the 2D array shadow map
-            ImGui::Image((void*)(intptr_t)shadowmap, ImVec2(256, 256));
+            ImGui::Image((void*)(intptr_t)shadowmap, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
         }
 
         // Render Point Light Shadow Maps
@@ -244,7 +244,7 @@ namespace AMC {
                 std::string label = "Cubemap " + std::to_string(currentPointShadowcubemaps) + " Face " + std::to_string(face);
                 ImGui::Text("%s", label.c_str());
                 int index = currentPointShadowcubemaps * 6 + face;
-                ImGui::Image((void*)(intptr_t)debugcubemapFaceViews[index], ImVec2(256, 256));
+                ImGui::Image((void*)(intptr_t)debugcubemapFaceViews[index], ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
             }
         }
         ImGui::End();

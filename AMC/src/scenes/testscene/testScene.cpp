@@ -19,7 +19,7 @@ void testScene::init()
 	programModelAnim = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\spv\\modelAnim.vert.spv"),RESOURCE_PATH("shaders\\model\\spv\\model.frag.spv") });
 
 	// ModelPlacer
-	mp = new AMC::ModelPlacer(glm::vec3(0.0, 0.0, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 0.1f);
+	mp = new AMC::ModelPlacer(glm::vec3(0.0, 0.0, -2.0f), glm::vec3(0.0f, 0.0f, 0.0f), 2.0f);
 
 	// Models Setup
 	//AMC::RenderModel cubeobj;
@@ -28,7 +28,7 @@ void testScene::init()
 	//addModel("cube", cubeobj);
 
 	AMC::RenderModel animman;
-	animman.model = new AMC::Model(RESOURCE_PATH("models\\Yash\\Rip1.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	animman.model = new AMC::Model(RESOURCE_PATH("models\\DamagedHelmet\\DamagedHelmet.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 	animman.matrix = mp->getModelMatrix();
 	addModel("man", animman);
 

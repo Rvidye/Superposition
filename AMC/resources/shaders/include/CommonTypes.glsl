@@ -58,3 +58,12 @@ struct GpuMaterial
     sampler2D Transmission;
     uvec2 _pad0;
 };
+
+struct Vertex {
+    vec4 position; 
+    uint normal;   
+    uint tangent;   
+    vec2 texCoords; 
+    ivec4 boneIDs;  
+    vec4 weights;  
+};

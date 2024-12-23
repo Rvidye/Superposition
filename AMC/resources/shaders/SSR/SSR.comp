@@ -6,6 +6,7 @@
 #include<..\..\..\resources\shaders\include\CommonTypes.glsl>
 #include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
 #include<..\..\..\resources\shaders\include\Transformations.glsl>
+#include<..\..\..\resources\shaders\include\Compression.glsl>
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -35,7 +36,7 @@ void main()
     vec2 uv = (imgCoord + 0.5) / imageSize(ImgResult);
 
     vec3 fragPos = PerspectiveTransformUvDepth(vec3(uv, depth), perFrameDataUBO.InvProjection);
-    vec3 normal = texelFetch(gBufferDataUBO.Normal, imgCoord, 0).rgb;
+    vec3 normal = DecodeUnitVec(texelFetch(gBufferDataUBO.Normal, imgCoord, 0).rg);
     mat3 normalToView = mat3(transpose(perFrameDataUBO.InvView));
     normal = normalToView * normal;
 

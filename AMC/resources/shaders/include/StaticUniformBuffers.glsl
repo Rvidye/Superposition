@@ -10,11 +10,6 @@ layout(std140, binding = 1) uniform LightBlock {
     int pad0; int pad1; int pad2;
 };
 
-layout(std430, binding = 2) restrict readonly buffer MaterialSSBO
-{
-    GpuMaterial Materials[];
-} materialSSBO;
-
 layout(std140, binding = 4) uniform SkyBoxUBO{
     samplerCube Albedo;
 }skyBoxUBO;
@@ -35,3 +30,23 @@ layout(std140, binding = 6) uniform GBufferDataUBO
     sampler2D Emissive;
     sampler2D Depth;
 } gBufferDataUBO;
+
+// SSBO's
+
+layout(std430, binding = 2) restrict readonly buffer MaterialSSBO
+{
+    GpuMaterial Materials[];
+} materialSSBO;
+
+// skining
+layout(std430, binding = 0) readonly buffer VertexBufferIn {
+    Vertex vin[];
+};
+
+layout(std430, binding = 1) writeonly buffer VertexBufferOut {
+    Vertex vout[];
+};
+
+layout(std430, binding = 6) readonly buffer BoneMatricesBuffer {
+    mat4 boneMatrices[];
+};

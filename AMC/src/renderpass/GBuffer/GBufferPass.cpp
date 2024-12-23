@@ -20,7 +20,7 @@ void GBufferPass::create(AMC::RenderContext& context)
     glTextureParameteri(m_textureNormal, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTextureParameteri(m_textureNormal, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTextureParameteri(m_textureNormal, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTextureStorage2D(m_textureNormal, 1, GL_RGB16F, context.width, context.height);
+    glTextureStorage2D(m_textureNormal, 1, GL_RG8, context.width, context.height);
     glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT1, m_textureNormal, 0);
 
     glCreateTextures(GL_TEXTURE_2D, 1, &m_textureMetallicRoughness);
@@ -36,7 +36,7 @@ void GBufferPass::create(AMC::RenderContext& context)
     glTextureParameteri(m_textureEmissive, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTextureParameteri(m_textureEmissive, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTextureParameteri(m_textureEmissive, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTextureStorage2D(m_textureEmissive, 1, GL_RGB16F, context.width, context.height);
+    glTextureStorage2D(m_textureEmissive, 1, GL_R11F_G11F_B10F, context.width, context.height);
     glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT3, m_textureEmissive, 0);
 
     glCreateTextures(GL_TEXTURE_2D, 1, &m_textureDepth);

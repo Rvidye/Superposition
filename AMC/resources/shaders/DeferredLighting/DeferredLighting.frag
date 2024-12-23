@@ -52,10 +52,9 @@ void main()
     vec3 albedo = albedoAlpha.rgb;
     float alpha = albedoAlpha.a;
 
-    vec3 normal = normalize(texelFetch(gBufferDataUBO.Normal, imgCoord, 0).rgb);
-    vec2 metallicRoughness = texelFetch(gBufferDataUBO.MetallicRoughness, imgCoord, 0).rg;
-    float metallic = metallicRoughness.r;
-    float roughness = metallicRoughness.g;
+    vec3 normal = DecodeUnitVec(texelFetch(gBufferDataUBO.Normal, imgCoord, 0).rg);
+    float metallic = texelFetch(gBufferDataUBO.MetallicRoughness, imgCoord, 0).r;
+    float roughness = texelFetch(gBufferDataUBO.MetallicRoughness, imgCoord, 0).g;
     vec3 emissive = texelFetch(gBufferDataUBO.Emissive, imgCoord, 0).rgb;
     float ambientOcclusion = 1.0 - texelFetch(SamplerAO, imgCoord, 0).r;
 
@@ -70,12 +69,9 @@ void main()
     for (int i = 0; i < u_LightCount; i++)
     {
         Light light = u_Lights[i];
-        if(light.isactive == 0) 
-            continue;
-            
         vec3 contribution = EvaluateLighting(light, surface, fragPos, perFrameDataUBO.ViewPos, ambientOcclusion);
 
-        if (light.shadows == 1)
+        if (contribution != vec3(0.0))
         {
             float shadow = 0.0;
             if (light.shadowMapIndex == -1)
@@ -92,15 +88,7 @@ void main()
     }
 
     vec3 indirectLight;
-    // if (IsVXGI)
-    // {
-        indirectLight = texelFetch(SamplerIndirectLighting, imgCoord, 0).rgb * albedo;
-    // }
-    // else
-    // {
-        // const vec3 ambient = vec3(0.015);
-        // indirectLight = ambient * albedo;
-    // }
+    indirectLight = texelFetch(SamplerIndirectLighting, imgCoord, 0).rgb * albedo;
 
     OutFragColor = vec4((directLighting + indirectLight) + emissive, 1.0);
 }
@@ -153,34 +141,6 @@ float Visibility(Light light, vec3 normal, vec3 lightToSample)
 
     return visibilityFactor;
 }
-
-// float Visibility(Light light, vec3 fragPos)
-// {
-//     const vec3 gridSamplingDisk[20] = vec3[]
-//     (
-//     vec3(1, 1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1, 1,  1), 
-//     vec3(1, 1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
-//     vec3(1, 1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1, 1,  0),
-//     vec3(1, 0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1, 0, -1),
-//     vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
-//     );
-//     vec3 fragToLight = fragPos - light.position;
-//     float currentDepth = length(fragToLight);
-//     float shadow = 0.0;
-//     float bias = 0.15;
-//     int samples = 20;
-//     float viewDistance = length(perFrameDataUBO.ViewPos - fragPos);
-//     float diskRadius = (1.0 + (viewDistance / 60.0)) / 25.0;
-//     for(int i = 0; i < samples; ++i)
-//     {
-//         float closestDepth = texture(SamplerPointShadowmap, fragToLight + gridSamplingDisk[i] * diskRadius).r;
-//         closestDepth *= 60.0;   // undo mapping [0;1]
-//         if(currentDepth - bias > closestDepth)
-//             shadow += 1.0;
-//     }
-//     shadow /= float(samples);
-//     return shadow;
-// }
 
 float GetLightSpaceDepth(Light light, vec3 lightSpaceSamplePos)
 {

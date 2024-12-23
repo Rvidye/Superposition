@@ -8,6 +8,7 @@
 #include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
 #include<..\..\..\resources\shaders\include\Random.glsl>
 #include<..\..\..\resources\shaders\include\Sampling.glsl>
+#include<..\..\..\resources\shaders\include\Compression.glsl>
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
@@ -30,7 +31,7 @@ void main()
     }
 
     vec2 uv = (imgCoord + 0.5) / imageSize(ImgResult);
-    vec3 normal = texelFetch(gBufferDataUBO.Normal, imgCoord, 0).rgb;
+    vec3 normal = DecodeUnitVec(texelFetch(gBufferDataUBO.Normal, imgCoord, 0).rg);
     vec3 fragPos = PerspectiveTransformUvDepth(vec3(uv, depth), perFrameDataUBO.InvProjView);
 
     float occlusion = SSAO(fragPos, normal);

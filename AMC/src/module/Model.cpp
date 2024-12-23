@@ -218,10 +218,10 @@ namespace AMC {
 				vertices[i].position = glm::vec4(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z,1.0f);
 
 				if (mesh->HasNormals()) {
-					vertices[i].normal = glm::vec4(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, 0.0f);
+					vertices[i].normal = AMC::Compression::CompressSR11G11B10(glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z));//glm::vec4(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, 0.0f);
 				}
 				else {
-					vertices[i].normal = glm::vec4(0.0f);
+					vertices[i].normal = 0;//glm::vec4(0.0f);
 				}
 
 
@@ -233,12 +233,10 @@ namespace AMC {
 				}
 
 				if (mesh->HasTangentsAndBitangents()) {
-					vertices[i].tangent = glm::vec4(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z,0.0f);
-					vertices[i].bitangent = glm::vec4(mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z,0.0f);
+					vertices[i].tangent = AMC::Compression::CompressSR11G11B10(glm::vec3(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z));//glm::vec4(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z,0.0f);
 				}
 				else {
-					vertices[i].tangent = glm::vec4(0.0f);
-					vertices[i].bitangent = glm::vec4(0.0f);
+					vertices[i].tangent = 0;//glm::vec4(0.0f);
 				}
 
 				// Initialize bone IDs and weights to zero
@@ -298,7 +296,7 @@ namespace AMC {
 			// Normals
 			if (mesh->HasNormals()) {
 				glEnableVertexArrayAttrib(VAO, 1);
-				glVertexArrayAttribFormat(VAO, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+				glVertexArrayAttribIFormat(VAO, 1, 1, GL_UNSIGNED_INT, offsetof(Vertex, normal));
 				glVertexArrayAttribBinding(VAO, 1, 0);
 			}
 			// Texture Coordinates
@@ -310,24 +308,19 @@ namespace AMC {
 			// Tangents
 			if (mesh->HasTangentsAndBitangents()) {
 				glEnableVertexArrayAttrib(VAO, 3);
-				glVertexArrayAttribFormat(VAO, 3, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, tangent));
+				glVertexArrayAttribIFormat(VAO, 3, 1, GL_UNSIGNED_INT, offsetof(Vertex, tangent));
 				glVertexArrayAttribBinding(VAO, 3, 0);
-
-				// Bitangents
-				glEnableVertexArrayAttrib(VAO, 4);
-				glVertexArrayAttribFormat(VAO, 4, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, bitangent));
-				glVertexArrayAttribBinding(VAO, 4, 0);
 			}
 			// Bone IDs
 			if (mesh->HasBones()) {
-				glEnableVertexArrayAttrib(VAO, 5);
-				glVertexArrayAttribIFormat(VAO, 5, 4, GL_INT, offsetof(Vertex, boneIDs));
-				glVertexArrayAttribBinding(VAO, 5, 0);
+				glEnableVertexArrayAttrib(VAO, 4);
+				glVertexArrayAttribIFormat(VAO, 4, 4, GL_INT, offsetof(Vertex, boneIDs));
+				glVertexArrayAttribBinding(VAO, 4, 0);
 
 				// Weights
-				glEnableVertexArrayAttrib(VAO, 6);
-				glVertexArrayAttribFormat(VAO, 6, 4, GL_FLOAT, GL_FALSE, offsetof(Vertex, weights));
-				glVertexArrayAttribBinding(VAO, 6, 0);
+				glEnableVertexArrayAttrib(VAO, 5);
+				glVertexArrayAttribFormat(VAO, 5, 4, GL_FLOAT, GL_FALSE, offsetof(Vertex, weights));
+				glVertexArrayAttribBinding(VAO, 5, 0);
 			}
 
 			std::vector<UINT> indices;
@@ -918,7 +911,7 @@ namespace AMC {
 		}
 
 		if (!programGPUSkin) {
-			programGPUSkin = new ShaderProgram({ RESOURCE_PATH("shaders\\model\\spv\\SkinCompute.comp.spv") });
+			programGPUSkin = new ShaderProgram({ RESOURCE_PATH("shaders\\model\\SkinCompute.comp") });
 		}
 
 		//Print Info

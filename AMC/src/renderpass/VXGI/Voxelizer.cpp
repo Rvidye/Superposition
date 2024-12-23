@@ -116,7 +116,7 @@ void Voxelizer::Voxelize(const AMC::Scene* scene){
 		if (!obj.visible)
 			continue;
 
-		glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(obj.matrix));
+		glUniformMatrix4fv(m_ProgramVoxelize->getUniformLocation("modelMat"), 1, GL_FALSE, glm::value_ptr(obj.matrix));
 		obj.model->draw(m_ProgramVoxelize);
 	}
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);

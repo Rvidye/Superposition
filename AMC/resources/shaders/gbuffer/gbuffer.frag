@@ -10,7 +10,7 @@
 #include<..\..\..\resources\shaders\include\Surface.glsl>
 
 layout (location = 0)out vec4 OutAlbedoAlpha;
-layout (location = 1)out vec3 OutNormal;
+layout (location = 1)out vec2 OutNormal;
 layout (location = 2)out vec2 OutMetallicRoughness;
 layout (location = 3)out vec3 OutEmissive;
 
@@ -39,7 +39,7 @@ void main(void)
     //sampledNormal = normalize(mix(interpNormal, sampledNormal,0.0));
     // Output to GBuffer
     OutAlbedoAlpha = vec4(surface.Albedo, surface.Alpha);
-    OutNormal = surface.Normal;
+    OutNormal = EncodeUnitVec(surface.Normal);
     OutMetallicRoughness = vec2(surface.Metallic, surface.Roughness);
     OutEmissive = surface.Emissive;
 }

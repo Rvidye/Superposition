@@ -1,5 +1,8 @@
 #version 460 core
 
+#extension GL_ARB_bindless_texture : require
+#extension GL_EXT_shader_image_load_formatted : require
+
 #include<..\..\..\resources\shaders\include\CommonTypes.glsl>
 #include<..\..\..\resources\shaders\include\Transformations.glsl>
 #include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
@@ -8,8 +11,6 @@
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-layout(binding = 0) uniform sampler2D gNormal;
-layout(binding = 1) uniform sampler2D gDepth;
 layout(binding = 2) restrict writeonly uniform image2D ImgResult;
 
 layout(location = 0) uniform int SampleCount;
@@ -21,7 +22,7 @@ float SSAO(vec3 fragPos, vec3 normal);
 void main()
 {
     ivec2 imgCoord = ivec2(gl_GlobalInvocationID.xy);
-    float depth = texelFetch(gDepth, imgCoord, 0).r;
+    float depth = texelFetch(gBufferDataUBO.Depth, imgCoord, 0).r;
     if (depth == 1.0)
     {
         imageStore(ImgResult, imgCoord, vec4(0.0));
@@ -29,7 +30,7 @@ void main()
     }
 
     vec2 uv = (imgCoord + 0.5) / imageSize(ImgResult);
-    vec3 normal = texelFetch(gNormal, imgCoord, 0).rgb;
+    vec3 normal = texelFetch(gBufferDataUBO.Normal, imgCoord, 0).rgb;
     vec3 fragPos = PerspectiveTransformUvDepth(vec3(uv, depth), perFrameDataUBO.InvProjView);
 
     float occlusion = SSAO(fragPos, normal);
@@ -55,7 +56,7 @@ float SSAO(vec3 fragPos, vec3 normal)
         vec3 projectedSample = PerspectiveTransform(samplePos, perFrameDataUBO.ProjView);
         projectedSample.xy = projectedSample.xy * 0.5 + 0.5;
 
-        float depth = texture(gDepth, projectedSample.xy).r;
+        float depth = texture(gBufferDataUBO.Depth, projectedSample.xy).r;
         if (projectedSample.z > depth)
         {
             vec3 sampleToFrag = fragPos - samplePos;

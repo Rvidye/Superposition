@@ -11,6 +11,8 @@ void Voxelizer::create(AMC::RenderContext& context){
 	SetSize(256,256,256);
 	SetGridSize(glm::vec3(-5.0f, -5.0f, -5.0f), glm::vec3(5.0f, 5.0f, 5.0f));
 
+	context.textureVolxelResult = resultVoxels;
+
 	glCreateTextures(GL_TEXTURE_2D, 1, &debugResult);
 	glTextureParameteri(debugResult, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTextureParameteri(debugResult, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -28,6 +30,8 @@ void Voxelizer::execute(AMC::Scene* scene, AMC::RenderContext& context){
 
 	GridMin = quantizedMin;
 	GridMax = quantizedMax;
+	context.GridMin = GridMin;
+	context.GridMax = GridMax;
 
 	ClearTextures();
 	Voxelize(scene);
@@ -66,7 +70,6 @@ void Voxelizer::SetSize(int width, int height, int depth){
 	levels = AMC::GetMaxMipmapLevel(width, height, depth);
 
 	glCreateTextures(GL_TEXTURE_3D, 1, &resultVoxels);
-	glTextureStorage3D(resultVoxels, 1, GL_RGBA16F, width, height, depth);
 	glTextureParameteri(resultVoxels, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTextureParameteri(resultVoxels, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTextureParameteri(resultVoxels, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -97,9 +100,9 @@ void Voxelizer::Voxelize(const AMC::Scene* scene){
 	glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
 	glViewportSwizzleNV(1, 0x9350, 0x9354, 0x9352, 0x9356);
 	glViewportSwizzleNV(2, 0x9354, 0x9352, 0x9354, 0x9356);
-	glViewportIndexedf(0, 0.0f,0.0f, width,height);
-	glViewportIndexedf(1, 0.0f, 0.0f, width, height);
-	glViewportIndexedf(2, 0.0f, 0.0f, width, height);
+	glViewportIndexedf(0, 0.0f,0.0f, (float)width,(float)height);
+	glViewportIndexedf(1, 0.0f, 0.0f, (float)width, (float)height);
+	glViewportIndexedf(2, 0.0f, 0.0f, (float)width, (float)height);
 	glViewport(0, 0, 256, 256);
 	glBindImageTexture(0, resultVoxels, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16F);
 	glBindTextureUnit(8, scene->lightManager->getShadowMapManager()->getPointShadowCubemap());

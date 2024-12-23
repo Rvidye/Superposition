@@ -1,5 +1,8 @@
 #version 460 core
 
+#extension GL_ARB_bindless_texture : require
+#extension GL_EXT_shader_image_load_formatted : require
+
 #include<..\..\..\resources\shaders\include\CommonTypes.glsl>
 #include<..\..\..\resources\shaders\include\Transformations.glsl>
 #include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
@@ -8,11 +11,6 @@
 
 layout(location = 0) out vec4 OutFragColor;
 
-layout(binding = 0) uniform sampler2D gAlbedoAlpha;
-layout(binding = 1) uniform sampler2D gNormal;
-layout(binding = 2) uniform sampler2D gMetallicRoughness;
-layout(binding = 3) uniform sampler2D gEmissive;
-layout(binding = 4) uniform sampler2D gDepth;
 layout(binding = 5) uniform sampler2D SamplerAO;
 layout(binding = 6) uniform sampler2D SamplerIndirectLighting;
 
@@ -37,7 +35,7 @@ void main()
     vec2 uv = inData.TexCoord;
 
     // G-buffer values
-    float depth = texelFetch(gDepth, imgCoord, 0).r;
+    float depth = texelFetch(gBufferDataUBO.Depth, imgCoord, 0).r;
 
     if (depth >= 1.0)
     {
@@ -49,15 +47,15 @@ void main()
     vec3 fragPos = PerspectiveTransform(ndc, perFrameDataUBO.InvProjView);
     vec3 unjitteredFragPos = PerspectiveTransform(vec3(ndc.xy, ndc.z), perFrameDataUBO.InvProjView);
 
-    vec4 albedoAlpha = texelFetch(gAlbedoAlpha, imgCoord, 0);
+    vec4 albedoAlpha = texelFetch(gBufferDataUBO.AlbedoAlpha, imgCoord, 0);
     vec3 albedo = albedoAlpha.rgb;
     float alpha = albedoAlpha.a;
 
-    vec3 normal = normalize(texelFetch(gNormal, imgCoord, 0).rgb);
-    vec2 metallicRoughness = texelFetch(gMetallicRoughness, imgCoord, 0).rg;
+    vec3 normal = normalize(texelFetch(gBufferDataUBO.Normal, imgCoord, 0).rgb);
+    vec2 metallicRoughness = texelFetch(gBufferDataUBO.MetallicRoughness, imgCoord, 0).rg;
     float metallic = metallicRoughness.r;
     float roughness = metallicRoughness.g;
-    vec3 emissive = texelFetch(gEmissive, imgCoord, 0).rgb;
+    vec3 emissive = texelFetch(gBufferDataUBO.Emissive, imgCoord, 0).rgb;
     float ambientOcclusion = 1.0 - texelFetch(SamplerAO, imgCoord, 0).r;
 
     Surface surface = GetDefaultSurface();
@@ -84,7 +82,7 @@ void main()
                 shadow = 0.0;
             }
             else{
-                vec3 lightToSample = unjitteredFragPos - light.position;
+                vec3 lightToSample = fragPos - light.position;
                 shadow = 1.0 - Visibility(light, normal, lightToSample);
             }
             contribution *= (1.0 - shadow);
@@ -95,12 +93,12 @@ void main()
     vec3 indirectLight;
     // if (IsVXGI)
     // {
-    //     indirectLight = texelFetch(SamplerIndirectLighting, imgCoord, 0).rgb * albedo;
+        indirectLight = texelFetch(SamplerIndirectLighting, imgCoord, 0).rgb * albedo;
     // }
     // else
     // {
-        const vec3 ambient = vec3(0.015);
-        indirectLight = ambient * albedo;
+        // const vec3 ambient = vec3(0.015);
+        // indirectLight = ambient * albedo;
     // }
 
     OutFragColor = vec4((directLighting + indirectLight) + emissive, 1.0);
@@ -148,7 +146,7 @@ float Visibility(Light light, vec3 normal, vec3 lightToSample)
     {
         vec3 samplePos = (lightToSample + ShadowSampleOffsets[i] * sampleDiskRadius);
         float depth = GetLightSpaceDepth(light, samplePos * (1.0 - bias));
-        visibilityFactor += texture(SamplerPointShadowmap, vec4(samplePos, light.shadowMapIndex)).r;
+        visibilityFactor += texture(SamplerPointShadowmap, vec4(samplePos, light.shadowMapIndex), depth).r;
     }
     visibilityFactor /= ShadowSampleOffsets.length();
 

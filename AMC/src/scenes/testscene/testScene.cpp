@@ -9,7 +9,7 @@ void testScene::sceneEnd(float t)
 void testScene::moveModel(float t)
 {
 	moveZ = std::lerp(-15.0f, -5.0f, t);
-	models["cube"].matrix = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, moveZ));
+	//models["cube"].matrix = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, moveZ));
 }
 
 void testScene::init()
@@ -19,7 +19,7 @@ void testScene::init()
 	programModelAnim = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\spv\\modelAnim.vert.spv"),RESOURCE_PATH("shaders\\model\\spv\\model.frag.spv") });
 
 	// ModelPlacer
-	mp = new AMC::ModelPlacer(glm::vec3(0.0, 0.0, -2.0f), glm::vec3(0.0f, 0.0f, 0.0f), 2.0f);
+	mp = new AMC::ModelPlacer(glm::vec3(0.0, 0.0, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 5.0f);
 
 	// Models Setup
 	//AMC::RenderModel cubeobj;
@@ -55,12 +55,12 @@ void testScene::init()
 	// event manager setup
 
 	events = new AMC::EventManager();
-	AMC::events_t *endEvent = new AMC::events_t();
-	endEvent->start = 0.0f;
-	endEvent->duration = 10.0f;
-	endEvent->easingFunction = nullptr;
-	endEvent->updateFunction = [this](float t) { this->sceneEnd(t); }; // Bind the member function using a lambda ! did not think this through so here is an ugly hack !!!
-	events->AddEvent("SceneEndEvent", endEvent);
+	//AMC::events_t *endEvent = new AMC::events_t();
+	//endEvent->start = 0.0f;
+	//endEvent->duration = 10.0f;
+	//endEvent->easingFunction = nullptr;
+	//endEvent->updateFunction = [this](float t) { this->sceneEnd(t); }; // Bind the member function using a lambda ! did not think this through so here is an ugly hack !!!
+	//events->AddEvent("SceneEndEvent", endEvent);
 
 	AMC::events_t* moveEvent = new AMC::events_t();
 	moveEvent->start = 0.0f;
@@ -75,41 +75,41 @@ void testScene::init()
 	directional.direction = glm::vec3(0.50f, -0.7071f, -0.50f);
 	directional.color = glm::vec3(1.0f, 1.0f, 1.0f);
 	directional.intensity = 1.0f;
-	directional.range = -1.0f; // if 0.0 then range is infinite, used in case of point and spot lights
+	directional.range = 7.5f; // if 0.0 then range is infinite, used in case of point and spot lights
 	directional.spotAngle = 1.0f; // for spot lights
 	directional.spotExponent = 0.7071f; // for spot lights
-	directional.position = glm::vec3(0.0f, 0.0f, 0.0f); // for point and spot lights
+	directional.position = glm::vec3(-19.40f, 6.2f, -21.10f); // for point and spot lights
 	directional.active = 1; // need to activate light here
-	directional.shadows = true;
-	directional.type = AMC::LIGHT_TYPE_DIRECTIONAL; // need to let shader know what type of light is this
+	directional.shadows = false;
+	directional.type = AMC::LIGHT_TYPE_POINT; // need to let shader know what type of light is this
 
 	AMC::Light point;
 	point.direction = glm::vec3(-0.50f, 0.7071f, 0.50f); // doesn't matter in case of point lights
 	point.color = glm::vec3(1.0f, 1.0f, 1.0f);
 	point.intensity = 0.5f;
-	point.range = 20.0f; // range decides the square fall of distance or attenuation of light
+	point.range = 25.0f; // range decides the square fall of distance or attenuation of light
 	point.spotAngle = 1.0f; // for spot lights
 	point.spotExponent = 0.7071f; // for spot lights
-	point.position = glm::vec3(0.0f, 10.0f, 10.0f); // for point and spot lights
+	point.position = glm::vec3(-14.60f, 11.90f, -22.20f); // for point and spot lights
 	point.active = 1; // need to activate light here
-	point.shadows = true;
+	point.shadows = false;
 	point.type = AMC::LIGHT_TYPE_POINT; // need to let shader know what type of light is this
 
 	AMC::Light spot;
 	spot.direction = glm::vec3(0.0f, 0.0f, 0.0f);
 	spot.color = glm::vec3(1.0f, 0.0f, 0.0f);
 	spot.intensity = 0.5f;
-	spot.range = 15.0f;
+	spot.range = 25.417f;
 	spot.spotAngle = 0.0f; // requrie a cos(radians) doing here just saves computatiaon of GPU
 	spot.spotExponent = 45.0f; // requrie a cos(radians) doing here just saves computatiaon of GPU
-	spot.position = glm::vec3(0.0f, 10.0f, -10.0f); // for point and spot lights
+	spot.position = glm::vec3(9.2f, 10.10f, 27.50f); // for point and spot lights
 	spot.active = 1; // need to activate light here
 	spot.shadows = false;
 	spot.type = AMC::LIGHT_TYPE_POINT; // need to let shader know what type of light is this
 
-	//lightManager->addLight(directional);
 	lightManager->addLight(spot);
 	lightManager->addLight(point);
+	lightManager->addLight(directional);
 }
 
 //void testScene::render()

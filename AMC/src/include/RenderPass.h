@@ -1,14 +1,18 @@
 #pragma once
 
 #include <Scene.h>
+#include <UBO.h>
 
 namespace AMC {
 	// Store Extra Data that can be accesses by all render passes
 	struct RenderContext {
 		GLsizei width = 2048, height = 2048;
 		GLsizei screenWidth, screenHeight;
+		glm::vec3 GridMin, GridMax;
 		//GBuffer
 		GLuint textureGBuffer[5]; // albedo, normal, metalroughness, emissive, depth
+		GBufferDataUBO gBufferData;
+		GLuint gBufferUBO;
 		GLuint textureDeferredResult = 0;
 		GLuint textureSSAOResult = 0;
 		GLuint textureSSRResult = 0;
@@ -16,6 +20,8 @@ namespace AMC {
 		GLuint textureBloomResult = 0;
 		GLuint textureTonemapResult = 0;
 		GLuint textureAtmosphere = 0;
+		GLuint textureVolxelResult = 0;
+		GLuint textureVXGIResult = 0;
 		GLuint fboPostDeferred = 0; // seems like a hack but fuck it
 		GLuint emptyVAO = 0;
 	};

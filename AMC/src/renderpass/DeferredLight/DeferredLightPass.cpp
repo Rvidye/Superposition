@@ -37,12 +37,14 @@ void DeferredPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 
 	m_ProgramDeferredLighting->use();
 
-	glBindTextureUnit(0, context.textureGBuffer[0]);
-	glBindTextureUnit(1, context.textureGBuffer[1]);
-	glBindTextureUnit(2, context.textureGBuffer[2]);
-	glBindTextureUnit(3, context.textureGBuffer[3]);
-	glBindTextureUnit(4, context.textureGBuffer[4]);
+	//glBindTextureUnit(0, context.textureGBuffer[0]);
+	//glBindTextureUnit(1, context.textureGBuffer[1]);
+	//glBindTextureUnit(2, context.textureGBuffer[2]);
+	//glBindTextureUnit(3, context.textureGBuffer[3]);
+	//glBindTextureUnit(4, context.textureGBuffer[4]);
 	glBindTextureUnit(5, context.textureSSAOResult);
+	glBindTextureUnit(6, context.textureVXGIResult);
+
 	//glBindTextureUnit(7, scene->lightManager->getShadowMapManager()->getShadowMapTexture());
 	glBindTextureUnit(8, scene->lightManager->getShadowMapManager()->getPointShadowCubemap());
 	scene->lightManager->bindUBO();

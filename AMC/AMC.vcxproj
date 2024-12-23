@@ -236,6 +236,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClCompile Include="src\renderpass\SSR\SSR.cpp" />
     <ClCompile Include="src\renderpass\TestPass\TestPass.cpp" />
     <ClCompile Include="src\renderpass\Tonemap\Tonemap.cpp" />
+    <ClCompile Include="src\renderpass\VXGI\ConeTracer.cpp" />
     <ClCompile Include="src\renderpass\VXGI\Voxelizer.cpp" />
     <ClCompile Include="src\scenes\testscene\testScene.cpp" />
     <ClCompile Include="src\module\VulkanHelperClasses.cpp" />
@@ -1038,6 +1039,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\include\SplineCameraAdjuster.h" />
     <ClInclude Include="src\include\stb_image.h" />
     <ClInclude Include="src\include\TextureManager.h" />
+    <ClInclude Include="src\include\UBO.h" />
     <ClInclude Include="src\renderpass\AtmosphericScattering\AtmosphericScatter.h" />
     <ClInclude Include="src\renderpass\BlitPass\BlitPass.h" />
     <ClInclude Include="src\renderpass\Bloom\Bloom.h" />
@@ -1050,6 +1052,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\renderpass\SSR\SSR.h" />
     <ClInclude Include="src\renderpass\TestPass\TestPass.h" />
     <ClInclude Include="src\renderpass\Tonemap\Tonemap.h" />
+    <ClInclude Include="src\renderpass\VXGI\ConeTracer.h" />
     <ClInclude Include="src\renderpass\VXGI\Voxelizer.h" />
     <ClInclude Include="src\scenes\testscene\testScene.h" />
     <ClInclude Include="src\include\VulkanHelperClasses.h" />

@@ -1,5 +1,8 @@
 #version 460 core
 
+#extension GL_ARB_bindless_texture : require
+#extension GL_EXT_shader_image_load_formatted : require
+
 in InOutData
 {
     vec2 TexCoord;

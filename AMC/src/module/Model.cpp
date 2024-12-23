@@ -36,11 +36,11 @@ namespace AMC {
 			FLOAT emissiveIntensity;
 			mat->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissiveIntensity);
 
-			FLOAT metallic;
-			mat->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
+			//FLOAT metallic;
+			//mat->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
 
-			FLOAT roughness;
-			mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
+			//FLOAT roughness;
+			//mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
 
 			FLOAT alpha;
 			mat->Get(AI_MATKEY_OPACITY, alpha);
@@ -121,8 +121,8 @@ namespace AMC {
 			}
 
 			material->albedo = glm::vec3(albedo.r, albedo.g, albedo.b);
-			material->metallic = metallic;
-			material->roughness = roughness;
+			material->metallic = 1.0f;
+			material->roughness = 1.0f;
 			material->emissiveFactor = emissiveIntensity;
 			material->emission = glm::vec3(emission.r, emission.g, emission.b);
 			material->alpha = alpha;

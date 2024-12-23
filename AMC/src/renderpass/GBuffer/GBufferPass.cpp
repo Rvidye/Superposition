@@ -60,6 +60,22 @@ void GBufferPass::create(AMC::RenderContext& context)
     context.textureGBuffer[2] = m_textureMetallicRoughness;
     context.textureGBuffer[3] = m_textureEmissive;
     context.textureGBuffer[4] = m_textureDepth;
+
+    context.gBufferData.AlbedoAlphaTexture = glGetTextureHandleARB(m_textureAlbedoAlpha);
+    context.gBufferData.NormalTexture = glGetTextureHandleARB(m_textureNormal);
+    context.gBufferData.MetallicRoughnessTexture = glGetTextureHandleARB(m_textureMetallicRoughness);
+    context.gBufferData.EmissiveTexture = glGetTextureHandleARB(m_textureEmissive);
+    context.gBufferData.DepthTexture = glGetTextureHandleARB(m_textureDepth);
+
+    glMakeTextureHandleResidentARB(context.gBufferData.AlbedoAlphaTexture);
+    glMakeTextureHandleResidentARB(context.gBufferData.NormalTexture);
+    glMakeTextureHandleResidentARB(context.gBufferData.MetallicRoughnessTexture);
+    glMakeTextureHandleResidentARB(context.gBufferData.EmissiveTexture);
+    glMakeTextureHandleResidentARB(context.gBufferData.DepthTexture);
+
+    glCreateBuffers(1, &context.gBufferUBO);
+    glNamedBufferData(context.gBufferUBO, sizeof(GBufferDataUBO), &context.gBufferData, GL_STATIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 6, context.gBufferUBO);
 }
 
 void GBufferPass::execute(AMC::Scene* scene, AMC::RenderContext& context)

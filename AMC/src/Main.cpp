@@ -27,6 +27,7 @@
 #include "renderpass/Bloom/Bloom.h"
 #include "renderpass/Tonemap/Tonemap.h"
 #include "renderpass/VXGI/Voxelizer.h"
+#include "renderpass/VXGI/ConeTracer.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -318,6 +319,8 @@ void mouse(AMC::RenderWindow*, int button, int action, int x, int y)
 #ifdef _MYDEBUG
 	if ((!ImGui::GetIO().WantCaptureMouse) && (gpDebugCamera))
 		gpDebugCamera->mouse(button, action, x, y);
+#else
+	gpDebugCamera->mouse(button, action, x, y);
 #endif
 }
 
@@ -516,6 +519,7 @@ void InitRenderPasses()
 	gpRenderer->addPass(new DebugDrawPass());
 #endif
 	gpRenderer->addPass(new SSAO());
+	gpRenderer->addPass(new ConeTracer());
 	gpRenderer->addPass(new DeferredPass());
 	gpRenderer->addPass(new SkyBoxPass());
 	gpRenderer->addPass(new SSR());

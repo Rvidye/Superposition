@@ -267,7 +267,7 @@ namespace AMC {
 				model *= rotMatrix;
 			}
 			else if (light.type == LIGHT_TYPE_POINT) {
-				model = glm::translate(model, light.position) * glm::scale(glm::mat4(1.0f), glm::vec3(light.range));
+				model = glm::translate(model, light.position);
 			}
 
 			glUniformMatrix4fv(m_program->getUniformLocation("modelMat"), 1, GL_FALSE, glm::value_ptr(model));

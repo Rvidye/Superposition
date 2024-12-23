@@ -4,13 +4,14 @@
 #include<ktx/ktx.h>
 //#include<ktx/ktxvulkan.h>
 #include<iostream>
+#include<common.h>
 
 namespace AMC {
 
 	std::unordered_map<std::string, GLuint> TextureManager::textureMap;
     
     // Load a general texture (using stb_image)
-    GLuint TextureManager::LoadTexture(const std::string& filename)
+    GLuint TextureManager::LoadTexture(const std::string& filename, GLenum img_format, int desiredchannels, GLenum minFilter, GLenum magFilter, GLenum WRAP_S, GLenum WRAP_T)
     {
         // Check if the texture is already loaded
         auto it = textureMap.find(filename);
@@ -21,58 +22,47 @@ namespace AMC {
 
         // Load the image using stb_image
         int width, height, nchannels;
-        unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nchannels, 0);
+        unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nchannels, desiredchannels);
         if (!data)
         {
             std::cout << "ERROR: Failed to load texture " << filename << std::endl;
             return 0;
         }
 
-        // Determine the image format
-        GLenum img_format = GL_RGBA;
-        GLenum internal_format = GL_RGBA;
-
-        if (nchannels == 1)
-        {
-            img_format = GL_RED;
-            internal_format = GL_RED;
-        }
-        else if (nchannels == 3)
-        {
-            img_format = GL_RGB;
-            internal_format = GL_RGB;
-        }
-        else if (nchannels == 4)
-        {
-            img_format = GL_RGBA;
-            internal_format = GL_RGBA;
-        }
-        else
+        if (nchannels == 0)
         {
             stbi_image_free(data);
             std::cout << "ERROR: Unsupported texture format in file " << filename << std::endl;
             return 0;
         }
 
+        GLenum dataFormat;
+        switch (desiredchannels)
+        {
+        case 1: dataFormat = GL_RED; break;
+        case 2: dataFormat = GL_RG; break;
+        case 3: dataFormat = GL_RGB; break;
+        case 4: dataFormat = GL_RGBA; break;
+        default:
+            std::cout << "ERROR: Unsupported number of channels in texture: " << desiredchannels << std::endl;
+            stbi_image_free(data);
+            return 0;
+        }
+
         // Generate and bind the texture
         GLuint texID;
-        glGenTextures(1, &texID);
-        glBindTexture(GL_TEXTURE_2D, texID);
+        glCreateTextures(GL_TEXTURE_2D, 1, &texID);
+        glTextureParameteri(texID, GL_TEXTURE_MIN_FILTER, minFilter);
+        glTextureParameteri(texID, GL_TEXTURE_MAG_FILTER, magFilter);
+        glTextureParameteri(texID, GL_TEXTURE_WRAP_S, WRAP_S);
+        glTextureParameteri(texID, GL_TEXTURE_WRAP_T, WRAP_T);
+        glTextureStorage2D(texID, 1, img_format, width, height);
+        glTextureSubImage2D(texID, 0, 0, 0, width, height, dataFormat, GL_UNSIGNED_BYTE, data);
 
-        // Set texture parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // or GL_CLAMP_TO_EDGE
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); // or GL_CLAMP_TO_EDGE
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // or GL_NEAREST_MIPMAP_NEAREST
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // or GL_NEAREST
+        if (minFilter == GL_LINEAR_MIPMAP_LINEAR || minFilter == GL_LINEAR_MIPMAP_NEAREST) {
+            glGenerateTextureMipmap(texID);
+        }
 
-        // Upload the texture data
-        glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, img_format, GL_UNSIGNED_BYTE, data);
-
-        // Generate mipmaps
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        // Unbind the texture and free image data
-        glBindTexture(GL_TEXTURE_2D, 0);
         stbi_image_free(data);
         textureMap[filename] = texID;
         return texID;

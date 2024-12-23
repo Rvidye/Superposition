@@ -38,3 +38,23 @@ struct Material{
     float alpha;
     uint textureFlag;
 };
+
+struct GpuMaterial
+{
+    vec3 EmissiveFactor;
+    uint BaseColorFactor;
+
+    vec3 Absorbance;
+    float IOR;
+    float TransmissionFactor;
+    float RoughnessFactor;
+    float MetallicFactor;
+    float AlphaCutoff;
+
+    sampler2D BaseColor;
+    sampler2D MetallicRoughness;
+    sampler2D Normal;
+    sampler2D Emissive;
+    sampler2D Transmission;
+    uvec2 _pad0;
+};

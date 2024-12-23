@@ -208,6 +208,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClCompile Include="src\include\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="src\include\imgui\imgui_tables.cpp" />
     <ClCompile Include="src\include\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="src\module\Compression.cpp" />
     <ClCompile Include="src\module\LightManager.cpp" />
     <ClCompile Include="src\module\MemoryManager.cpp" />
     <ClCompile Include="src\module\ModelPlacer.cpp" />
@@ -332,6 +333,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\include\BSplineUtils.h" />
     <ClInclude Include="src\include\Camera.h" />
     <ClInclude Include="src\include\common.h" />
+    <ClInclude Include="src\include\Compression.h" />
     <ClInclude Include="src\include\eigen\Core\arch\AltiVec\Complex.h" />
     <ClInclude Include="src\include\eigen\Core\arch\AltiVec\MathFunctions.h" />
     <ClInclude Include="src\include\eigen\Core\arch\AltiVec\MatrixProduct.h" />

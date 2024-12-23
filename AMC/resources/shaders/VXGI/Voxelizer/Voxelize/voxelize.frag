@@ -9,12 +9,13 @@
 #include<..\..\..\resources\shaders\include\CommonTypes.glsl>
 #include<..\..\..\resources\shaders\include\Transformations.glsl>
 #include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
+#include<..\..\..\resources\shaders\include\Compression.glsl>
 #include<..\..\..\resources\shaders\include\Surface.glsl>
 #include<..\..\..\resources\shaders\include\Pbr.glsl>
 
 layout(binding = 0, rgba16f) restrict uniform image3D ImgResult;
 
-layout(location = 4)uniform Material material;
+layout(location = 4)uniform int materialIndex;
 
 layout (binding = 0)uniform sampler2D BaseColorMap;
 layout (binding = 3)uniform sampler2D EmissiveMap;
@@ -36,29 +37,14 @@ void main()
 {
     ivec3 voxelPos = WorlSpaceToVoxelImageSpace(inData.FragPos);
 
-    vec4 albedo = vec4(material.albedo, material.alpha);
-    vec3 emissive = material.emissive * material.emissiveFactor;
-    vec3 sampledNormal = inData.Normal;
-
-    if ((material.textureFlag & (1u << 0)) != 0u) {
-        albedo *= texture(BaseColorMap, inData.TexCoord);
-    }
-
-    if ((material.textureFlag & (1u << 3)) != 0u) {
-        emissive += texture(EmissiveMap, inData.TexCoord).rgb;
-    }
-
-    Surface surface = GetDefaultSurface();
-    surface.Albedo = albedo.rgb;
-    surface.Normal = sampledNormal;
-    surface.IOR = 1.0;
+    GpuMaterial material = materialSSBO.Materials[materialIndex];
+    Surface surface = GetSurface(material, inData.TexCoord);
+    surface.Emissive = surface.Emissive + surface.Albedo;
 
     vec3 directLighting = vec3(0.0);
     for (int i = 0; i < u_LightCount; i++)
     {
         Light light = u_Lights[i];
-        if(light.isactive == 0) 
-            continue;
         vec3 sampleToLight = light.position - inData.FragPos;
         vec3 contrib = EvaluateDiffuseLighting(light, surface.Albedo, sampleToLight);
         if (light.shadowMapIndex >= 0)
@@ -70,7 +56,7 @@ void main()
 
     const float ambient = 0.02;
     directLighting += surface.Albedo * ambient;
-    directLighting += emissive;
+    directLighting += surface.Emissive;
     imageAtomicMax(ImgResult, voxelPos, f16vec4(directLighting, 1.0));
 }
 

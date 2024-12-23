@@ -22,3 +22,23 @@ struct VoxelizerDataUBO {
 	glm::vec3 GridMax;
 	float _pad1;
 };
+
+struct GPUMaterial{
+
+	glm::vec3 EmissiveFactor;
+	GLuint BaseColorFactor;
+	glm::vec3 Absorbance;
+	float IOR;
+	float TransmissionFactor;
+	float RoughnessFactor;
+	float MetallicFactor;
+	float AlphaCutoff;
+	GLuint64 BaseColor;
+	GLuint64 MetallicRoughness;
+	GLuint64 Normal;
+	GLuint64 Emissive;
+	GLuint64 Transmission;
+	float _pad0 = 0.0f;
+	float _pad1 = 0.0f;
+};
+

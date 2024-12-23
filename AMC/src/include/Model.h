@@ -179,7 +179,8 @@ namespace AMC {
 
 			AABB aabb;
 			std::vector<Mesh*> meshes;
-			std::vector<Material*> materials;
+			GLuint materialSSBO;
+			//std::vector<Material*> materials;
 			NodeData rootNode;
 
 			BOOL haveAnimation = FALSE;

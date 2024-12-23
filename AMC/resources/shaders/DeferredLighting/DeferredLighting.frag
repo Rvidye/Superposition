@@ -6,6 +6,7 @@
 #include<..\..\..\resources\shaders\include\CommonTypes.glsl>
 #include<..\..\..\resources\shaders\include\Transformations.glsl>
 #include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
+#include<..\..\..\resources\shaders\include\Compression.glsl>
 #include<..\..\..\resources\shaders\include\Surface.glsl>
 #include<..\..\..\resources\shaders\include\Pbr.glsl>
 

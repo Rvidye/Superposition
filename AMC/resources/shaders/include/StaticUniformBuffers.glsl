@@ -7,8 +7,13 @@ layout(std140, binding = 0) uniform PerFrameDataUBO
 layout(std140, binding = 1) uniform LightBlock {
     Light u_Lights[MAX_LIGHTS];
     int u_LightCount;
-    int pad0; int pad1; int pad2; // Padding for std140 alignment
+    int pad0; int pad1; int pad2;
 };
+
+layout(std430, binding = 2) restrict readonly buffer MaterialSSBO
+{
+    GpuMaterial Materials[];
+} materialSSBO;
 
 layout(std140, binding = 4) uniform SkyBoxUBO{
     samplerCube Albedo;

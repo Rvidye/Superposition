@@ -10,3 +10,4 @@ AMCLog.txt
 #*.gltf
 #*.bin
 /AMC/resources/models
+*.bak

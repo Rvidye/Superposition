@@ -16,7 +16,6 @@
 #include<..\..\..\resources\shaders\include\TraceCone.glsl>
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
-layout(binding = 0) uniform samplerCube SkyBoxAlbedo;
 layout(binding = 1) uniform sampler3D SamplerVoxels;
 layout(binding = 2) restrict writeonly uniform image2D ImgResult;
 
@@ -25,8 +24,6 @@ layout(location = 1) uniform float StepMultiplier;
 layout(location = 2) uniform float GIBoost;
 layout(location = 3) uniform float GISkyBoxBoost;
 layout(location = 4) uniform float NormalRayOffset;
-layout(location = 5) uniform vec3 GridMin;
-layout(location = 6) uniform vec3 GridMax;
 
 vec3 IndirectLight(Surface surface, vec3 position, vec3 incomming);
 float GetMaterialVariance(float specularChance, float roughness);
@@ -98,8 +95,8 @@ vec3 IndirectLight(Surface surface, vec3 position, vec3 incomming)
             coneAngle = maxConeAngle;
         }
 
-        vec4 coneTrace = TraceCone(SamplerVoxels, coneRay, surface.Normal, coneAngle, StepMultiplier, GridMin, GridMax, NormalRayOffset, 0.99);
-        coneTrace += (1.0 - coneTrace.a) * (texture(SkyBoxAlbedo, coneRay.Direction) * GISkyBoxBoost);
+        vec4 coneTrace = TraceCone(SamplerVoxels, coneRay, surface.Normal, coneAngle, StepMultiplier, NormalRayOffset, 0.99);
+        coneTrace += (1.0 - coneTrace.a) * (texture(skyBoxUBO.Albedo, coneRay.Direction) * GISkyBoxBoost);
         
         irradiance += coneTrace.rgb;
     }

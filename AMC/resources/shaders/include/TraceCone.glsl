@@ -1,7 +1,7 @@
 
-vec4 TraceCone(sampler3D samplerVoxels, Ray ray, vec3 normal, float coneAngle, float stepMultiplier, vec3 GridMin, vec3 GridMax, float normalRayOffset, float alphaThreshold)
+vec4 TraceCone(sampler3D samplerVoxels, Ray ray, vec3 normal, float coneAngle, float stepMultiplier, float normalRayOffset, float alphaThreshold)
 {
-    vec3 voxelGridWorldSpaceSize = GridMax - GridMin; // need these as uniforms
+    vec3 voxelGridWorldSpaceSize = voxelizerDataUBO.GridMax - voxelizerDataUBO.GridMin; // need these as uniforms
     vec3 voxelWorldSpaceSize = voxelGridWorldSpaceSize / textureSize(samplerVoxels, 0);
     float voxelMaxLength = max(voxelWorldSpaceSize.x, max(voxelWorldSpaceSize.y, voxelWorldSpaceSize.z));
     float voxelMinLength = min(voxelWorldSpaceSize.x, min(voxelWorldSpaceSize.y, voxelWorldSpaceSize.z));
@@ -18,7 +18,7 @@ vec4 TraceCone(sampler3D samplerVoxels, Ray ray, vec3 normal, float coneAngle, f
         float sampleLod = log2(sampleDiameter / voxelMinLength);
         
         vec3 worldPos = ray.Origin + ray.Direction * distFromStart;
-        vec3 sampleUVW = MapToZeroOne(worldPos, GridMin, GridMax);
+        vec3 sampleUVW = MapToZeroOne(worldPos, voxelizerDataUBO.GridMin, voxelizerDataUBO.GridMax);
         if (any(lessThan(sampleUVW, vec3(0.0))) || any(greaterThanEqual(sampleUVW, vec3(1.0))) || sampleLod > maxLevel)
         {
             break;
@@ -36,9 +36,9 @@ vec4 TraceCone(sampler3D samplerVoxels, Ray ray, vec3 normal, float coneAngle, f
     return accumulatedColor;
 }
 
-vec4 TraceCone(sampler3D samplerVoxels, Ray ray, float coneAngle, float stepMultiplier, vec3 GridMin, vec3 GridMax)
+vec4 TraceCone(sampler3D samplerVoxels, Ray ray, float coneAngle, float stepMultiplier)
 {
     const vec3 normal = vec3(0.0);
     const float normalRayOffset = 0.0;
-    return TraceCone(samplerVoxels, ray, normal, coneAngle, stepMultiplier, GridMin, GridMax ,normalRayOffset, 1.0);
+    return TraceCone(samplerVoxels, ray, normal, coneAngle, stepMultiplier, normalRayOffset, 1.0);
 }

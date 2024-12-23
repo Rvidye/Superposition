@@ -14,8 +14,6 @@
 
 layout(binding = 0, rgba16f) restrict uniform image3D ImgResult;
 
-layout(location = 2) uniform vec3 GridMin;
-layout(location = 3) uniform vec3 GridMax;
 layout(location = 4)uniform Material material;
 
 layout (binding = 0)uniform sampler2D BaseColorMap;
@@ -114,7 +112,7 @@ float GetLightSpaceDepth(Light light, vec3 lightSpaceSamplePos)
 
 ivec3 WorlSpaceToVoxelImageSpace(vec3 worldPos)
 {
-    vec3 uvw = MapToZeroOne(worldPos, GridMin, GridMax);
+    vec3 uvw = MapToZeroOne(worldPos, voxelizerDataUBO.GridMin, voxelizerDataUBO.GridMax);
     ivec3 voxelPos = ivec3(uvw * imageSize(ImgResult));
     return voxelPos;
 }

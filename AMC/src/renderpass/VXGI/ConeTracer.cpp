@@ -30,8 +30,6 @@ void ConeTracer::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	glUniform1f(m_programConeTrace->getUniformLocation("GIBoost"), GIBoost);
 	glUniform1f(m_programConeTrace->getUniformLocation("GISkyBoxBoost"), GISkyBoxBoost);
 	glUniform1f(m_programConeTrace->getUniformLocation("NormalRayOffset"), NormalRayOffset);
-	glUniform3fv(m_programConeTrace->getUniformLocation("GridMin"), 1, glm::value_ptr(context.GridMin));
-	glUniform3fv(m_programConeTrace->getUniformLocation("GridMax"), 1, glm::value_ptr(context.GridMax));
 	GLuint workGroupSizeX = (context.width + 8 - 1) / 8;
 	GLuint workGroupSizeY = (context.height + 8 - 1) / 8;
 	glDispatchCompute( workGroupSizeX, workGroupSizeY, 1);

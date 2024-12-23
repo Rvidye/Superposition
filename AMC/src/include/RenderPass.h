@@ -8,11 +8,16 @@ namespace AMC {
 	struct RenderContext {
 		GLsizei width = 2048, height = 2048;
 		GLsizei screenWidth, screenHeight;
-		glm::vec3 GridMin, GridMax;
+		//glm::vec3 GridMin, GridMax;
 		//GBuffer
 		GLuint textureGBuffer[5]; // albedo, normal, metalroughness, emissive, depth
+
 		GBufferDataUBO gBufferData;
 		GLuint gBufferUBO;
+
+		SkyBoxUBO SkyBoxData;
+		GLuint skyBoxUBO;
+
 		GLuint textureDeferredResult = 0;
 		GLuint textureSSAOResult = 0;
 		GLuint textureSSRResult = 0;

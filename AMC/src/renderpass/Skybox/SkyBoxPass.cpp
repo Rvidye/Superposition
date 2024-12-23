@@ -32,7 +32,6 @@ void SkyBoxPass::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	glBindFramebuffer(GL_FRAMEBUFFER, context.fboPostDeferred);
 	glDepthMask(GL_FALSE);
 	m_ProgramSkybox->use();
-	glBindTextureUnit(0, context.textureAtmosphere);
 	glBindVertexArray(context.emptyVAO);
 	glDrawArrays(GL_TRIANGLES,0,36);
 	glDepthMask(GL_TRUE);

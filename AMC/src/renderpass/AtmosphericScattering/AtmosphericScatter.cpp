@@ -15,6 +15,13 @@ void AtmosphericScatterer::create(AMC::RenderContext& context) {
 	glTextureStorage2D(textureAtmosphericResult, 1, GL_RGBA32F, 128, 128);
 
 	context.textureAtmosphere = textureAtmosphericResult;
+
+	context.SkyBoxData.Albedo = glGetTextureHandleARB(textureAtmosphericResult);
+	glMakeTextureHandleResidentARB(context.SkyBoxData.Albedo);
+
+	glCreateBuffers(1, &context.skyBoxUBO);
+	glNamedBufferData(context.skyBoxUBO, sizeof(SkyBoxUBO), &context.SkyBoxData, GL_STATIC_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 4, context.skyBoxUBO);
 }
 
 void AtmosphericScatterer::execute(AMC::Scene* scene, AMC::RenderContext& context) {

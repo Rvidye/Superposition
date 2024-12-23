@@ -10,7 +10,6 @@
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout(binding = 4) uniform sampler2D SamplerSrc;
-layout(binding = 5) uniform samplerCube skyAlbedo;
 
 layout(binding = 0) restrict writeonly uniform image2D ImgResult;
 
@@ -78,7 +77,7 @@ vec3 SSR(vec3 normal, vec3 fragPos)
     }
 
     vec3 worldSpaceReflectDir = (perFrameDataUBO.InvView * vec4(reflectDir, 0.0)).xyz;
-    return texture(skyAlbedo, worldSpaceReflectDir).rgb;
+    return texture(skyBoxUBO.Albedo, worldSpaceReflectDir).rgb;
 }
 
 void BinarySearch(vec3 samplePoint, vec3 deltaStep, inout vec3 projectedSample)

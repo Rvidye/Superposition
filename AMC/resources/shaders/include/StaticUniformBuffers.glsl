@@ -17,7 +17,7 @@ layout(std140, binding = 4) uniform SkyBoxUBO{
 layout(std140, binding = 5) uniform VoxelizerDataUBO
 {
     vec3 GridMin;
-    float _pad0;
+    float _pad0; // for alignment i can use vec4 but this is easier for computing stuff.
     vec3 GridMax;
     float _pad1;
 } voxelizerDataUBO;

@@ -19,6 +19,10 @@ void Voxelizer::create(AMC::RenderContext& context){
 	glTextureParameteri(debugResult, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(debugResult, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTextureStorage2D(debugResult, 1, GL_RGBA16F, 512, 512);
+
+	glCreateBuffers(1, &voxelUBO);
+	glNamedBufferData(voxelUBO, sizeof(VoxelizerDataUBO), nullptr, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 5, voxelUBO);
 }
 
 void Voxelizer::execute(AMC::Scene* scene, AMC::RenderContext& context){
@@ -28,10 +32,10 @@ void Voxelizer::execute(AMC::Scene* scene, AMC::RenderContext& context){
 	glm::vec3 quantizedMin = ((AMC::currentCamera->getViewPosition() - glm::vec3(35.0f, 20.0f, 35.0f)) / granularity)* granularity;
 	glm::vec3 quantizedMax = ((AMC::currentCamera->getViewPosition() + glm::vec3(35.0f, 20.0f, 35.0f)) / granularity) * granularity;
 
-	GridMin = quantizedMin;
-	GridMax = quantizedMax;
-	context.GridMin = GridMin;
-	context.GridMax = GridMax;
+	GridData.GridMin = quantizedMin;
+	GridData.GridMax = quantizedMax;
+
+	glNamedBufferSubData(voxelUBO, 0, sizeof(VoxelizerDataUBO), &GridData);
 
 	ClearTextures();
 	Voxelize(scene);
@@ -51,8 +55,8 @@ void Voxelizer::renderUI()
 #ifdef _MYDEBUG
 	ImGui::Checkbox("Debug Voxel", &debugVoxels);
 	if (debugVoxels) {
-		ImGui::DragFloat3("Grid Min", &GridMin.x, 0.1f);
-		ImGui::DragFloat3("Grid Max", &GridMax.x, 0.1f);
+		ImGui::DragFloat3("Grid Min", &GridData.GridMin.x, 0.1f);
+		ImGui::DragFloat3("Grid Max", &GridData.GridMax.x, 0.1f);
 		ImGui::SliderFloat("DebugStepMultiplier", &debugStepMultiplier, 0.05f, 1.0f);
 		ImGui::SliderFloat("DebugConeAngle", &debugConeAngle, 0, 0.5f);
 		if (ImGui::CollapsingHeader("Voxelizer Texture")) {
@@ -80,8 +84,8 @@ void Voxelizer::SetSize(int width, int height, int depth){
 }
 
 void Voxelizer::SetGridSize(glm::vec3 min, glm::vec3 max){
-	GridMin = glm::min(min, min - glm::vec3(0.1f));
-	GridMax = glm::max(max, max + glm::vec3(0.1f));
+	GridData.GridMin = glm::min(min, min - glm::vec3(0.1f));
+	GridData.GridMax = glm::max(max, max + glm::vec3(0.1f));
 }
 
 void Voxelizer::ClearTextures(){
@@ -108,8 +112,6 @@ void Voxelizer::Voxelize(const AMC::Scene* scene){
 	glBindTextureUnit(8, scene->lightManager->getShadowMapManager()->getPointShadowCubemap());
 	scene->lightManager->bindUBO();
 	m_ProgramVoxelize->use();
-	glUniform3fv(m_ProgramVoxelize->getUniformLocation("GridMin"), 1, glm::value_ptr(GridMin));
-	glUniform3fv(m_ProgramVoxelize->getUniformLocation("GridMax"), 1, glm::value_ptr(GridMax));
 	for (const auto& [name, obj] : scene->models) {
 		if (!obj.visible)
 			continue;
@@ -141,8 +143,6 @@ void Voxelizer::DubugVoxels(AMC::RenderContext& context) {
 	m_ProgramVisualizeDebug->use();
 	glUniform1f(m_ProgramVisualizeDebug->getUniformLocation("StepMultiplier"), debugStepMultiplier);
 	glUniform1f(m_ProgramVisualizeDebug->getUniformLocation("ConeAngle"), debugConeAngle);
-	glUniform3fv(m_ProgramVoxelize->getUniformLocation("GridMin"), 1, glm::value_ptr(GridMin));
-	glUniform3fv(m_ProgramVoxelize->getUniformLocation("GridMax"), 1, glm::value_ptr(GridMax));
 	glDispatchCompute((512 + 8 - 1) / 8, (512 + 8 - 1) / 8, 1);
 	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
 }

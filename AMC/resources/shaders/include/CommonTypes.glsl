@@ -14,6 +14,7 @@ struct PerFrameData
 
 // see https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_lights_punctual
 #define MAX_LIGHTS 32
+#define MAX_SHADOWS 16
 struct Light {
     vec3 position;       // 12 bytes
     float intensity;     // 4 bytes
@@ -26,6 +27,16 @@ struct Light {
     int shadows;         // 4 bytes
     int shadowMapIndex;  // 4 bytes
     int isactive;          // 4 bytes
+};
+
+struct Shadows{
+    mat4 ProjViewMatrices[6];
+    vec3 Position;
+    float NearPlane;
+    float FarPlane;
+    int LightIndex;
+    samplerCube ShadowMapTexture;
+    samplerCubeShadow PcfShadowTexture;
 };
 
 // Material == Surface

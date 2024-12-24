@@ -109,8 +109,8 @@ void Voxelizer::Voxelize(const AMC::Scene* scene){
 	glViewportIndexedf(2, 0.0f, 0.0f, (float)width, (float)height);
 	glViewport(0, 0, 256, 256);
 	glBindImageTexture(0, resultVoxels, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16F);
-	glBindTextureUnit(8, scene->lightManager->getShadowMapManager()->getPointShadowCubemap());
-	scene->lightManager->bindUBO();
+	//glBindTextureUnit(8, scene->lightManager->GetShadowManager()->getPointShadowCubemap());
+	scene->lightManager->BindUBO();
 	m_ProgramVoxelize->use();
 	for (const auto& [name, obj] : scene->models) {
 		if (!obj.visible)

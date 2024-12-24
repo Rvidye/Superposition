@@ -10,6 +10,12 @@ layout(std140, binding = 1) uniform LightBlock {
     int pad0; int pad1; int pad2;
 };
 
+layout(std140, binding = 2) uniform ShadowsUBO {
+    Shadows shadows[MAX_SHADOWS];
+    int count;
+    float Padding[3];
+};
+
 layout(std140, binding = 4) uniform SkyBoxUBO{
     samplerCube Albedo;
 }skyBoxUBO;

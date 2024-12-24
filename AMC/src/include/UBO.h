@@ -42,3 +42,25 @@ struct GPUMaterial{
 	float _pad1 = 0.0f;
 };
 
+struct alignas(16) GpuLight {
+	glm::vec3 position; float intensity;
+	glm::vec3 direction; float range;
+	glm::vec3 color; float spotAngle;
+	float spotExponent;
+	int type = 2;
+	int shadows = 0;
+	int shadowMapIndex = -1;
+	int active;
+	float pad[2];
+};
+
+struct alignas(16) GpuShadow {
+	glm::mat4 ProjViewMatrices[6];
+	glm::vec3 Position;
+	float NearPlane;
+	float FarPlane;
+	int LightIndex;
+	GLuint64 NearestSampler;
+	GLuint64 ShadowSampler;
+	float padding[2];
+};

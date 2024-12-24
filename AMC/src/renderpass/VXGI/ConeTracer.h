@@ -16,5 +16,5 @@ public:
 	int MaxSamples = 4;
 	float GIBoost = 1.3f;
 	float GISkyBoxBoost = 1.0f / 1.3f;
-	float StepMultiplier = 0.16f;
+	float StepMultiplier = 0.5f;
 };

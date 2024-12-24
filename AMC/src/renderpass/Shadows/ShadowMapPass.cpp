@@ -12,9 +12,9 @@ void ShadowMapPass::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	glCullFace(GL_BACK);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
-	AMC::ShadowManager *sm = scene->lightManager->getShadowMapManager();
+	AMC::ShadowManager *sm = scene->lightManager->GetShadowManager();
 	//sm->renderShadowMaps(m_programShadowMap, scene);
-	sm->renderPointShadowMaps(m_programPointShadowMap, scene);
+	sm->RenderShadowMaps(m_programPointShadowMap, scene);
 	#ifdef _MYDEBUG
 	this->sm = sm;
 	#endif

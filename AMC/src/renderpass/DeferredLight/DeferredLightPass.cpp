@@ -36,18 +36,11 @@ void DeferredPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 	glClearNamedFramebufferfv(m_FBO, GL_COLOR, 0, glm::value_ptr(clearcolor));
 
 	m_ProgramDeferredLighting->use();
-
-	//glBindTextureUnit(0, context.textureGBuffer[0]);
-	//glBindTextureUnit(1, context.textureGBuffer[1]);
-	//glBindTextureUnit(2, context.textureGBuffer[2]);
-	//glBindTextureUnit(3, context.textureGBuffer[3]);
-	//glBindTextureUnit(4, context.textureGBuffer[4]);
+	glUniform1i(m_ProgramDeferredLighting->getUniformLocation("IsVXGI"), vxgi);
 	glBindTextureUnit(5, context.textureSSAOResult);
 	glBindTextureUnit(6, context.textureVXGIResult);
-
-	//glBindTextureUnit(7, scene->lightManager->getShadowMapManager()->getShadowMapTexture());
-	glBindTextureUnit(8, scene->lightManager->getShadowMapManager()->getPointShadowCubemap());
-	scene->lightManager->bindUBO();
+	scene->lightManager->BindUBO();
+	scene->lightManager->GetShadowManager()->BindUBO();
 	glBindVertexArray(context.emptyVAO);
 	glDrawArrays(GL_TRIANGLES,0,3);
 	glBindVertexArray(0);
@@ -62,5 +55,6 @@ const char* DeferredPass::getName() const
 void DeferredPass::renderUI()
 {
 #ifdef _MYDEBUG
+	ImGui::Checkbox("VXGI", &vxgi);
 #endif
 }

@@ -102,5 +102,8 @@ namespace AMC {
 		float padding2;         
 		float padding3;         
 	};
+
+	int GetMaxMipmapLevel(int width, int height, int depth = 1); 
+	glm::ivec3 GetMipmapLevelSize(int width, int height, int depth, int level);
 };
 

@@ -13,7 +13,7 @@ namespace AMC {
 			GLuint shader = compileShader(filepath);
 			if (shader != 0) {
 				glAttachShader(program, shader);
-				glDeleteShader(shader);
+				//glDeleteShader(shader);
 			}
 		}
 
@@ -96,6 +96,15 @@ namespace AMC {
 			glGetShaderInfoLog(shader, infoLogLength, nullptr, infoLog.data());
 			LOG(AMC::LogLevel::LOG_ERROR);
 			std::cout << "Shader compilation error in " << filePath << ":\n" << infoLog.data() << std::endl;
+			std::ofstream dumpFile("dump.txt");
+			if (dumpFile) {
+				dumpFile << "Shader Source from " << filePath << ":\n";
+				dumpFile << finalSource;
+				std::cout << "Shader source dumped to dump.txt" << std::endl;
+			}
+			else {
+				std::cout << "Failed to create dump.txt" << std::endl;
+			}
 			LOG(AMC::LogLevel::LOG_INFO);
 			glDeleteShader(shader);
 			return 0;
@@ -184,6 +193,7 @@ namespace AMC {
 				//LOG_ERROR(L"Program link error:\n : %s\n", infoLog.data());
 				LOG(AMC::LogLevel::LOG_ERROR);
 				std::cout << "Program link error:\n" << infoLog.data() << "\n" << "Shaders used in program: " << shaderCombination << std::endl;
+				LOG(AMC::LogLevel::LOG_INFO);
 			}
 		}
 	}

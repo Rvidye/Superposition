@@ -10,31 +10,24 @@ namespace AMC {
 	class ShadowManager {
 		public:
 
-			ShadowManager(int maxShadows, int maxPointShadows);
+			ShadowManager();
+			~ShadowManager();
 
-			void createShadowMapForLight(Light& light);
-			void removeShadowMapForLight(Light& light);
+			bool AddShadow(int lightIndex, Light& light);
+			void DeleteShadow(int shadowIndex);
 
-			void renderShadowMaps(ShaderProgram* program,const Scene* scene);
-			void renderPointShadowMaps(ShaderProgram* program,const Scene* scene);
-
+			void UpdateShadows(const std::vector<Light>& lights);
+			void UpdateShadowUBO();
+			void RenderShadowMaps(ShaderProgram* program,const Scene* scene);
+			void UpdateShadowLightIndex(int shadowIndex, int newLightIndex);
 			void renderUI();
 
-			GLuint getShadowMapTexture() const { return shadowmap; }
-			GLuint getPointShadowCubemap() const { return pointShadowCubemap; }
+			void BindUBO();
 
-		private:
-			GLuint shadowmapFBO = 0;
-			GLuint pointShadowmapFBO = 0;
-			GLuint shadowmap = 0;
-			GLuint pointShadowCubemap = 0;
-			int maxShadowmaps;
-			int maxPointShadowcubemaps;
-			int currentShadowmaps = 0;
-			int currentPointShadowcubemaps = 0;
-#if defined(_MYDEBUG)
-			std::vector<GLuint> debugShadowmapView;
-			std::vector<GLuint> debugcubemapFaceViews;
-#endif
+			//GLuint getShadowMapTexture() const { return shadowmap; }
+			//GLuint getPointShadowCubemap() const { return pointShadowCubemap; }
+
+			std::vector<Shadow> shadows;
+			GLuint shadowsUBO = 0;
 	};
 };

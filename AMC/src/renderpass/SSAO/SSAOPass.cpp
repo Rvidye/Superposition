@@ -16,8 +16,8 @@ void SSAO::create(AMC::RenderContext& context) {
 
 void SSAO::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	if (!enableSSAO) return;
-	glBindTextureUnit(0, context.textureGBuffer[1]);
-	glBindTextureUnit(1, context.textureGBuffer[4]);
+	//glBindTextureUnit(0, context.textureGBuffer[1]);
+	//glBindTextureUnit(1, context.textureGBuffer[4]);
 	glBindImageTexture(2, m_textureResult, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R8);
 	m_ProgramCompuetSSAO->use();
 	glUniform1i(m_ProgramCompuetSSAO->getUniformLocation("SampleCount"), SampleCount);
@@ -43,7 +43,7 @@ void SSAO::renderUI()
 	ImGui::SliderFloat("Stength", &stength, 0.0f, 10.0f);
 
 	if (ImGui::CollapsingHeader("SSAO Texture")) {
-		ImGui::Image((void*)(intptr_t)m_textureResult, ImVec2(256, 256));
+		ImGui::Image((void*)(intptr_t)m_textureResult, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
 	}
 #endif
 }

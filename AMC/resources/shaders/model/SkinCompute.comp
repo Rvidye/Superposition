@@ -1,36 +1,19 @@
 #version 460 core 
 
+#extension GL_ARB_bindless_texture : require
+#extension GL_EXT_shader_image_load_formatted : require
+
 #define MAX_BONES_PER_VERTEX 4
 
-struct Vertex {
-    vec4 position;    // offset 0 
-    vec4 normal;      // offset 16 
-    vec4 texCoords;   // offset 32 
-    vec4 tangent;     // offset 48 
-    vec4 bitangent;   // offset 64 
-    ivec4 boneIDs;    // offset 80 
-    vec4 weights;     // offset 96
-};    
-
-layout(std430, binding = 0) readonly buffer VertexBufferIn {
-    Vertex vin[];
-};
-
-layout(std430, binding = 1) writeonly buffer VertexBufferOut {
-    Vertex vout[];
-};
-
-layout(std430, binding = 6) readonly buffer BoneMatricesBuffer {
-    mat4 boneMatrices[];
-};
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+#include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
+#include<..\..\..\resources\shaders\include\Compression.glsl>
 
 // Workgroup size
 layout(local_size_x = 256) in;
 
 void main() {
-
-uint idx = gl_GlobalInvocationID.x;
-
+    uint idx = gl_GlobalInvocationID.x;
     // Ensure index is within bounds
     if (idx >= vin.length()) {
         return;
@@ -38,16 +21,23 @@ uint idx = gl_GlobalInvocationID.x;
 
     // Read vertex data from buffer
     Vertex vert = vin[idx];
-
     // Accumulate weighted bone matrices
     vec4 totalPosition = vec4(0.0);
+    vec3 totalNormal = vec3(0.0);
+    vec3 totalTangent = vec3(0.0);
     for (int i = 0; i < MAX_BONES_PER_VERTEX; ++i) {
         if(vert.boneIDs[i] == -1){
             continue;
         }
         vec4 localPos = boneMatrices[vert.boneIDs[i]] * vec4(vert.position.xyz,1.0);
+        vec3 localNormal = normalize(mat3(boneMatrices[vert.boneIDs[i]]) * DecompressSR11G11B10(vert.normal)); 
+        vec3 localTangent = normalize(mat3(boneMatrices[vert.boneIDs[i]]) * DecompressSR11G11B10(vert.tangent)); 
         totalPosition += localPos * vert.weights[i];
+        totalNormal += localNormal * vert.weights[i];
+        totalTangent += localTangent * vert.weights[i];
     }
     vert.position = totalPosition;
+    vert.normal = CompressSR11G11B10(totalNormal);
+    vert.tangent = CompressSR11G11B10(totalTangent);
     vout[idx] = vert;
 }

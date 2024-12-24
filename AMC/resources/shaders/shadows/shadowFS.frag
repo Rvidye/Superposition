@@ -1,13 +1,17 @@
 #version 460 core
 
-in vec4 FragPos;
+#extension GL_ARB_bindless_texture : require
+#extension GL_EXT_shader_image_load_formatted : require
 
-layout(location = 2)uniform float far_plane;
-layout(location = 3)uniform vec3 lightPos;
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+#include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
+
+in vec4 FragPos;
+layout(location = 4)uniform int shadowIndex;
 
 void main()
 {
-    float lightDistance = length(FragPos.xyz - lightPos);
-    lightDistance = lightDistance / far_plane;
-    gl_FragDepth = lightDistance;
+    // float lightDistance = length(FragPos.xyz - shadows[shadowIndex].Position);
+    // lightDistance = lightDistance / shadows[shadowIndex].FarPlane;
+    // gl_FragDepth = lightDistance;
 }

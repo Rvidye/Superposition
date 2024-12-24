@@ -1,16 +1,16 @@
 #include<common.h>
 #include "Bloom.h"
 
-int GetMaxMipmapLevel(int width, int height, int depth = 1) {
-	int largestDimension = std::max({ width, height, depth });
-	return static_cast<int>(std::log2(largestDimension)) + 1;
+int AMC::GetMaxMipmapLevel(int width, int height, int depth) {
+    int largestDimension = std::max({ width, height, depth });
+    return static_cast<int>(std::log2(largestDimension)) + 1;
 }
 
-glm::ivec3 GetMipmapLevelSize(int width, int height, int depth, int level) {
-	// Divide each dimension by 2^level
-	glm::ivec3 size = glm::ivec3(width, height, depth) / (1 << level);
-	// Ensure each dimension is at least 1
-	return glm::max(size, glm::ivec3(1));
+glm::ivec3 AMC::GetMipmapLevelSize(int width, int height, int depth, int level) {
+    // Divide each dimension by 2^level
+    glm::ivec3 size = glm::ivec3(width, height, depth) / (1 << level);
+    // Ensure each dimension is at least 1
+    return glm::max(size, glm::ivec3(1));
 }
 
 void Bloom::create(AMC::RenderContext& context) {
@@ -24,7 +24,7 @@ void Bloom::create(AMC::RenderContext& context) {
 	texWidth = context.width / 2;
 	texHeight = context.height / 2;
 
-	levels = std::max(GetMaxMipmapLevel(texWidth,texHeight,1) - minusLods, 2);
+	levels = std::max(AMC::GetMaxMipmapLevel(texWidth,texHeight,1) - minusLods, 2);
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &textureDownsample);
 	glTextureParameteri(textureDownsample, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
@@ -56,7 +56,7 @@ void Bloom::execute(AMC::Scene* scene, AMC::RenderContext& context) {
         glBindImageTexture(0, textureDownsample, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
         glUniform1i(0, currentWriteLod);
         glUniform1i(1, 0); // 0 for Downsample stage
-        glm::ivec3 mipLevelSize = GetMipmapLevelSize(texWidth, texHeight, 1, currentWriteLod);
+        glm::ivec3 mipLevelSize = AMC::GetMipmapLevelSize(texWidth, texHeight, 1, currentWriteLod);
         glDispatchCompute((mipLevelSize.x + 8 - 1) / 8, (mipLevelSize.y + 8 - 1) / 8, 1);
         glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
         currentWriteLod++;
@@ -67,7 +67,7 @@ void Bloom::execute(AMC::Scene* scene, AMC::RenderContext& context) {
     for (; currentWriteLod < levels; currentWriteLod++) {
         glBindImageTexture(0, textureDownsample, currentWriteLod, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
         glUniform1i(0, currentWriteLod - 1);
-        glm::ivec3 mipLevelSize = GetMipmapLevelSize(texWidth, texHeight, 1, currentWriteLod);
+        glm::ivec3 mipLevelSize = AMC::GetMipmapLevelSize(texWidth, texHeight, 1, currentWriteLod);
         glDispatchCompute((mipLevelSize.x + 8 - 1) / 8, (mipLevelSize.y + 8 - 1) / 8, 1);
         glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
     }
@@ -79,7 +79,7 @@ void Bloom::execute(AMC::Scene* scene, AMC::RenderContext& context) {
         glBindImageTexture(0, textureUpsample, currentWriteLod, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
         glUniform1i(0, currentWriteLod + 1);
         glUniform1i(1, 1); // 1 for Upsample stage
-        glm::ivec3 mipLevelSize = GetMipmapLevelSize(texWidth, texHeight, 1, currentWriteLod);
+        glm::ivec3 mipLevelSize = AMC::GetMipmapLevelSize(texWidth, texHeight, 1, currentWriteLod);
         glDispatchCompute((mipLevelSize.x + 8 - 1) / 8, (mipLevelSize.y + 8 - 1) / 8, 1);
         glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
         currentWriteLod--;
@@ -90,7 +90,7 @@ void Bloom::execute(AMC::Scene* scene, AMC::RenderContext& context) {
         glBindImageTexture(0, textureUpsample, currentWriteLod, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
         glUniform1i(0, currentWriteLod + 1);
         glUniform1i(1, 1);
-        glm::ivec3 mipLevelSize = GetMipmapLevelSize(texWidth, texHeight, 1, currentWriteLod);
+        glm::ivec3 mipLevelSize = AMC::GetMipmapLevelSize(texWidth, texHeight, 1, currentWriteLod);
         glDispatchCompute((mipLevelSize.x + 8 - 1) / 8, (mipLevelSize.y + 8 - 1) / 8, 1);
         glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
     }
@@ -112,7 +112,7 @@ void Bloom::renderUI()
         minusLods = temp;
     }
     if (ImGui::CollapsingHeader("Bloom Texture")) {
-        ImGui::Image((void*)(intptr_t)textureUpsample, ImVec2(256, 256));
+        ImGui::Image((void*)(intptr_t)textureUpsample, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
     }
 #endif
 }

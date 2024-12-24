@@ -14,6 +14,7 @@ struct PerFrameData
 
 // see https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_lights_punctual
 #define MAX_LIGHTS 32
+#define MAX_SHADOWS 16
 struct Light {
     vec3 position;       // 12 bytes
     float intensity;     // 4 bytes
@@ -28,6 +29,16 @@ struct Light {
     int isactive;          // 4 bytes
 };
 
+struct Shadows{
+    mat4 ProjViewMatrices[6];
+    vec3 Position;
+    float NearPlane;
+    float FarPlane;
+    int LightIndex;
+    samplerCube ShadowMapTexture;
+    samplerCubeShadow PcfShadowTexture;
+};
+
 // Material == Surface
 struct Material{
     vec3 albedo;
@@ -37,4 +48,33 @@ struct Material{
     float emissiveFactor;
     float alpha;
     uint textureFlag;
+};
+
+struct GpuMaterial
+{
+    vec3 EmissiveFactor;
+    uint BaseColorFactor;
+
+    vec3 Absorbance;
+    float IOR;
+    float TransmissionFactor;
+    float RoughnessFactor;
+    float MetallicFactor;
+    float AlphaCutoff;
+
+    sampler2D BaseColor;
+    sampler2D MetallicRoughness;
+    sampler2D Normal;
+    sampler2D Emissive;
+    sampler2D Transmission;
+    uvec2 _pad0;
+};
+
+struct Vertex {
+    vec4 position; 
+    uint normal;   
+    uint tangent;   
+    vec2 texCoords; 
+    ivec4 boneIDs;  
+    vec4 weights;  
 };

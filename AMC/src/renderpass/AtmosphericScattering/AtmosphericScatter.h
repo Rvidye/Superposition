@@ -17,5 +17,5 @@ public:
 	int JSteps = 8;
 	float LightIntensity = 15.0f;
 	float Azimuth = 0.0f;
-	float Elevation = 0.0f;
+	float Elevation = 1.57f;
 };

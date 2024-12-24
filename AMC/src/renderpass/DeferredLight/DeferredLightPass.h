@@ -12,4 +12,5 @@ public:
 	AMC::ShaderProgram* m_ProgramDeferredLighting;
 	GLuint m_FBO;
 	GLuint m_TextureResult;
+	bool vxgi = false;
 };

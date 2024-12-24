@@ -15,6 +15,7 @@ public:
 	float maxColor;
 	int minusLods;
 	bool enableBloom = true;
-	GLuint textureDownsample, textureUpsample, levels;
+	int levels;
+	GLuint textureDownsample, textureUpsample;
 	GLsizei texWidth, texHeight;
 };

@@ -9,7 +9,7 @@ void TestPass::create(AMC::RenderContext& context){
 void TestPass::execute(AMC::Scene* scene, AMC::RenderContext& context){
 
 	AMC::Renderer::resetFBO();
-	AMC::ShadowManager* sm = scene->lightManager->getShadowMapManager();
+	AMC::ShadowManager* sm = scene->lightManager->GetShadowManager();
 	
 	m_programTexturedDraw->use();
 

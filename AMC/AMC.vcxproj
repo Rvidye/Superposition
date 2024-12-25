@@ -198,6 +198,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\module\Scene.cpp" />
     <ClCompile Include="src\renderpass\RTPass.cpp" />
     <ClCompile Include="src\scenes\rtdemo\rtscene.cpp" />
     <ClCompile Include="src\include\glm\detail\glm.cpp" />

@@ -71,6 +71,22 @@ namespace AMC {
 		return *this;
 	}
 
+	static VkBool32 VulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+		switch (messageSeverity) {
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+			LOG_ERROR(L"Vulkan Error: %s", CString(pCallbackData->pMessage));
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+			LOG_WARNING(L"Vulkan Warning: %s", CString(pCallbackData->pMessage));
+			break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT: case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+			LOG_INFO(L"Vulkan Info: %s", CString(pCallbackData->pMessage));
+			break;
+		}
+
+		return VK_FALSE;
+	}
+
 	VkContext* VkContext::Builder::build() {
 		VkContext* ctx = new VkContext();
 
@@ -86,8 +102,10 @@ namespace AMC {
 		appInfo.pApplicationName = "Raster";
 
 #ifdef _MYDEBUG
+		instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		instanceLayers.push_back("VK_LAYER_KHRONOS_validation");
 		LOG_WARNING(L"Vulkan: Enabling Validation Layers");
+
 #endif // _MYDEBUG
 
 		VkInstanceCreateInfo instanceCI{};
@@ -100,6 +118,16 @@ namespace AMC {
 		CHECK_VULKAN_ERROR(vkCreateInstance(&instanceCI, nullptr, &ctx->instance));
 
 		volkLoadInstance(ctx->instance);
+
+#ifdef _MYDEBUG
+		VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCI{};
+		debugUtilsMessengerCI.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+		debugUtilsMessengerCI.pfnUserCallback = VulkanDebugCallback;
+		debugUtilsMessengerCI.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+		debugUtilsMessengerCI.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+
+		vkCreateDebugUtilsMessengerEXT(ctx->instance, &debugUtilsMessengerCI, nullptr, &ctx->callback);
+#endif // _MYDEBUG
 
 		uint32_t devCount;
 		CHECK_VULKAN_ERROR(vkEnumeratePhysicalDevices(ctx->instance, &devCount, nullptr));
@@ -166,6 +194,7 @@ namespace AMC {
 		queueFamilyIndex = 0xffff;
 		queue = VK_NULL_HANDLE;
 		commandPool = VK_NULL_HANDLE;
+		callback = VK_NULL_HANDLE;
 	}
 
 	VkContext::~VkContext() {
@@ -175,124 +204,93 @@ namespace AMC {
 		if (device != VK_NULL_HANDLE) {
 			vkDestroyDevice(device, nullptr);
 		}
+		if (callback != VK_NULL_HANDLE) {
+			vkDestroyDebugUtilsMessengerEXT(instance, callback, nullptr);
+		}
 		if (instance != VK_NULL_HANDLE) {
 			vkDestroyInstance(instance, nullptr);
 		}
 	}
 
-	VkDescSetManager::Builder::Builder(const VkContext* context) {
-		descSetData = {};
-		ctx = context;
-	}
+	std::unordered_map<VkDescriptorType, uint32_t> VkDescSetLayoutManager::poolsizeMap{};
+	VkDescriptorPool VkDescSetLayoutManager::descPool = VK_NULL_HANDLE;
+	uint32_t VkDescSetLayoutManager::maxSetCount = 0;
 
-	VkDescSetManager::Builder& VkDescSetManager::Builder::addToDescSet(std::string key, uint32_t binding, VkDescriptorType descType, VkShaderStageFlags stageFlags, std::vector<VkBuffer> bufferVector) {
-		if (descSetData.find(key) != descSetData.end() && descSetData[key].size() > 0) {
-			if (descSetData[key][0].resourceVec.size() != bufferVector.size()) {
-				LOG_ERROR(L"Descriptor Set Resource Count Mismatch. Recived %d resource, but expecting %d.", bufferVector.size(), descSetData[key][0].resourceVec.size());
-				return *this;
-			}
-			for (const auto& data : descSetData[key]) {
-				if (binding == data.binding) {
-					LOG_ERROR(L"Binding %d already present in '%s' Descriptor Set", binding, CString(key.c_str()));
-					return *this;
-				}
+	void VkDescSetLayoutManager::addBinding(uint32_t binding, VkDescriptorType type, VkShaderStageFlags shaderStages) {
+		for (auto& bind : bindings)
+		{
+			if(bind.binding == binding) {
+				LOG_ERROR(L"Binding %d already present in Descriptor Set.", binding);
+				return;
 			}
 		}
-		descSetData[key].push_back(DescriptorSetData(binding, descType, stageFlags, bufferVector));
-		return *this;
+
+		VkDescriptorSetLayoutBinding bind{};
+		bind.binding = binding;
+		bind.descriptorType = type;
+		bind.stageFlags = shaderStages;
+		bind.descriptorCount = 1;
+		bindings.push_back(bind);
+
+		poolsizeMap[type] += descSetCount;
+
+		maxSetCount += descSetCount;
 	}
 
-	VkDescSetManager* VkDescSetManager::Builder::build() {
-		VkDescSetManager* descSetMan = new VkDescSetManager();
-
+	void VkDescSetLayoutManager::generateDescSetLayout() {
 		VkDescriptorSetLayoutCreateInfo descSetLayoutCI{};
 		descSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-
-		std::unordered_map<VkDescriptorType, size_t> poolSizeMap{};
-		size_t maxSet = 0;
-		std::unordered_map<std::string, size_t> maxCountPerLayout;
-
-		for (auto& entry : descSetData) {
-			descSetMan->descriptorSet[entry.first] = {};
-
-			std::vector<VkDescriptorSetLayoutBinding> bindings{};
-
-			size_t temp = 0;
-			for (auto& bindingData : entry.second) {
-				VkDescriptorSetLayoutBinding descSetBinding{};
-				descSetBinding.binding = bindingData.binding;
-				descSetBinding.descriptorCount = 1;
-				descSetBinding.descriptorType = bindingData.type;
-				descSetBinding.stageFlags = bindingData.shaderStages;
-
-				poolSizeMap[bindingData.type] += bindingData.resourceVec.size();
-
-				bindings.push_back(descSetBinding);
-
-				temp = bindingData.resourceVec.size();
-			}
-			maxCountPerLayout[entry.first] = temp;
-			maxSet += temp;
-
-			descSetLayoutCI.bindingCount = static_cast<uint32_t>(bindings.size());
-			descSetLayoutCI.pBindings = bindings.data();
-
-			vkCreateDescriptorSetLayout(ctx->vkDevice(), &descSetLayoutCI, nullptr, &descSetMan->descriptorSet[entry.first].first);
-		}
-
+		descSetLayoutCI.bindingCount = static_cast<uint32_t>(bindings.size());
+		descSetLayoutCI.pBindings = bindings.data();
+		vkCreateDescriptorSetLayout(ctx->vkDevice(), &descSetLayoutCI, nullptr, &descSetLayout);
+	}
+	
+	void VkDescSetLayoutManager::generateDescSetPool(const VkContext* ctx) {
 		std::vector<VkDescriptorPoolSize> poolSizes{};
-		for (auto& poolEntry : poolSizeMap) {
+		for (auto& poolEntry : poolsizeMap) {
 			poolSizes.push_back({ poolEntry.first, static_cast<uint32_t>(poolEntry.second) });
 		}
-
+		
 		VkDescriptorPoolCreateInfo descPoolCI{};
 		descPoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		descPoolCI.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		descPoolCI.pPoolSizes = poolSizes.data();
-		descPoolCI.maxSets = static_cast<uint32_t>(maxSet);
-		vkCreateDescriptorPool(ctx->vkDevice(), &descPoolCI, nullptr, &descSetMan->pool);
+		descPoolCI.maxSets = maxSetCount;
+		vkCreateDescriptorPool(ctx->vkDevice(), &descPoolCI, nullptr, &descPool);
+	}
 
-		VkDescriptorSetAllocateInfo descSetAI{};
-		descSetAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		descSetAI.descriptorPool = descSetMan->pool;
+	void VkDescSetLayoutManager::generateDescSet() {
+		std::vector<VkDescriptorSetLayout> layouts(descSetCount, descSetLayout);
 
-		VkWriteDescriptorSet writeDescSet{};
-		writeDescSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescSet.descriptorCount = 1;
-		writeDescSet.dstArrayElement = 0;
+		VkDescriptorSetAllocateInfo descAI{};
+		descAI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descAI.descriptorPool = descPool;
+		descAI.descriptorSetCount = descSetCount;
+		descAI.pSetLayouts = layouts.data();
 
-		VkDescriptorBufferInfo descBufferInfo{};
-		descBufferInfo.offset = 0;
-		descBufferInfo.range = VK_WHOLE_SIZE;
+		descSet.resize(descSetCount);
+		vkAllocateDescriptorSets(ctx->vkDevice(), &descAI, descSet.data());
+	}
 
-		for (auto& entry : descSetMan->descriptorSet) {
-			std::vector<VkDescriptorSetLayout> layoutsArray(maxCountPerLayout[entry.first], entry.second.first);
+	void VkDescSetLayoutManager::writeToDescSet(uint32_t index, uint32_t binding, std::variant<VkAccelerationStructureKHR> obj) {
+		for (auto& descBind : bindings) {
+			if (descBind.binding == binding) {
+				VkWriteDescriptorSetAccelerationStructureKHR writeDescAS{};
+				writeDescAS.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+				writeDescAS.accelerationStructureCount = 1;
 
-			descSetAI.descriptorSetCount = static_cast<uint32_t>(layoutsArray.size());
-			descSetAI.pSetLayouts = layoutsArray.data();
-			descSetMan->descriptorSet[entry.first].second.resize(descSetAI.descriptorSetCount);
-			vkAllocateDescriptorSets(ctx->vkDevice(), &descSetAI, descSetMan->descriptorSet[entry.first].second.data());
-
-			for (auto& layoutBinding : descSetData[entry.first]) {
-				writeDescSet.descriptorType = layoutBinding.type;
-				writeDescSet.dstBinding = layoutBinding.binding;
-
-				for (uint32_t i = 0; i < maxCountPerLayout[entry.first]; i++) {
-					writeDescSet.dstSet = descSetMan->descriptorSet[entry.first].second[i];
-					switch (layoutBinding.type) {
-					case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-						writeDescSet.pBufferInfo = &descBufferInfo;
-						descBufferInfo.buffer = std::get<VkBuffer>(layoutBinding.resourceVec[i]);
-						break;
-					case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-						break;
-					}
-					vkUpdateDescriptorSets(ctx->vkDevice(), 1, &writeDescSet, 0, nullptr);
+				VkWriteDescriptorSet descSetWrite{};
+				descSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descSetWrite.descriptorCount = 1;
+				descSetWrite.descriptorType = descBind.descriptorType;
+				descSetWrite.dstBinding = descBind.binding;
+				descSetWrite.dstSet = descSet[index];
+				if (descBind.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR) {
+					writeDescAS.pAccelerationStructures = &std::get<VkAccelerationStructureKHR>(obj);
+					descSetWrite.pNext = &writeDescAS;
 				}
 			}
 		}
-
-		return descSetMan;
 	}
 
 #define CHECK_OUT_OF_INDEX(x) \

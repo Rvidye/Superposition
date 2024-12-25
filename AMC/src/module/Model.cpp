@@ -3,11 +3,13 @@
 #include<assimp/Importer.hpp>
 #include<assimp/scene.h>
 #include<assimp/postprocess.h>
+#include<VulkanHelperClasses.h>
+#include<MemoryManager.h>
 
 namespace AMC {
 
-	glm::mat4 ConvertMatrix(const aiMatrix4x4* from) {
-		glm::mat4 to;
+	static glm::mat4 ConvertMatrix(const aiMatrix4x4* from) {
+		glm::mat4 to{};
 		to[0][0] = from->a1; to[1][0] = from->a2; to[2][0] = from->a3; to[3][0] = from->a4;
 		to[0][1] = from->b1; to[1][1] = from->b2; to[2][1] = from->b3; to[3][1] = from->b4;
 		to[0][2] = from->c1; to[1][2] = from->c2; to[2][2] = from->c3; to[3][2] = from->c4;
@@ -15,7 +17,7 @@ namespace AMC {
 		return to;
 	}
 
-	void LoadMaterials(const aiScene* scene, Model* model, std::string directory) {
+	static void LoadMaterials(const aiScene* scene, Model* model, std::string directory) {
 
 		auto GetTexturePath = [](aiString name, std::string& directory) {
 			std::string fileName = std::string(name.C_Str());
@@ -130,7 +132,77 @@ namespace AMC {
 		}
 	}
 
-	void LoadMeshes(const aiScene* scene, Model* model, std::string directory) {
+	static VkAccelerationStructureKHR BuildBLAS(const AMC::VkContext* ctx) {
+		AMC::MemoryManager* mem = new AMC::MemoryManager(*ctx);
+
+		std::vector<glm::vec3> vertex{
+			glm::vec3(0.0f, 1.0f, 0.0f),
+			glm::vec3(-1.0f, -1.0f, 0.0f),
+			glm::vec3(1.0f, -1.0f, 0.0f)
+		};
+		std::vector<uint32_t> index{ 0, 1, 2 };
+
+		AMC::Buffer vertexBuffer = mem->createBuffer(sizeof(glm::vec3) * vertex.size(), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
+		AMC::Buffer indexBuffer = mem->createBuffer(sizeof(uint32_t) * index.size(), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
+
+		vertexBuffer.copyFromCpu(ctx, vertex, 0);
+		indexBuffer.copyFromCpu(ctx, index, 0);
+
+		VkAccelerationStructureGeometryKHR asGeometry{};
+		asGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+		asGeometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+		asGeometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+		asGeometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+		asGeometry.geometry.triangles.indexData.deviceAddress = indexBuffer.deviceAddress;
+		asGeometry.geometry.triangles.vertexData.deviceAddress = vertexBuffer.deviceAddress;
+		asGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+		asGeometry.geometry.triangles.vertexStride = sizeof(glm::vec3);
+
+		VkAccelerationStructureBuildGeometryInfoKHR asBuildGeomInfo{};
+		asBuildGeomInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
+		asBuildGeomInfo.geometryCount = 1;
+		asBuildGeomInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+		asBuildGeomInfo.pGeometries = &asGeometry;
+		asBuildGeomInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+
+		uint32_t primCount = 1;
+		VkAccelerationStructureBuildSizesInfoKHR sizeInfo{};
+		sizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+		vkGetAccelerationStructureBuildSizesKHR(ctx->vkDevice(), VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &asBuildGeomInfo, &primCount, &sizeInfo);
+	
+		AMC::Buffer scratch = mem->createBuffer(sizeInfo.buildScratchSize, AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true);
+		asBuildGeomInfo.scratchData.deviceAddress = scratch.deviceAddress;
+	
+		AMC::Buffer asBuff = mem->createBuffer(sizeInfo.accelerationStructureSize, AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR, true);
+
+		VkAccelerationStructureKHR as;
+
+		VkAccelerationStructureCreateInfoKHR asCI{};
+		asCI.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+		asCI.size = sizeInfo.accelerationStructureSize;
+		asCI.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
+		asCI.buffer = asBuff.vk;
+		vkCreateAccelerationStructureKHR(ctx->vkDevice(), &asCI, nullptr, &as);
+
+		asBuildGeomInfo.dstAccelerationStructure = as;
+
+		VkCommandBufferManager cmdBufferManager(ctx);
+		cmdBufferManager.allocate(1);
+		cmdBufferManager.begin();
+
+		VkAccelerationStructureBuildRangeInfoKHR buildrangeAS{};
+		buildrangeAS.primitiveCount = 1;
+		std::vector<VkAccelerationStructureBuildRangeInfoKHR*> buildRange{ &buildrangeAS };
+		vkCmdBuildAccelerationStructuresKHR(cmdBufferManager.get(), 1, &asBuildGeomInfo, buildRange.data());
+
+		cmdBufferManager.end();
+		cmdBufferManager.submit();
+		vkQueueWaitIdle(ctx->vkQueue());
+
+		return as;
+	}
+
+	static void LoadMeshes(const aiScene* scene, Model* model, std::string directory, const VkContext* ctx) {
 
 		if (!model || !scene)
 			return;
@@ -140,7 +212,7 @@ namespace AMC {
 
 			aiMesh* mesh = scene->mMeshes[i];
 			Mesh* m = new Mesh();
-			AABB meshAABB;
+			AABB meshAABB{};
 			GLuint VAO, VBO, IBO;
 
 			std::vector<Vertex> vertices(mesh->mNumVertices);
@@ -296,7 +368,13 @@ namespace AMC {
 			aabbs.push_back(meshAABB);
 		}
 		
-		AABB modelAABB;
+#if defined(RT_ENABLE)
+		if (ctx != nullptr) {
+			model->blas = BuildBLAS(ctx);
+		}
+#endif // defined(RT_ENABLE)
+
+		AABB modelAABB{};
 		modelAABB.mMin = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
 		modelAABB.mMax = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 		for (auto& meshAABB : aabbs) {
@@ -792,7 +870,7 @@ namespace AMC {
 
 	ShaderProgram* Model::programGPUSkin = nullptr;
 
-	Model::Model(std::string path, int iAssimpFlags){
+	Model::Model(std::string path, int iAssimpFlags, const AMC::VkContext* ctx){
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path, iAssimpFlags);
 		if (!scene) {
@@ -817,7 +895,7 @@ namespace AMC {
 
 		// Load Meshes
 		if (scene->HasMeshes()) {
-			LoadMeshes(scene, this, directory);
+			LoadMeshes(scene, this, directory, ctx);
 		}
 
 		// store node heirarchy because we'll render in that order

@@ -11,6 +11,14 @@ static VkResult result;
 #endif // _MYDEBUG
 
 namespace AMC {
+	void Buffer::copyFromCpu(const VkContext* ctx, const void* data, size_t size, size_t offset, bool useStaging) const {
+		if (!useStaging) {
+			void* mem;
+			vkMapMemory(ctx->vkDevice(), vkmem, offset, size, 0, &mem);
+			memcpy(mem, data, size);
+		}
+	}
+
 	static uint32_t getMemoryType(VkPhysicalDevice dev, uint32_t typeBits, VkMemoryPropertyFlags properties) {
 		VkPhysicalDeviceMemoryProperties memoryProperties;
 		vkGetPhysicalDeviceMemoryProperties(dev, &memoryProperties);
@@ -23,7 +31,7 @@ namespace AMC {
 		return 0xffff;
 	}
 
-	Buffer MemoryManager::createBuffer(uint64_t size, MemoryFlagBits memoryFlags, VkBufferUsageFlags bufferUsage) {
+	Buffer MemoryManager::createBuffer(uint64_t size, MemoryFlagBits memoryFlags, VkBufferUsageFlags bufferUsage, bool getAddress) {
 		Buffer buffer{};
 		
 		const bool isGl = memoryFlags & kGlMemoryBit;
@@ -44,6 +52,9 @@ namespace AMC {
 			bufferCI.queueFamilyIndexCount = 1;
 			bufferCI.pQueueFamilyIndices = &ctx.vkQueueFamilyIndex();
 			bufferCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			if (getAddress) {
+				bufferUsage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+			}
 			bufferCI.usage = bufferUsage;
 			bufferCI.size = size;
 			CHECK_VULKAN_ERROR(vkCreateBuffer(ctx.vkDevice(), &bufferCI, nullptr, &buffer.vk));
@@ -55,16 +66,33 @@ namespace AMC {
 			exportMemoryAI.sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO;
 			exportMemoryAI.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 
+			VkMemoryAllocateFlagsInfo memoryAIFlags{};
+			memoryAIFlags.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+			memoryAIFlags.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
 			VkMemoryAllocateInfo memoryAI{};
 			memoryAI.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+			const void **pNext = &memoryAI.pNext;
 			if (isGl) {
-				memoryAI.pNext = &exportMemoryAI;
+				*pNext = &exportMemoryAI;
+				pNext = &exportMemoryAI.pNext;
+			}
+			if (getAddress) {
+				*pNext = &memoryAIFlags;
+				pNext = &memoryAIFlags.pNext;
 			}
 			memoryAI.allocationSize = memReq.size;
-			memoryAI.memoryTypeIndex = getMemoryType(ctx.vkPhysicalDevice(), memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+			memoryAI.memoryTypeIndex = getMemoryType(ctx.vkPhysicalDevice(), memReq.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 			CHECK_VULKAN_ERROR(vkAllocateMemory(ctx.vkDevice(), &memoryAI, nullptr, &buffer.vkmem));
 
 			CHECK_VULKAN_ERROR(vkBindBufferMemory(ctx.vkDevice(), buffer.vk, buffer.vkmem, 0));
+
+			if (getAddress) {
+				VkBufferDeviceAddressInfo bufferDeviceAI{};
+				bufferDeviceAI.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+				bufferDeviceAI.buffer = buffer.vk;
+				buffer.deviceAddress = vkGetBufferDeviceAddress(ctx.vkDevice(), &bufferDeviceAI);
+			}
 
 			if (isGl) {
 				VkMemoryGetWin32HandleInfoKHR memGetWin32HI{};

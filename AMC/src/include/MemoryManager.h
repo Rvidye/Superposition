@@ -20,13 +20,20 @@ namespace AMC {
 		VkDeviceMemory vkmem;
 		GLuint glmem;
 		HANDLE memhandle;
+		VkDeviceAddress deviceAddress;
+		//Just for VK for now
+		void copyFromCpu(const VkContext* ctx, const void* data, size_t size, size_t offset, bool useStaging = false) const;
+		template<typename T>
+		void copyFromCpu(const VkContext* ctx, const std::vector<T>& dataVec, size_t offset, bool useStaging = false) const {
+			copyFromCpu(ctx, dataVec.data(), dataVec.size() * sizeof(T), offset, useStaging);
+		}
 	};
 
 	class MemoryManager {
 	public:
 		MemoryManager(const VkContext& ctx) : ctx(ctx) {}
 		//TODO: Make MemoryFlags a Template argument to improve perf, Low Priority
-		Buffer createBuffer(uint64_t size, MemoryFlagBits memoryFlags, VkBufferUsageFlags bufferUsage);
+		Buffer createBuffer(uint64_t size, MemoryFlagBits memoryFlags, VkBufferUsageFlags bufferUsage = 0, bool getAddress = false);
 	private:
 		const VkContext& ctx;
 	};

@@ -2,12 +2,14 @@
 
 #include<Scene.h>
 #include<ShaderProgram.h>
+#include<VulkanHelperClasses.h>
 
 class rtscene : public AMC::Scene
 {
 private:
 	AMC::ShaderProgram* programModel;
 public:
+	rtscene(const AMC::VkContext* vkctx) : Scene(vkctx), programModel(nullptr) {}
 	void init() override;
 	void renderDebug() override;
 	void renderUI() override;

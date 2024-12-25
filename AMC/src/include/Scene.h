@@ -4,6 +4,7 @@
 #include<Model.h>
 #include<Camera.h>
 #include<LightManager.h>
+#include<VulkanHelperClasses.h>
 
 namespace AMC {
 
@@ -15,8 +16,8 @@ namespace AMC {
 	};
 
 	class Scene {
-
 		public:
+			Scene(const AMC::VkContext* vkctx);
 			virtual void init() = 0;
 			//virtual void render() = 0; I would prefer if we don't let user draw whatever they want and pass system should render all the objects instead.
 			virtual void renderDebug() = 0; // only used in debug mode
@@ -24,6 +25,9 @@ namespace AMC {
 			virtual void update() = 0;
 			virtual void keyboardfunc(char key, UINT keycode) = 0;
 			virtual AMC::Camera* getCamera() = 0;
+
+			void BuildTLAS();
+
 
 			void addModel(const std::string& name, const RenderModel& obj) {
 				models[name] = obj;
@@ -33,6 +37,18 @@ namespace AMC {
 			void removeModel(const std::string& name) {
 				models.erase(name);
 				reCalculateSceneAABB();
+			}
+			
+			void writeDescSet(int index);
+
+			VkAccelerationStructureKHR getAS() const {
+				return tlas;
+			}
+
+			static void createDescSetLayout(const AMC::VkContext* ctx, size_t count);
+			static void createDescSets();
+			static const VkDescSetLayoutManager* vkDescSetLayout() {
+				return descSetLayout;
 			}
 
 			//TODO: Remove this, models is already a public variable
@@ -90,10 +106,14 @@ namespace AMC {
 				}
 			}
 
+			VkAccelerationStructureKHR tlas;
 			bool completed = false;
 			std::unordered_map<std::string, RenderModel> models;
 			LightManager *lightManager  = nullptr;
 			AABB sceneAABB = {glm::vec3(FLT_MAX),glm::vec3(FLT_MAX)};
+			const VkContext* ctx;
+			VkDescriptorSet descSet;
+			static VkDescSetLayoutManager* descSetLayout;
 	};
 };
 

@@ -4,6 +4,7 @@
 #include<ShaderProgram.h>
 #include<assimp/scene.h>
 #include<assimp/postprocess.h>
+#include<VulkanHelperClasses.h>
 
 #define MAX_BONE_COUNT 100
 #define MAX_BONE_INFLUENCE 4
@@ -168,7 +169,7 @@ namespace AMC {
 
 		public:
 			
-			Model(std::string path, int iAssimpFlags);
+			Model(std::string path, int iAssimpFlags, const AMC::VkContext* ctx = nullptr);
 			~Model();
 
 			void draw(ShaderProgram* program,UINT iNumInstance = 1, bool iUseMaterial = true);
@@ -176,6 +177,7 @@ namespace AMC {
 			void lerpAnimation(float t);
 			void setActiveAnimation(int indel = 0);
 
+			VkAccelerationStructureKHR blas;
 			AABB aabb;
 			std::vector<Mesh*> meshes;
 			std::vector<Material*> materials;

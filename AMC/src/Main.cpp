@@ -28,6 +28,7 @@
 #include "renderpass/Tonemap/Tonemap.h"
 #include "renderpass/VXGI/Voxelizer.h"
 #include "renderpass/VXGI/ConeTracer.h"
+#include "renderpass/VolumetricLighting/VolumetricLighting.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -524,6 +525,7 @@ void InitRenderPasses()
 	gpRenderer->addPass(new SkyBoxPass());
 	gpRenderer->addPass(new SSR());
 	gpRenderer->addPass(new Bloom());
+	gpRenderer->addPass(new Volumetric());
 	gpRenderer->addPass(new Tonemap());
 	gpRenderer->addPass(new BlitPass());
 

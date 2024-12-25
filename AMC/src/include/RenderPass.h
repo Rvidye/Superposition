@@ -6,7 +6,7 @@
 namespace AMC {
 	// Store Extra Data that can be accesses by all render passes
 	struct RenderContext {
-		GLsizei width = 2048, height = 2048;
+		GLsizei width = 1024, height = 1024;
 		GLsizei screenWidth, screenHeight;
 		//glm::vec3 GridMin, GridMax;
 		//GBuffer

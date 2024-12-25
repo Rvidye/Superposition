@@ -1,10 +1,13 @@
 import os
 import subprocess
 
-def compile_spv(file):
+def compile_spv(file: str):
     os.makedirs("spv", exist_ok=True)
-    print(f"Running: glslc {file} -o spv/{file}.spv --target-env=opengl")
-    subprocess.run(f"glslc {file} -o spv/{file}.spv --target-env=opengl")
+    target_env = "opengl"
+    if file.startswith("vk_"):
+        target_env = "vulkan"
+    print(f"Running: glslc {file} -o spv/{file}.spv --target-env={target_env}")
+    subprocess.run(f"glslc {file} -o spv/{file}.spv --target-env={target_env}")
     print()
 
 def recursive_compile(path):

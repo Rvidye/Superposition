@@ -11,6 +11,7 @@ namespace AMC {
 		m_positionAdjuster = new AMC::SplineAdjuster(m_splineCamera->m_positionSpline);
 		m_frontAdjuster = new AMC::SplineAdjuster(m_splineCamera->m_frontSpline);
 		m_activespline = 0;
+		t = 0.0f;
 	}
 
 	SplineCameraAdjuster::~SplineCameraAdjuster(){
@@ -34,7 +35,11 @@ namespace AMC {
 	}
 
 	void SplineCameraAdjuster::renderUI() {
-	#if defined(_MYDEBUG)
+	#if defined(_MYDEBUG)		
+		if (ImGui::SliderFloat("Delta t : ", &t, 0.0f, 1.0f)) {
+			m_splineCamera->update(t);
+		}
+		
 		ImGui::Text("Active Spline: %s", m_activespline == ACTIVESPLINE::POSITION ? "Position" : "Front");
 		
 		if (ImGui::Button("Toggle Active Spline")) {
@@ -59,6 +64,7 @@ namespace AMC {
 				m_frontAdjuster->renderUI();
 			}
 		}
+
 	#endif
 	}
 
@@ -75,6 +81,19 @@ namespace AMC {
 				m_frontAdjuster->keyboardfunc(keyPressed, keycode);
 			}
 		}
+
+		switch (keycode)
+		{
+			case VK_UP:
+				t += 0.01f;
+				break;
+			case VK_DOWN:
+				t -= 0.01f;
+				break;
+		default:
+			break;
+		}
+		m_splineCamera->update(t);
 	}
 
 	SplineCamera* SplineCameraAdjuster::getCamera(){

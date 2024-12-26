@@ -234,6 +234,7 @@ namespace AMC {
             splineRenderer->setRenderPoints(isRenderPoints);
         }
         ImGui::SliderFloat("Scaling Factor", &scalingFactor, 0.1f, 10.0f);
+        ImGui::DragFloat("Movement Speed", &movementSpeed, 0.1f, 0.001f);
         ImGui::Text("Selected Path Point : %d", selectedPoint);
         if (ImGui::Button("Next Point")) {
             selectedPoint = (selectedPoint == 0) ? (int)splineInterpolator->getPoints().size() - 1 : (int)(selectedPoint - 1) % splineInterpolator->getPoints().size();

@@ -32,6 +32,7 @@
 // Scenes
 #include "scenes/testscene/testScene.h"
 #include "scenes/AMCBanner/AMCBanner.h"
+#include "scenes/Superposition/SuperPosition.h"
 
 // Libraries
 #pragma comment(lib,"glew32.lib")
@@ -538,7 +539,8 @@ void InitRenderPasses()
 void InitScenes(void)
 {
 	//sceneQueue.push_back(new testScene());
-	sceneQueue.push_back(new AMCBannerScene());
+	//sceneQueue.push_back(new AMCBannerScene());
+	sceneQueue.push_back(new SuperpositionScene());
 
 	for (auto* scene : sceneQueue) {
 		scene->init();

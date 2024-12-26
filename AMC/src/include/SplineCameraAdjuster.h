@@ -18,7 +18,7 @@ namespace AMC {
 			SplineAdjuster* m_positionAdjuster;
 			SplineAdjuster* m_frontAdjuster;
 			UINT m_activespline;
-
+			FLOAT t;
 		public:
 
 			SplineCameraAdjuster(SplineCamera* splinecam);

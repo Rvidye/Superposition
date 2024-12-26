@@ -132,40 +132,17 @@ namespace AMC {
 		}
 	}
 
-	static VkAccelerationStructureKHR BuildBLAS(const AMC::VkContext* ctx) {
-		AMC::MemoryManager* mem = new AMC::MemoryManager(*ctx);
-
-		std::vector<glm::vec3> vertex{
-			glm::vec3(0.0f, 1.0f, 0.0f),
-			glm::vec3(-1.0f, -1.0f, 0.0f),
-			glm::vec3(1.0f, -1.0f, 0.0f)
-		};
-		std::vector<uint32_t> index{ 0, 1, 2 };
-
-		AMC::Buffer vertexBuffer = mem->createBuffer(sizeof(glm::vec3) * vertex.size(), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
-		AMC::Buffer indexBuffer = mem->createBuffer(sizeof(uint32_t) * index.size(), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
-
-		vertexBuffer.copyFromCpu(ctx, vertex, 0);
-		indexBuffer.copyFromCpu(ctx, index, 0);
-
-		VkAccelerationStructureGeometryKHR asGeometry{};
-		asGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
-		asGeometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
-		asGeometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
-		asGeometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
-		asGeometry.geometry.triangles.indexData.deviceAddress = indexBuffer.deviceAddress;
-		asGeometry.geometry.triangles.vertexData.deviceAddress = vertexBuffer.deviceAddress;
-		asGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-		asGeometry.geometry.triangles.vertexStride = sizeof(glm::vec3);
+	static VkAccelerationStructureKHR BuildBLAS(const AMC::VkContext* ctx, std::vector<VkAccelerationStructureGeometryKHR>& geomConfigs, std::vector<uint32_t> primCounts) {
+		AMC::MemoryManager* mem = new AMC::MemoryManager(ctx);
 
 		VkAccelerationStructureBuildGeometryInfoKHR asBuildGeomInfo{};
 		asBuildGeomInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
-		asBuildGeomInfo.geometryCount = 1;
+		asBuildGeomInfo.geometryCount = static_cast<uint32_t>(geomConfigs.size());
 		asBuildGeomInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-		asBuildGeomInfo.pGeometries = &asGeometry;
+		asBuildGeomInfo.pGeometries = geomConfigs.data();
 		asBuildGeomInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
 
-		uint32_t primCount = 1;
+		uint32_t primCount = *std::max_element(primCounts.begin(), primCounts.end());
 		VkAccelerationStructureBuildSizesInfoKHR sizeInfo{};
 		sizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 		vkGetAccelerationStructureBuildSizesKHR(ctx->vkDevice(), VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &asBuildGeomInfo, &primCount, &sizeInfo);
@@ -190,19 +167,41 @@ namespace AMC {
 		cmdBufferManager.allocate(1);
 		cmdBufferManager.begin();
 
-		VkAccelerationStructureBuildRangeInfoKHR buildrangeAS{};
-		buildrangeAS.primitiveCount = 1;
-		std::vector<VkAccelerationStructureBuildRangeInfoKHR*> buildRange{ &buildrangeAS };
+		std::vector<VkAccelerationStructureBuildRangeInfoKHR> buildRangesAS(geomConfigs.size());
+		for (int i = 0; i < buildRangesAS.size(); i++) {
+			buildRangesAS[i].firstVertex = 0;
+			buildRangesAS[i].primitiveCount = primCounts[i];
+			buildRangesAS[i].primitiveOffset = 0;
+			buildRangesAS[i].transformOffset = 0;
+		}
+		std::vector<VkAccelerationStructureBuildRangeInfoKHR*> buildRange{ buildRangesAS.data() };
 		vkCmdBuildAccelerationStructuresKHR(cmdBufferManager.get(), 1, &asBuildGeomInfo, buildRange.data());
 
 		cmdBufferManager.end();
 		cmdBufferManager.submit();
 		vkQueueWaitIdle(ctx->vkQueue());
-
+		
 		return as;
 	}
 
 	static void LoadMeshes(const aiScene* scene, Model* model, std::string directory, const VkContext* ctx) {
+		AMC::MemoryManager* memoryManager = new AMC::MemoryManager(ctx);
+		
+		//TODO: currently the code assumes the first member of struct is position. If that needs to change this function or buildBLAS may have to be reworked
+		auto createGeometryConfig = [](const AMC::Buffer& vertexBuffer, const AMC::Buffer& indexBuffer, uint32_t vertexCount) -> VkAccelerationStructureGeometryKHR {
+			VkAccelerationStructureGeometryKHR asGeometry{};
+			asGeometry.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
+			asGeometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+			asGeometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+			asGeometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
+			asGeometry.geometry.triangles.indexData.deviceAddress = indexBuffer.deviceAddress;
+			asGeometry.geometry.triangles.vertexData.deviceAddress = vertexBuffer.deviceAddress;
+			asGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+			asGeometry.geometry.triangles.vertexStride = sizeof(Vertex);
+			asGeometry.geometry.triangles.maxVertex = vertexCount - 1;
+
+			return asGeometry;
+		};
 
 		if (!model || !scene)
 			return;
@@ -283,6 +282,9 @@ namespace AMC {
 				}
 			}
 
+			AMC::Buffer vertexBuffer = memoryManager->createBuffer(vertices.size() * sizeof(Vertex), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
+			vertexBuffer.copyFromCpu(ctx, vertices, 0);
+
 			glCreateVertexArrays(1, &VAO);
 			glCreateBuffers(1, &VBO);
 			glNamedBufferData(VBO, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
@@ -342,6 +344,9 @@ namespace AMC {
 				}
 			}
 
+			AMC::Buffer indexBuffer = memoryManager->createBuffer(indices.size() * sizeof(uint32_t), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
+			indexBuffer.copyFromCpu(ctx, indices, 0);
+			
 			glCreateBuffers(1, &IBO);
 			glNamedBufferData(IBO, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 			glVertexArrayElementBuffer(VAO, IBO);
@@ -362,6 +367,9 @@ namespace AMC {
 			m->vao = VAO;
 			model->meshes.push_back(m);
 
+			model->geomConfigs.push_back(createGeometryConfig(vertexBuffer, indexBuffer, vertices.size()));
+			model->primCounts.push_back(indices.size() / 3);
+
 			// AABB
 			meshAABB.mMin = glm::vec3(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z);
 			meshAABB.mMax = glm::vec3(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
@@ -370,7 +378,7 @@ namespace AMC {
 		
 #if defined(RT_ENABLE)
 		if (ctx != nullptr) {
-			model->blas = BuildBLAS(ctx);
+			model->blas = BuildBLAS(ctx, model->geomConfigs, model->primCounts);
 		}
 #endif // defined(RT_ENABLE)
 

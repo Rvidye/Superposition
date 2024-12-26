@@ -14,8 +14,17 @@ namespace AMC {
 	void Buffer::copyFromCpu(const VkContext* ctx, const void* data, size_t size, size_t offset, bool useStaging) const {
 		if (!useStaging) {
 			void* mem;
-			vkMapMemory(ctx->vkDevice(), vkmem, offset, size, 0, &mem);
-			memcpy(mem, data, size);
+			//Prefer this over GL version
+			if (vkmem != VK_NULL_HANDLE) {
+				vkMapMemory(ctx->vkDevice(), vkmem, offset, size, 0, &mem);
+				memcpy(mem, data, size);
+			}
+			else if (glIsBuffer(gl)) {
+				glNamedBufferSubData(gl, offset, size, data);
+			}
+			else {
+				LOG_ERROR(L"Invalid buffer used for copying");
+			}
 		}
 	}
 
@@ -39,6 +48,11 @@ namespace AMC {
 		//TODO: Confirm if certain Buffers need to be updated per frame if that is the case: Provisions will have to be made on both Vulkan and OpenGL side.
 		//Currently the Buffers are created to be un-modifyable by CPU for the sake of performance.
 
+		if (isVk && !isGl && ctx == nullptr) {
+			LOG_ERROR(L"Cannot allocate a Vulkan Buffer without a context set.");
+			return buffer;
+		}
+
 		if (isVk) {
 			VkExternalMemoryBufferCreateInfo externalMemoryBufferCI{};
 			externalMemoryBufferCI.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO;
@@ -50,17 +64,17 @@ namespace AMC {
 				bufferCI.pNext = &externalMemoryBufferCI;
 			}
 			bufferCI.queueFamilyIndexCount = 1;
-			bufferCI.pQueueFamilyIndices = &ctx.vkQueueFamilyIndex();
+			bufferCI.pQueueFamilyIndices = &ctx->vkQueueFamilyIndex();
 			bufferCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			if (getAddress) {
 				bufferUsage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 			}
 			bufferCI.usage = bufferUsage;
 			bufferCI.size = size;
-			CHECK_VULKAN_ERROR(vkCreateBuffer(ctx.vkDevice(), &bufferCI, nullptr, &buffer.vk));
+			CHECK_VULKAN_ERROR(vkCreateBuffer(ctx->vkDevice(), &bufferCI, nullptr, &buffer.vk));
 
 			VkMemoryRequirements memReq{};
-			vkGetBufferMemoryRequirements(ctx.vkDevice(), buffer.vk, &memReq);
+			vkGetBufferMemoryRequirements(ctx->vkDevice(), buffer.vk, &memReq);
 
 			VkExportMemoryAllocateInfo exportMemoryAI{};
 			exportMemoryAI.sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO;
@@ -82,16 +96,16 @@ namespace AMC {
 				pNext = &memoryAIFlags.pNext;
 			}
 			memoryAI.allocationSize = memReq.size;
-			memoryAI.memoryTypeIndex = getMemoryType(ctx.vkPhysicalDevice(), memReq.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-			CHECK_VULKAN_ERROR(vkAllocateMemory(ctx.vkDevice(), &memoryAI, nullptr, &buffer.vkmem));
+			memoryAI.memoryTypeIndex = getMemoryType(ctx->vkPhysicalDevice(), memReq.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+			CHECK_VULKAN_ERROR(vkAllocateMemory(ctx->vkDevice(), &memoryAI, nullptr, &buffer.vkmem));
 
-			CHECK_VULKAN_ERROR(vkBindBufferMemory(ctx.vkDevice(), buffer.vk, buffer.vkmem, 0));
+			CHECK_VULKAN_ERROR(vkBindBufferMemory(ctx->vkDevice(), buffer.vk, buffer.vkmem, 0));
 
 			if (getAddress) {
 				VkBufferDeviceAddressInfo bufferDeviceAI{};
 				bufferDeviceAI.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
 				bufferDeviceAI.buffer = buffer.vk;
-				buffer.deviceAddress = vkGetBufferDeviceAddress(ctx.vkDevice(), &bufferDeviceAI);
+				buffer.deviceAddress = vkGetBufferDeviceAddress(ctx->vkDevice(), &bufferDeviceAI);
 			}
 
 			if (isGl) {
@@ -99,7 +113,7 @@ namespace AMC {
 				memGetWin32HI.sType = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR;
 				memGetWin32HI.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 				memGetWin32HI.memory = buffer.vkmem;
-				CHECK_VULKAN_ERROR(vkGetMemoryWin32HandleKHR(ctx.vkDevice(), &memGetWin32HI, &buffer.memhandle));
+				CHECK_VULKAN_ERROR(vkGetMemoryWin32HandleKHR(ctx->vkDevice(), &memGetWin32HI, &buffer.memhandle));
 				
 				glCreateMemoryObjectsEXT(1, &buffer.glmem);
 				glImportMemoryWin32HandleEXT(buffer.glmem, memReq.size, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, buffer.memhandle);

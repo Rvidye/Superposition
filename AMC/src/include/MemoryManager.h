@@ -31,10 +31,10 @@ namespace AMC {
 
 	class MemoryManager {
 	public:
-		MemoryManager(const VkContext& ctx) : ctx(ctx) {}
+		MemoryManager(const VkContext* ctx) : ctx(ctx) {}
 		//TODO: Make MemoryFlags a Template argument to improve perf, Low Priority
 		Buffer createBuffer(uint64_t size, MemoryFlagBits memoryFlags, VkBufferUsageFlags bufferUsage = 0, bool getAddress = false);
 	private:
-		const VkContext& ctx;
+		const VkContext* ctx;
 	};
 };

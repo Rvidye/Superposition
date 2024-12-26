@@ -37,7 +37,7 @@ namespace AMC {
 		glm::vec3 mMin;
 		glm::vec3 mMax;
 	};
-
+	
 	class Material {
 		public:
 			glm::vec3 albedo;
@@ -180,6 +180,8 @@ namespace AMC {
 			VkAccelerationStructureKHR blas;
 			AABB aabb;
 			std::vector<Mesh*> meshes;
+			std::vector<VkAccelerationStructureGeometryKHR> geomConfigs{};
+			std::vector<uint32_t> primCounts{};
 			std::vector<Material*> materials;
 			NodeData rootNode;
 

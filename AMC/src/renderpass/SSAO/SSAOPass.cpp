@@ -15,7 +15,7 @@ void SSAO::create(AMC::RenderContext& context) {
 }
 
 void SSAO::execute(AMC::Scene* scene, AMC::RenderContext& context) {
-	if (!enableSSAO) return;
+	if (!context.IsSSAO) return;
 	//glBindTextureUnit(0, context.textureGBuffer[1]);
 	//glBindTextureUnit(1, context.textureGBuffer[4]);
 	glBindImageTexture(2, m_textureResult, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R8);
@@ -37,7 +37,6 @@ const char* SSAO::getName() const
 void SSAO::renderUI()
 {
 #ifdef _MYDEBUG
-	ImGui::Checkbox("Enable SSAO", &enableSSAO);
 	ImGui::SliderInt("Samples", &SampleCount, 1, 20);
 	ImGui::SliderFloat("Radius", &radius, 0.0f, 0.5f);
 	ImGui::SliderFloat("Stength", &stength, 0.0f, 10.0f);

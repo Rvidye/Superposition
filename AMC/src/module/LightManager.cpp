@@ -125,6 +125,7 @@ namespace AMC {
 
 	ShadowManager* LightManager::GetShadowManager()
 	{
+		if(!shadowManager) return nullptr;
 		return shadowManager;
 	}
 

@@ -239,6 +239,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClCompile Include="src\renderpass\Tonemap\Tonemap.cpp" />
     <ClCompile Include="src\renderpass\VXGI\ConeTracer.cpp" />
     <ClCompile Include="src\renderpass\VXGI\Voxelizer.cpp" />
+    <ClCompile Include="src\scenes\AMCBanner\AMCBanner.cpp" />
     <ClCompile Include="src\scenes\testscene\testScene.cpp" />
     <ClCompile Include="src\module\VulkanHelperClasses.cpp" />
   </ItemGroup>
@@ -1056,6 +1057,7 @@ copy /Y "$(ProjectDir)lib\release\ktx.dll" "$(ProjectDir)bin\$(Platform)\$(Confi
     <ClInclude Include="src\renderpass\Tonemap\Tonemap.h" />
     <ClInclude Include="src\renderpass\VXGI\ConeTracer.h" />
     <ClInclude Include="src\renderpass\VXGI\Voxelizer.h" />
+    <ClInclude Include="src\scenes\AMCBanner\AMCBanner.h" />
     <ClInclude Include="src\scenes\testscene\testScene.h" />
     <ClInclude Include="src\include\VulkanHelperClasses.h" />
   </ItemGroup>

@@ -80,6 +80,10 @@ void GBufferPass::create(AMC::RenderContext& context)
 
 void GBufferPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 {
+    if (!context.IsGbuffer) {
+        return;
+    }
+
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);

@@ -15,11 +15,19 @@ void Tonemap::create(AMC::RenderContext& context) {
 }
 
 void Tonemap::execute(AMC::Scene* scene, AMC::RenderContext& context) {
-
+	if (!context.IsToneMap)
+		return;
 	glBindImageTexture(0, textureTonemapResult, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
 	glBindTextureUnit(0, context.textureDeferredResult); // Rasterier Result
-	glBindTextureUnit(1, context.textureBloomResult); // Bloom Result
-	glBindTextureUnit(2, 0); // Volumetric Result
+	if (context.IsBloom)
+		glBindTextureUnit(1, context.textureBloomResult); // Bloom Result
+	else
+		glBindTextureUnit(1, 0);
+	if (context.IsVolumetric)
+		glBindTextureUnit(2, context.textureVolumetricResult); // Volumetric Light Result
+	else
+		glBindTextureUnit(2, 0);
+
 	m_ProgramTonemap->use();
 	glUniform1f(0,Exposure);
 	glUniform1f(1, Saturation);

@@ -12,7 +12,7 @@ public:
 	void renderUI() override;
 	AMC::ShaderProgram* m_ProgramAtmosphericScatter;
 	GLuint textureAtmosphericResult;
-	bool enableAtmosphericScattering = true;
+	bool modified = true;
 	int ISteps = 40;
 	int JSteps = 8;
 	float LightIntensity = 15.0f;

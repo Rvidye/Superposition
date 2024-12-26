@@ -44,9 +44,17 @@ void Bloom::create(AMC::RenderContext& context) {
 }
 
 void Bloom::execute(AMC::Scene* scene, AMC::RenderContext& context) {
-    if (!enableBloom) return;
-	m_ProgramBloom->use();
 
+    if (!context.IsBloom) {
+        context.textureBloomResult = NULL;
+        return;
+    }
+    else
+    {
+        context.textureBloomResult = textureUpsample;
+    }
+
+    m_ProgramBloom->use();
     int currentWriteLod = 0;
     glUniform1f(2, threshold);
     glUniform1f(3, maxColor);
@@ -104,7 +112,6 @@ const char* Bloom::getName() const
 void Bloom::renderUI()
 {
 #ifdef _MYDEBUG
-    ImGui::Checkbox("Enable Bloom", &enableBloom);
     ImGui::SliderFloat("Threshold", &threshold, 0.0f, 10.0f);
     ImGui::SliderFloat("MaxColor", &maxColor, 0.0f, 20.0f);
     int temp = minusLods;

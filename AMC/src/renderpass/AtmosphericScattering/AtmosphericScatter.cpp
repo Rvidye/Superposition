@@ -27,6 +27,8 @@ void AtmosphericScatterer::create(AMC::RenderContext& context) {
 void AtmosphericScatterer::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 
 	// Compute Atmospheric Scattering
+	if (!modified)
+		return;
 	glBindImageTexture(0, textureAtmosphericResult, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 	m_ProgramAtmosphericScatter->use();
 	glUniform1i(m_ProgramAtmosphericScatter->getUniformLocation("ISteps"), ISteps);
@@ -38,6 +40,7 @@ void AtmosphericScatterer::execute(AMC::Scene* scene, AMC::RenderContext& contex
 	GLuint workGroupSizeY = (128 + 8 - 1) / 8;
 	glDispatchCompute(workGroupSizeX, workGroupSizeY, 6);
 	glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+	modified = false;
 }
 
 const char* AtmosphericScatterer::getName() const
@@ -48,11 +51,24 @@ const char* AtmosphericScatterer::getName() const
 void AtmosphericScatterer::renderUI()
 {
 #ifdef _MYDEBUG
-	ImGui::Checkbox("Enable Scattering", &enableAtmosphericScattering);
-	ImGui::SliderFloat("Elevation", &Elevation, - glm::pi<float>(), glm::pi<float>());
-	ImGui::SliderFloat("Azimuth", &Azimuth, -glm::pi<float>(), glm::pi<float>());
-	ImGui::DragFloat("LightIntensity", &LightIntensity, 0.2f);
-	ImGui::SliderInt("InScatteringSamples", &ISteps, 1, 100);
-	ImGui::SliderInt("DensitySamples", &JSteps, 1, 40);
+	if (ImGui::SliderFloat("Elevation", &Elevation, -glm::pi<float>(), glm::pi<float>())) {
+		modified = true;
+	}
+
+	if (ImGui::SliderFloat("Azimuth", &Azimuth, -glm::pi<float>(), glm::pi<float>())) {
+		modified = true;
+	}
+
+	if (ImGui::DragFloat("LightIntensity", &LightIntensity, 0.2f)) {
+		modified = true;
+	}
+
+	if (ImGui::SliderInt("InScatteringSamples", &ISteps, 1, 100)) {
+		modified = true;
+	}
+
+	if (ImGui::SliderInt("DensitySamples", &JSteps, 1, 40)) {
+		modified = true;
+	}
 #endif
 }

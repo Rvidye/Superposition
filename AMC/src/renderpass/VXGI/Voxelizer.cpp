@@ -27,6 +27,8 @@ void Voxelizer::create(AMC::RenderContext& context){
 
 void Voxelizer::execute(AMC::Scene* scene, AMC::RenderContext& context){
 
+	if (!context.IsVGXI)
+		return;
 	// Maybe we should take scene aabb into accound as well.
 	float granularity = 8.0f;
 	glm::vec3 quantizedMin = ((AMC::currentCamera->getViewPosition() - glm::vec3(35.0f, 20.0f, 35.0f)) / granularity)* granularity;

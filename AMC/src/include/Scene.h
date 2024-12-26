@@ -6,7 +6,7 @@
 #include<LightManager.h>
 
 namespace AMC {
-
+	struct RenderContext; // forward declare
 	struct RenderModel {
 		Model* model = nullptr;
 		glm::mat4 matrix = glm::mat4(1.0f);
@@ -23,6 +23,7 @@ namespace AMC {
 			virtual void renderUI() = 0;
 			virtual void update() = 0;
 			virtual void keyboardfunc(char key, UINT keycode) = 0;
+			virtual void updateRenderContext(RenderContext& context) = 0; //hacky but fuck it
 			virtual AMC::Camera* getCamera() = 0;
 
 			void addModel(const std::string& name, const RenderModel& obj) {

@@ -19,7 +19,7 @@ void Tonemap::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	glBindImageTexture(0, textureTonemapResult, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
 	glBindTextureUnit(0, context.textureDeferredResult); // Rasterier Result
 	glBindTextureUnit(1, context.textureBloomResult); // Bloom Result
-	glBindTextureUnit(2, 0); // Volumetric Result
+	glBindTextureUnit(2, context.textureVolumetricResult); // Volumetric Result
 	m_ProgramTonemap->use();
 	glUniform1f(0,Exposure);
 	glUniform1f(1, Saturation);

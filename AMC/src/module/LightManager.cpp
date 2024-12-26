@@ -256,7 +256,7 @@ namespace AMC {
 				}
 
 				// Color controls
-				if (ImGui::ColorEdit3("Color", &light.gpuLight.color.x)) {
+				if (ImGui::DragFloat3("Color", &light.gpuLight.color.x, 0.1f, 0.0f)) {
 					shouldUpdateBuffer = true;
 				}
 

@@ -51,7 +51,7 @@ namespace AMC {
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, uboLights);
 
 		if (!m_program) {
-			m_program = new ShaderProgram({ RESOURCE_PATH("shaders\\model\\model.vert"), RESOURCE_PATH("shaders\\color\\color.frag") });
+			m_program = new ShaderProgram({ RESOURCE_PATH("shaders\\Light\\Light.vert"), RESOURCE_PATH("shaders\\Light\\Light.frag") });
 		}
 
 		if (!directional) {
@@ -341,42 +341,42 @@ namespace AMC {
 	void LightManager::drawLights(){
 
 		m_program->use();
+		point->draw(m_program, lights.size(), false);
+		//for (const auto& light : lights) {
 
-		for (const auto& light : lights) {
+		//	if (!light.gpuLight.active) continue;
 
-			if (!light.gpuLight.active) continue;
+		//	glm::mat4 model = glm::mat4(1.0f);
 
-			glm::mat4 model = glm::mat4(1.0f);
+		//	if (light.gpuLight.type == LIGHT_TYPE_DIRECTIONAL) {
+		//		model = glm::translate(model, light.gpuLight.position);
+		//		glm::vec3 direction = glm::normalize(light.gpuLight.direction);
+		//		glm::quat rotation = glm::rotation(glm::vec3(0.0f, -1.0f, 0.0f), direction);
+		//		glm::mat4 rotMatrix = glm::toMat4(rotation);
+		//		model *= rotMatrix;
+		//	}
+		//	else if (light.gpuLight.type == LIGHT_TYPE_SPOT) {
+		//		model = glm::translate(model, light.gpuLight.position);
+		//		glm::vec3 direction = glm::normalize(light.gpuLight.direction);
+		//		glm::quat rotation = glm::rotation(glm::vec3(0.0f, -1.0f, 0.0f), direction);
+		//		glm::mat4 rotMatrix = glm::toMat4(rotation);
+		//		model *= rotMatrix;
+		//	}
+		//	else if (light.gpuLight.type == LIGHT_TYPE_POINT) {
+		//		model = glm::translate(model, light.gpuLight.position);
+		//	}
 
-			if (light.gpuLight.type == LIGHT_TYPE_DIRECTIONAL) {
-				model = glm::translate(model, light.gpuLight.position);
-				glm::vec3 direction = glm::normalize(light.gpuLight.direction);
-				glm::quat rotation = glm::rotation(glm::vec3(0.0f, -1.0f, 0.0f), direction);
-				glm::mat4 rotMatrix = glm::toMat4(rotation);
-				model *= rotMatrix;
-			}
-			else if (light.gpuLight.type == LIGHT_TYPE_SPOT) {
-				model = glm::translate(model, light.gpuLight.position);
-				glm::vec3 direction = glm::normalize(light.gpuLight.direction);
-				glm::quat rotation = glm::rotation(glm::vec3(0.0f, -1.0f, 0.0f), direction);
-				glm::mat4 rotMatrix = glm::toMat4(rotation);
-				model *= rotMatrix;
-			}
-			else if (light.gpuLight.type == LIGHT_TYPE_POINT) {
-				model = glm::translate(model, light.gpuLight.position);
-			}
-
-			glUniformMatrix4fv(m_program->getUniformLocation("modelMat"), 1, GL_FALSE, glm::value_ptr(model));
-			glUniform4fv(m_program->getUniformLocation("color"), 1, glm::value_ptr(light.gpuLight.color));
-			if (light.gpuLight.type == LIGHT_TYPE_DIRECTIONAL) {
-				directional->draw(m_program, 1, false);
-			}
-			else if (light.gpuLight.type == LIGHT_TYPE_SPOT) {
-				spot->draw(m_program, 1, false);
-			}
-			else if (light.gpuLight.type == LIGHT_TYPE_POINT) {
-				point->draw(m_program, 1, false);
-			}
-		}
+		//	glUniformMatrix4fv(m_program->getUniformLocation("modelMat"), 1, GL_FALSE, glm::value_ptr(model));
+		//	glUniform4fv(m_program->getUniformLocation("color"), 1, glm::value_ptr(light.gpuLight.color));
+		//	if (light.gpuLight.type == LIGHT_TYPE_DIRECTIONAL) {
+		//		directional->draw(m_program, 1, false);
+		//	}
+		//	else if (light.gpuLight.type == LIGHT_TYPE_SPOT) {
+		//		spot->draw(m_program, 1, false);
+		//	}
+		//	else if (light.gpuLight.type == LIGHT_TYPE_POINT) {
+		//		point->draw(m_program, 1, false);
+		//	}
+		//}
 	}
 };

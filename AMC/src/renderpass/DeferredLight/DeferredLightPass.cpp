@@ -36,7 +36,7 @@ void DeferredPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 	glDisable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	glViewport(0, 0, context.width, context.height);
-	glm::vec4 clearcolor = glm::vec4(0.0, 0.5, 0.5f, 1.0f);
+	glm::vec4 clearcolor = glm::vec4(0.0, 0.0, 0.0f, 1.0f);
 	glClearNamedFramebufferfv(m_FBO, GL_COLOR, 0, glm::value_ptr(clearcolor));
 
 	m_ProgramDeferredLighting->use();

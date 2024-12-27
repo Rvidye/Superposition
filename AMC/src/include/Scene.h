@@ -91,6 +91,7 @@ namespace AMC {
 				}
 			}
 
+			bool OverrideRenderer = false;
 			bool completed = false;
 			std::unordered_map<std::string, RenderModel> models;
 			LightManager *lightManager  = nullptr;

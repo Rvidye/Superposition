@@ -171,10 +171,6 @@ namespace AMC {
         newShadow.UpdateViewMatrices();
         glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &newShadow.texture);
         glTextureStorage2D(newShadow.texture, 1, GL_DEPTH_COMPONENT16, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
-        glTextureParameteri(newShadow.texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTextureParameteri(newShadow.texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTextureParameteri(newShadow.texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTextureParameteri(newShadow.texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         glCreateFramebuffers(1, &newShadow.fbo);
         glNamedFramebufferTexture(newShadow.fbo, GL_DEPTH_ATTACHMENT, newShadow.texture, 0);

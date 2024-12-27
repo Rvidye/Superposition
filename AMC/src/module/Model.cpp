@@ -965,7 +965,6 @@ namespace AMC {
 	void Model::drawNodes(const NodeData& node, const glm::mat4& parentTransform, ShaderProgram* program, UINT iNumInstance, bool iUseMaterial) {
 
 		glm::mat4 globalTransform = parentTransform * node.globalTransform;
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, materialSSBO);
 		//TODO:  set Node matrix here
 		glUniformMatrix4fv(program->getUniformLocation("nodeMat"), 1, GL_FALSE, glm::value_ptr(globalTransform));
 		for (UINT meshIndex : node.meshIndices) {
@@ -987,6 +986,8 @@ namespace AMC {
 	void Model::draw(ShaderProgram* program, UINT iNumInstance, bool iUseMaterial){
 		
 		glm::mat4 identity = glm::mat4(1.0f);
+		if(iUseMaterial)
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, materialSSBO);
 
 		if (haveAnimation) {
 			switch (animType){

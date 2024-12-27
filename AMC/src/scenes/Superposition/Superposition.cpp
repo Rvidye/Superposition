@@ -52,7 +52,7 @@ void SuperpositionScene::init()
 	//addModel("cube", cubeobj);
 
 	AMC::RenderModel roomModel;
-	roomModel.model = new AMC::Model(RESOURCE_PATH("models\\temp\\untitled.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	roomModel.model = new AMC::Model(RESOURCE_PATH("models\\Sponza1\\Sponza.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 	roomModel.matrix = mp->getModelMatrix();
 	addModel("room", roomModel);
 
@@ -199,28 +199,28 @@ void SuperpositionScene::init()
 	point.gpuLight.direction = glm::vec3(-0.50f, 0.7071f, 0.50f); // doesn't matter in case of point lights
 	point.gpuLight.color = glm::vec3(500.0f, 500.0f, 500.0f);
 	point.gpuLight.intensity = 0.5f;
-	point.gpuLight.range = 1.0f; // range decides the square fall of distance or attenuation of light
+	point.gpuLight.range = 0.15; // range decides the square fall of distance or attenuation of light
 	point.gpuLight.spotAngle = 1.0f; // for spot lights
 	point.gpuLight.spotExponent = 0.7071f; // for spot lights
-	point.gpuLight.position = glm::vec3(0.0f, 27.40f, 0.0f); // for point and spot lights
+	point.gpuLight.position = glm::vec3(-4.0f, 3.90f, 0.0f); // for point and spot lights
 	point.gpuLight.active = 1; // need to activate light here
 	point.gpuLight.shadows = true;
 	point.gpuLight.type = AMC::LIGHT_TYPE_POINT; // need to let shader know what type of light is this
 
 	AMC::Light spot;
 	spot.gpuLight.direction = glm::vec3(0.0f, 0.0f, 0.0f);
-	spot.gpuLight.color = glm::vec3(1.0f, 0.0f, 0.0f);
+	spot.gpuLight.color = glm::vec3(100.0f, 0.0f, 0.0f);
 	spot.gpuLight.intensity = 0.5f;
-	spot.gpuLight.range = 25.417f;
+	spot.gpuLight.range = 0.15f;
 	spot.gpuLight.spotAngle = 0.0f; // requrie a cos(radians) doing here just saves computatiaon of GPU
 	spot.gpuLight.spotExponent = 45.0f; // requrie a cos(radians) doing here just saves computatiaon of GPU
-	spot.gpuLight.position = glm::vec3(9.2f, 10.10f, 27.50f); // for point and spot lights
+	spot.gpuLight.position = glm::vec3(0.0f, 0.0f, 0.0f); // for point and spot lights
 	spot.gpuLight.active = 1; // need to activate light here
-	spot.gpuLight.shadows = false;
+	spot.gpuLight.shadows = true;
 	spot.gpuLight.type = AMC::LIGHT_TYPE_POINT; // need to let shader know what type of light is this
 
-	//lightManager->AddLight(spot);
 	lightManager->AddLight(point);
+	//lightManager->AddLight(spot);
 	//lightManager->AddLight(directional);
 }
 
@@ -284,7 +284,7 @@ void SuperpositionScene::update()
 	events->update();
 	//models["cube"].model->update((float)AMC::deltaTime);
 	//models["man"].model->update((float)AMC::deltaTime);
-	//models["room"].matrix = mp->getModelMatrix();
+	models["room"].matrix = mp->getModelMatrix();
 	reCalculateSceneAABB(); // cannot find better way to do it for now
 	//modelAnim->update((float)AMC::deltaTime);
 }
@@ -309,6 +309,8 @@ void SuperpositionScene::keyboardfunc(char key, UINT keycode)
 
 void SuperpositionScene::updateRenderContext(AMC::RenderContext& context)
 {
+	if (!OverrideRenderer)
+		return;
 	context.IsVGXI = false;
 	context.IsGenerateShadowMaps = true;
 	context.IsGbuffer = true;

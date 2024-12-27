@@ -65,7 +65,7 @@ namespace AMC {
 		void generateDescSetLayout();
 		static void generateDescSetPool(const VkContext* ctx);
 		void generateDescSet();
-		void writeToDescSet(uint32_t index, uint32_t binding, std::variant<VkAccelerationStructureKHR> obj);
+		void writeToDescSet(uint32_t index, uint32_t binding, std::variant<VkAccelerationStructureKHR, VkDescriptorImageInfo> obj);
 		VkDescriptorSetLayout vkDescSetLayout() const { return descSetLayout; };
 		VkDescriptorSet vkDescSet(uint32_t index) { return descSet[index]; }
 	private:

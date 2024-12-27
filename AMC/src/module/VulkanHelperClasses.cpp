@@ -272,7 +272,7 @@ namespace AMC {
 		vkAllocateDescriptorSets(ctx->vkDevice(), &descAI, descSet.data());
 	}
 
-	void VkDescSetLayoutManager::writeToDescSet(uint32_t index, uint32_t binding, std::variant<VkAccelerationStructureKHR> obj) {
+	void VkDescSetLayoutManager::writeToDescSet(uint32_t index, uint32_t binding, std::variant<VkAccelerationStructureKHR, VkDescriptorImageInfo> obj) {
 		for (auto& descBind : bindings) {
 			if (descBind.binding == binding) {
 				VkWriteDescriptorSetAccelerationStructureKHR writeDescAS{};
@@ -285,10 +285,16 @@ namespace AMC {
 				descSetWrite.descriptorType = descBind.descriptorType;
 				descSetWrite.dstBinding = descBind.binding;
 				descSetWrite.dstSet = descSet[index];
-				if (descBind.descriptorType == VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR) {
+				switch(descBind.descriptorType) {
+				case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
 					writeDescAS.pAccelerationStructures = &std::get<VkAccelerationStructureKHR>(obj);
 					descSetWrite.pNext = &writeDescAS;
+					break;
+				case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+					descSetWrite.pImageInfo = &std::get<VkDescriptorImageInfo>(obj);
+					break;
 				}
+				vkUpdateDescriptorSets(ctx->vkDevice(), 1, &descSetWrite, 0, nullptr);
 			}
 		}
 	}

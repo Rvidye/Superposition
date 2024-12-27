@@ -117,6 +117,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	window->SetMouseFunc(mouse);
 	window->SetResizeFunc(resize);
 	resize(window,720, 480);
+	VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeature{};
+	rayQueryFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+	rayQueryFeature.rayQuery = VK_TRUE;
 	VkPhysicalDeviceAccelerationStructureFeaturesKHR asFeature{};
 	asFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 	asFeature.accelerationStructure = VK_TRUE;
@@ -132,7 +135,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 #if defined(RT_ENABLE)
 		.addDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
 		.addDeviceExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
+		.addDeviceExtension(VK_KHR_RAY_QUERY_EXTENSION_NAME)
 		.addToDeviceFeatureChain(&asFeature)
+		.addToDeviceFeatureChain(&rayQueryFeature)
 #endif
 		.addToDeviceFeatureChain(&vulkan12Features)
 		.build();
@@ -462,6 +467,7 @@ void WriteDescSets() {
 	for (int i = 0; auto * scene : sceneQueue) {
 		scene->writeDescSet(i++);
 	}
+	gpRenderer->writeDescSets();
 }
 
 void playNextScene(void) {

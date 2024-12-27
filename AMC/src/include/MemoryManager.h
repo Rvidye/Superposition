@@ -29,11 +29,21 @@ namespace AMC {
 		}
 	};
 
+	struct Image {
+		GLuint gl;
+		VkImage vk;
+		VkImageView view;
+		VkDeviceMemory vkmem;
+		GLuint glmem;
+		HANDLE memhandle;
+	};
+
 	class MemoryManager {
 	public:
 		MemoryManager(const VkContext* ctx) : ctx(ctx) {}
 		//TODO: Make MemoryFlags a Template argument to improve perf, Low Priority
 		Buffer createBuffer(uint64_t size, MemoryFlagBits memoryFlags, VkBufferUsageFlags bufferUsage = 0, bool getAddress = false);
+		Image createImage(VkExtent3D extent, VkFormat format, VkImageViewType type, uint32_t mipLevels, MemoryFlagBits memoryFlags, VkImageUsageFlags imageUsage = 0);
 	private:
 		const VkContext* ctx;
 	};

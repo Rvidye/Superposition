@@ -8,6 +8,7 @@ namespace AMC {
 			virtual ~RenderPass() = default;
 			virtual void create() = 0;
 			virtual void execute(const Scene* scene) = 0;
+			virtual void writeDescSet() {}
 	};
 
 	class Renderer {
@@ -27,6 +28,12 @@ namespace AMC {
 			void render(const Scene* scene) {
 				for (auto pass : passes) {
 					pass->execute(scene);
+				}
+			}
+
+			void writeDescSets() {
+				for (auto pass : passes) {
+					pass->writeDescSet();
 				}
 			}
 

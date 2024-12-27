@@ -212,7 +212,7 @@ namespace AMC {
 			aiMesh* mesh = scene->mMeshes[i];
 			Mesh* m = new Mesh();
 			AABB meshAABB{};
-			GLuint VAO, VBO, IBO;
+			GLuint VAO;
 
 			std::vector<Vertex> vertices(mesh->mNumVertices);
 
@@ -282,12 +282,12 @@ namespace AMC {
 				}
 			}
 
-			AMC::Buffer vertexBuffer = memoryManager->createBuffer(vertices.size() * sizeof(Vertex), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
+			AMC::Buffer vertexBuffer = memoryManager->createBuffer(vertices.size() * sizeof(Vertex), AMC::MemoryFlags::kVkMemoryBit | AMC::MemoryFlags::kGlMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
 			vertexBuffer.copyFromCpu(ctx, vertices, 0);
 
 			glCreateVertexArrays(1, &VAO);
-			glCreateBuffers(1, &VBO);
-			glNamedBufferData(VBO, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+			/*glCreateBuffers(1, &VBO);
+			glNamedBufferData(VBO, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);*/
 
 			GLuint outVBO;
 			if (skin) {
@@ -296,7 +296,7 @@ namespace AMC {
 				m->outVbo = outVBO;
 			}
 
-			glVertexArrayVertexBuffer(VAO, 0, skin ? outVBO : VBO, 0, sizeof(Vertex));
+			glVertexArrayVertexBuffer(VAO, 0, skin ? outVBO : vertexBuffer.gl, 0, sizeof(Vertex));
 			// Positions
 			glEnableVertexArrayAttrib(VAO, 0);
 			glVertexArrayAttribFormat(VAO, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
@@ -344,12 +344,12 @@ namespace AMC {
 				}
 			}
 
-			AMC::Buffer indexBuffer = memoryManager->createBuffer(indices.size() * sizeof(uint32_t), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
+			AMC::Buffer indexBuffer = memoryManager->createBuffer(indices.size() * sizeof(uint32_t), AMC::MemoryFlags::kVkMemoryBit | AMC::MemoryFlags::kGlMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
 			indexBuffer.copyFromCpu(ctx, indices, 0);
 			
-			glCreateBuffers(1, &IBO);
+			/*glCreateBuffers(1, &IBO);
 			glNamedBufferData(IBO, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-			glVertexArrayElementBuffer(VAO, IBO);
+			*/glVertexArrayElementBuffer(VAO, indexBuffer.gl);
 
 			//glVertexArrayVertexBuffers(VAO, 0, bindingIndex, vertexBuffers.data(), offsets.data(), strides.data());
 
@@ -362,8 +362,8 @@ namespace AMC {
 			m->mVertexCount = mesh->mNumVertices;
 			m->mTriangleCount = (UINT)indices.size();
 			m->mMaterial = mIndex;
-			m->ibo = IBO;
-			m->vbo = VBO;
+			m->ibo = indexBuffer.gl;
+			m->vbo = vertexBuffer.gl;
 			m->vao = VAO;
 			model->meshes.push_back(m);
 
@@ -878,7 +878,7 @@ namespace AMC {
 
 	ShaderProgram* Model::programGPUSkin = nullptr;
 
-	Model::Model(std::string path, int iAssimpFlags, const AMC::VkContext* ctx){
+	Model::Model(std::string path, int iAssimpFlags, const AMC::VkContext* ctx) : aabb({}), animType(AMC::AnimationType::SKELETALANIM), blas(VK_NULL_HANDLE) {
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path, iAssimpFlags);
 		if (!scene) {

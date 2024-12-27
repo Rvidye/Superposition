@@ -429,6 +429,7 @@ void RenderFrame(void)
 	ImGui::Checkbox("IsSSR", &gpRenderer->context.IsSSR);
 	ImGui::Checkbox("IsSkyBox", &gpRenderer->context.IsSkyBox);
 	ImGui::Checkbox("IsBloom", &gpRenderer->context.IsBloom);
+	ImGui::Checkbox("IsVolumetric", &gpRenderer->context.IsVolumetric);
 	ImGui::Checkbox("IsToneMap", &gpRenderer->context.IsToneMap);
 	ImGui::Separator();
 

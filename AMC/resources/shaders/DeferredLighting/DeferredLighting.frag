@@ -33,8 +33,7 @@ void main()
 
     // G-buffer values
     float depth = texelFetch(gBufferDataUBO.Depth, imgCoord, 0).r;
-
-    if (depth >= 1.0)
+    if (depth == 1.0)
     {
         OutFragColor = vec4(0.0);
         return;
@@ -42,12 +41,10 @@ void main()
 
     vec3 ndc = vec3(uv * 2.0 - 1.0, depth);
     vec3 fragPos = PerspectiveTransform(ndc, perFrameDataUBO.InvProjView);
-    vec3 unjitteredFragPos = PerspectiveTransform(vec3(ndc.xy, ndc.z), perFrameDataUBO.InvProjView);
+    vec3 unjitteredFragPos = PerspectiveTransform(vec3(ndc.xy - vec2(0.0,0.0), ndc.z), perFrameDataUBO.InvProjView);
 
-    vec4 albedoAlpha = texelFetch(gBufferDataUBO.AlbedoAlpha, imgCoord, 0);
-    vec3 albedo = albedoAlpha.rgb;
-    float alpha = albedoAlpha.a;
-
+    vec3 albedo = texelFetch(gBufferDataUBO.AlbedoAlpha, imgCoord, 0).rgb;
+    float alpha = texelFetch(gBufferDataUBO.AlbedoAlpha, imgCoord, 0).a;
     vec3 normal = DecodeUnitVec(texelFetch(gBufferDataUBO.Normal, imgCoord, 0).rg);
     float metallic = texelFetch(gBufferDataUBO.MetallicRoughness, imgCoord, 0).r;
     float roughness = texelFetch(gBufferDataUBO.MetallicRoughness, imgCoord, 0).g;
@@ -72,14 +69,14 @@ void main()
         if (contribution != vec3(0.0))
         {
             float shadow = 0.0;
-            if (light.shadowMapIndex == -1)
-            {
-                shadow = 0.0;
-            }
+            // if (light.shadowMapIndex == -1)
+            // {
+            //     shadow = 0.0;
+            // }
             // else
             // {
             //     Shadows lightShadow = shadows[light.shadowMapIndex];
-            //     vec3 lightToSample = fragPos - light.position;
+            //     vec3 lightToSample = unjitteredFragPos - light.position;
             //     shadow = 1.0 - Visibility(lightShadow, normal, lightToSample);
             // }
             contribution *= (1.0 - shadow);

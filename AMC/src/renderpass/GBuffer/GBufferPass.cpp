@@ -99,6 +99,19 @@ void GBufferPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
     glClearNamedFramebufferfv(gbuffer, GL_DEPTH, 0, &depth);
     glBindFramebuffer(GL_FRAMEBUFFER, gbuffer);
 
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glCullFace(GL_BACK);
+    glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glCullFace(GL_BACK);
+    glDepthFunc(GL_LESS);
+
     m_ProgramGBuffer->use();
     for (const auto& [name, obj] : scene->models) {
         if (!obj.visible)

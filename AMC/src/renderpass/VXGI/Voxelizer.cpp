@@ -83,6 +83,10 @@ void Voxelizer::SetSize(int width, int height, int depth){
 	glTextureParameteri(resultVoxels, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	glTextureParameterf(resultVoxels, GL_TEXTURE_MAX_ANISOTROPY, 16.0f);
 	glTextureStorage3D(resultVoxels, levels, GL_RGBA16F, width, height, depth);
+
+	glCreateFramebuffers(1, &tmpFBO);
+	glNamedFramebufferParameteri(tmpFBO, GL_FRAMEBUFFER_DEFAULT_WIDTH, width);
+	glNamedFramebufferParameteri(tmpFBO, GL_FRAMEBUFFER_DEFAULT_HEIGHT, height);
 }
 
 void Voxelizer::SetGridSize(glm::vec3 min, glm::vec3 max){
@@ -101,9 +105,16 @@ void Voxelizer::ClearTextures(){
 void Voxelizer::Voxelize(const AMC::Scene* scene){
 	//glClipControl()
 	// Set Viewport Swizzle for Geomtry Shader
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, tmpFBO);
+	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
+	glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
 	glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glCullFace(GL_BACK);
+	glDepthFunc(GL_LESS);
+
 	glViewportSwizzleNV(1, 0x9350, 0x9354, 0x9352, 0x9356);
 	glViewportSwizzleNV(2, 0x9354, 0x9352, 0x9354, 0x9356);
 	glViewportIndexedf(0, 0.0f,0.0f, (float)width,(float)height);

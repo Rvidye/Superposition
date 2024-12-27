@@ -32,9 +32,15 @@ void DeferredPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 		return;
 	}
 
+	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
-	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+	glDisable(GL_BLEND);
+	glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glDepthFunc(GL_LESS);
+	glCullFace(GL_BACK);
 	glViewport(0, 0, context.width, context.height);
 	glm::vec4 clearcolor = glm::vec4(0.0, 0.0, 0.0f, 1.0f);
 	glClearNamedFramebufferfv(m_FBO, GL_COLOR, 0, glm::value_ptr(clearcolor));

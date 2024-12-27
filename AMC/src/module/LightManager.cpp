@@ -19,7 +19,7 @@ namespace AMC {
 		gpuLight.intensity = 1.0f;
 		gpuLight.position = glm::vec3(0.0f);
 		gpuLight.direction = glm::vec3(0.0f, -1.0f, 0.0f);
-		gpuLight.range = 1.0f;
+		gpuLight.range = 0.10f;
 		gpuLight.spotAngle = glm::radians(45.0f);
 		gpuLight.spotExponent = 1.0f;
 		gpuLight.shadows = false;
@@ -46,8 +46,14 @@ namespace AMC {
 	{
 		lights.reserve(MAX_LIGHTS);
 		shadowManager = new ShadowManager();
+		Light hack[MAX_LIGHTS];
 		glCreateBuffers(1, &uboLights);
 		glNamedBufferData(uboLights, sizeof(GpuLight) * MAX_LIGHTS + sizeof(int), nullptr, GL_DYNAMIC_DRAW);
+		for (size_t i = 0; i < MAX_LIGHTS; ++i) {
+			glNamedBufferSubData(uboLights, sizeof(GpuLight) * i, sizeof(GpuLight), &hack[i].gpuLight);
+		}
+		int count = 0;
+		glNamedBufferSubData(uboLights, sizeof(GpuLight) * MAX_LIGHTS, sizeof(int), &count);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, uboLights);
 
 		if (!m_program) {
@@ -268,7 +274,7 @@ namespace AMC {
 
 				// Range control (for Spot and Point lights)
 				if (light.gpuLight.type == LIGHT_TYPE_SPOT || light.gpuLight.type == LIGHT_TYPE_POINT) {
-					if (ImGui::SliderFloat("Range", &light.gpuLight.range, 0.0f, 100.0f)) {
+					if (ImGui::DragFloat("Range", &light.gpuLight.range, 0.05f, 0.001f, 30.0f)) {
 						shouldUpdateBuffer = true;
 					}
 				}

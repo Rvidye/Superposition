@@ -69,7 +69,7 @@ namespace AMC {
 				}
 				else {
 					//material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeDiffuse);
-					basecolor = AMC::TextureManager::LoadTexture(GetTexturePath(name, directory));
+					basecolor = AMC::TextureManager::LoadTexture(GetTexturePath(name, directory), GL_SRGB8_ALPHA8, 4, GL_NEAREST_MIPMAP_LINEAR, GL_LINEAR);
 					//AMC::ModelTexture tex;
 					//tex.type = TextureType::TextureTypeDiffuse;
 					//tex.texture = basecolor;
@@ -88,7 +88,7 @@ namespace AMC {
 				}
 				else {
 					//material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeNormalMap);
-					normalmap = AMC::TextureManager::LoadTexture(GetTexturePath(name, directory));
+					normalmap = AMC::TextureManager::LoadTexture(GetTexturePath(name, directory), GL_RGB8, 3, GL_NEAREST_MIPMAP_LINEAR, GL_LINEAR);
 					//AMC::ModelTexture tex;
 					//tex.type = TextureType::TextureTypeNormalMap;
 					//tex.texture = normalmap;
@@ -107,7 +107,7 @@ namespace AMC {
 				}
 				else {
 					//material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeMetallicRoughnessMap);
-					metallicroughness = AMC::TextureManager::LoadTexture(GetTexturePath(name, directory));
+					metallicroughness = AMC::TextureManager::LoadTexture(GetTexturePath(name, directory), GL_R11F_G11F_B10F, 3, GL_NEAREST_MIPMAP_LINEAR, GL_LINEAR);
 					glTextureParameteri(metallicroughness, GL_TEXTURE_SWIZZLE_R, GL_BLUE); // Red channel for metallic and Green for roughness
 					//AMC::ModelTexture tex;
 					//tex.type = TextureType::TextureTypeMetallicRoughnessMap;
@@ -127,7 +127,7 @@ namespace AMC {
 				}
 				else {
 					//material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeEmissive);
-					emissivemap = AMC::TextureManager::LoadTexture(GetTexturePath(name, directory));
+					emissivemap = AMC::TextureManager::LoadTexture(GetTexturePath(name, directory), GL_SRGB8_ALPHA8, 4, GL_NEAREST_MIPMAP_LINEAR, GL_LINEAR);
 					//AMC::ModelTexture tex;
 					//tex.type = TextureType::TextureTypeEmissive;
 					//tex.texture = emissivemap;
@@ -160,12 +160,12 @@ namespace AMC {
 
 			GPUMaterial gmaterial;
 			gmaterial.EmissiveFactor = glm::vec3(emission.r, emission.g, emission.b);
-			gmaterial.BaseColorFactor = AMC::Compression::CompressUR8G8B8A8(glm::vec4(1.0f));
+			gmaterial.BaseColorFactor = AMC::Compression::CompressUR8G8B8A8(glm::vec4(albedo.r, albedo.g, albedo.b, alpha));
 			gmaterial.Absorbance = glm::vec3(0.0);
-			gmaterial.IOR = 1.5f;
+			gmaterial.IOR = 1.50f;
 			gmaterial.TransmissionFactor = 0.0f;
-			gmaterial.RoughnessFactor = 1.0f;
-			gmaterial.MetallicFactor = 1.0f;
+			gmaterial.RoughnessFactor = roughness;
+			gmaterial.MetallicFactor = metallic;
 			gmaterial.AlphaCutoff = 0.5f; //default
 
 			if (basecolor) {

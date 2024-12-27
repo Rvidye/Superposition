@@ -20,8 +20,8 @@ void SSR::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	//glBindTextureUnit(2, context.textureGBuffer[2]); // metal-roughness
 	//glBindTextureUnit(3, context.textureGBuffer[4]); // depth
 	//glBindTextureUnit(5, context.textureAtmosphere); // skyAlbedo
-	glBindTextureUnit(4, context.textureDeferredResult); // sampler src
 	glBindImageTexture(0, textureSSR, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F); // ImgResult
+	glBindTextureUnit(4, context.textureDeferredResult); // sampler src
 	m_ProgramSSR->use();
 	glUniform1i(m_ProgramSSR->getUniformLocation("SampleCount"), 30);
 	glUniform1i(m_ProgramSSR->getUniformLocation("BinarySearchCount"), 8);

@@ -23,7 +23,7 @@ class Voxelizer : public AMC::RenderPass {
 		AMC::ShaderProgram* m_ProgramMipMap;
 		AMC::ShaderProgram* m_ProgramVisualizeDebug;
 
-		GLuint resultVoxels, debugResult, voxelUBO;
+		GLuint resultVoxels, debugResult, voxelUBO, tmpFBO;
 		int width, height, depth, levels;
 		VoxelizerDataUBO GridData;
 		//glm::vec3 GridMin, GridMax;

@@ -60,8 +60,8 @@ void Bloom::execute(AMC::Scene* scene, AMC::RenderContext& context) {
     glUniform1f(3, maxColor);
     // Downsampling stage
     {
-        glBindTextureUnit(0, context.textureDeferredResult);
         glBindImageTexture(0, textureDownsample, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
+        glBindTextureUnit(0, context.textureDeferredResult);
         glUniform1i(0, currentWriteLod);
         glUniform1i(1, 0); // 0 for Downsample stage
         glm::ivec3 mipLevelSize = AMC::GetMipmapLevelSize(texWidth, texHeight, 1, currentWriteLod);

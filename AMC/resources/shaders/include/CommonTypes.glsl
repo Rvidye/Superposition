@@ -4,10 +4,10 @@ struct PerFrameData
     mat4 ProjView;
     mat4 View;
     mat4 InvView;
-    vec3 ViewPos;
     mat4 Projection;
     mat4 InvProjection;
     mat4 InvProjView;
+    vec3 ViewPos;
     float NearPlane;
     float FarPlane;
 };

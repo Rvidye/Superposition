@@ -31,7 +31,7 @@ namespace AMC
 		protected:
 
 			float fov = 45.0f, aspectRatio = 1920.0f / 1080.0f;
-			float nearPlane = 0.1f, farPlane = 1000.0f;
+			float nearPlane = 0.1f, farPlane = 250.0;
 			glm::vec3 position = glm::vec3(0.0f,0.0f,0.0f);
 			glm::vec3 front = glm::vec3(0.0f,0.0f,-1.0f);
 			glm::vec3 up = glm::vec3(0.0f,1.0f,0.0f);

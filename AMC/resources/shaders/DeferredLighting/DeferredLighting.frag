@@ -17,7 +17,6 @@ layout(binding = 6) uniform sampler2D SamplerIndirectLighting;
 
 vec3 EvaluateLighting(Light light, Surface surface, vec3 fragPos, vec3 viewPos, float ambientOcclusion);
 float Visibility(Shadows light, vec3 normal, vec3 lightToSample);
-//float Visibility(Light light, vec3 fragPos);
 float GetLightSpaceDepth(Shadows light, vec3 lightSpaceSamplePos);
 
 layout(location = 1) uniform bool IsVXGI;
@@ -77,11 +76,12 @@ void main()
             {
                 shadow = 0.0;
             }
-            else{
-                Shadows lightShadow = shadows[light.shadowMapIndex];
-                vec3 lightToSample = fragPos - light.position;
-                shadow = 1.0 - Visibility(lightShadow, normal, lightToSample);
-            }
+            // else
+            // {
+            //     Shadows lightShadow = shadows[light.shadowMapIndex];
+            //     vec3 lightToSample = fragPos - light.position;
+            //     shadow = 1.0 - Visibility(lightShadow, normal, lightToSample);
+            // }
             contribution *= (1.0 - shadow);
         }
         directLighting += contribution;

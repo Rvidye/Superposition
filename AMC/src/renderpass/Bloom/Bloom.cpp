@@ -19,6 +19,9 @@ void Bloom::create(AMC::RenderContext& context) {
 	threshold = 1.0f;
 	maxColor = 2.8f;
 
+    AMC::bloom_threshold = threshold;
+    AMC::bloom_maxcolor = maxColor;
+
 	m_ProgramBloom = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\Bloom\\Bloom.comp")});
 
 	texWidth = context.width / 2;
@@ -56,12 +59,12 @@ void Bloom::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 
     m_ProgramBloom->use();
     int currentWriteLod = 0;
-    glUniform1f(2, threshold);
-    glUniform1f(3, maxColor);
+    glUniform1f(2, AMC::bloom_threshold);
+    glUniform1f(3, AMC::bloom_maxcolor);
     // Downsampling stage
     {
         glBindImageTexture(0, textureDownsample, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
-        glBindTextureUnit(0, context.textureDeferredResult);
+        glBindTextureUnit(0, context.textureGBuffer[3]);
         glUniform1i(0, currentWriteLod);
         glUniform1i(1, 0); // 0 for Downsample stage
         glm::ivec3 mipLevelSize = AMC::GetMipmapLevelSize(texWidth, texHeight, 1, currentWriteLod);
@@ -112,8 +115,16 @@ const char* Bloom::getName() const
 void Bloom::renderUI()
 {
 #ifdef _MYDEBUG
-    ImGui::SliderFloat("Threshold", &threshold, 0.0f, 10.0f);
-    ImGui::SliderFloat("MaxColor", &maxColor, 0.0f, 20.0f);
+    if(ImGui::SliderFloat("Threshold", &threshold, 0.0f, 10.0f))
+    {
+        AMC::bloom_threshold = threshold;
+    }
+
+    if(ImGui::SliderFloat("MaxColor", &maxColor, 0.0f, 3.0f))
+    {
+        AMC::bloom_maxcolor = maxColor;
+    }
+
     int temp = minusLods;
     if (ImGui::SliderInt("MinusLods", &temp, 0, 10)) {
         minusLods = temp;

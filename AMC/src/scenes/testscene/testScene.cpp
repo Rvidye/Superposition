@@ -8,8 +8,18 @@ void testScene::sceneEnd(float t)
 
 void testScene::moveModel(float t)
 {
-	moveZ = std::lerp(-15.0f, -5.0f, t);
+	//moveZ = std::lerp(-15.0f, -5.0f, t);
 	//models["cube"].matrix = glm::translate(glm::mat4(1.0f), glm::vec3(3.0f, 0.0f, moveZ));
+}
+
+void testScene::fadeOut(float t)
+{
+	AMC::fade = std::lerp(AMC::fade, 1.0f, t);
+}
+
+void testScene::fadeIn(float t)
+{
+	AMC::fade = std::lerp(AMC::fade, 0.0f, t);
 }
 
 void testScene::init()
@@ -19,7 +29,7 @@ void testScene::init()
 	programModelAnim = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\spv\\modelAnim.vert.spv"),RESOURCE_PATH("shaders\\model\\spv\\model.frag.spv") });
 
 	// ModelPlacer
-	mp = new AMC::ModelPlacer(glm::vec3(0.0, 0.0, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 5.0f);
+	mp = new AMC::ModelPlacer(glm::vec3(0.0, 0.0, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1.0f);
 
 	// Models Setup
 	//AMC::RenderModel cubeobj;
@@ -28,7 +38,7 @@ void testScene::init()
 	//addModel("cube", cubeobj);
 
 	AMC::RenderModel animman;
-	animman.model = new AMC::Model(RESOURCE_PATH("models\\DamagedHelmet\\DamagedHelmet.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	animman.model = new AMC::Model(RESOURCE_PATH("models\\Sponza1\\Sponza.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 	animman.matrix = mp->getModelMatrix();
 	addModel("man", animman);
 
@@ -69,6 +79,34 @@ void testScene::init()
 	moveEvent->updateFunction = [this](float t) { this->moveModel(t); };
 	events->AddEvent("MoveModelEvent", moveEvent);
 
+	AMC::events_t* fade1 = new AMC::events_t();
+	fade1->start = 5.0f;
+	fade1->duration = 1.0f;
+	fade1->easingFunction = nullptr;
+	fade1->updateFunction = [this](float t) { this->fadeOut(t); };
+	events->AddEvent("fade1", fade1);
+
+	AMC::events_t* fade2 = new AMC::events_t();
+	fade2->start = 7.0f;
+	fade2->duration = 1.0f;
+	fade2->easingFunction = nullptr;
+	fade2->updateFunction = [this](float t) { this->fadeIn(t); };
+	events->AddEvent("fade2", fade2);
+
+	AMC::events_t* fade3 = new AMC::events_t();
+	fade3->start = 10.0f;
+	fade3->duration = 1.0f;
+	fade3->easingFunction = nullptr;
+	fade3->updateFunction = [this](float t) { this->fadeOut(t); };
+	events->AddEvent("fade3", fade3);
+
+	AMC::events_t* fade4 = new AMC::events_t();
+	fade4->start = 12.0f;
+	fade4->duration = 1.0f;
+	fade4->easingFunction = nullptr;
+	fade4->updateFunction = [this](float t) { this->fadeIn(t); };
+	events->AddEvent("fade4", fade4);
+
 	lightManager = new AMC::LightManager();
 
 	AMC::Light directional;
@@ -85,30 +123,30 @@ void testScene::init()
 
 	AMC::Light point;
 	point.gpuLight.direction = glm::vec3(-0.50f, 0.7071f, 0.50f); // doesn't matter in case of point lights
-	point.gpuLight.color = glm::vec3(1.0f, 1.0f, 1.0f);
+	point.gpuLight.color = glm::vec3(500.0f, 0.0f, 0.0f);
 	point.gpuLight.intensity = 0.5f;
-	point.gpuLight.range = 25.0f; // range decides the square fall of distance or attenuation of light
+	point.gpuLight.range = 0.15f; // range decides the square fall of distance or attenuation of light
 	point.gpuLight.spotAngle = 1.0f; // for spot lights
 	point.gpuLight.spotExponent = 0.7071f; // for spot lights
-	point.gpuLight.position = glm::vec3(0.0f, 0.0f, 0.0f); // for point and spot lights
+	point.gpuLight.position = glm::vec3(-4.0f, 3.90f, 0.0f); // for point and spot lights
 	point.gpuLight.active = 1; // need to activate light here
 	point.gpuLight.shadows = true;
 	point.gpuLight.type = AMC::LIGHT_TYPE_POINT; // need to let shader know what type of light is this
 
 	AMC::Light spot;
 	spot.gpuLight.direction = glm::vec3(0.0f, 0.0f, 0.0f);
-	spot.gpuLight.color = glm::vec3(1.0f, 0.0f, 0.0f);
+	spot.gpuLight.color = glm::vec3(500.0f, 500.0f, 500.0f);
 	spot.gpuLight.intensity = 0.5f;
-	spot.gpuLight.range = 25.417f;
+	spot.gpuLight.range = 0.150f;
 	spot.gpuLight.spotAngle = 0.0f; // requrie a cos(radians) doing here just saves computatiaon of GPU
 	spot.gpuLight.spotExponent = 45.0f; // requrie a cos(radians) doing here just saves computatiaon of GPU
-	spot.gpuLight.position = glm::vec3(9.2f, 10.10f, 27.50f); // for point and spot lights
+	spot.gpuLight.position = glm::vec3(4.0f, 3.90f, 0.0f); // for point and spot lights
 	spot.gpuLight.active = 1; // need to activate light here
-	spot.gpuLight.shadows = false;
+	spot.gpuLight.shadows = true;
 	spot.gpuLight.type = AMC::LIGHT_TYPE_POINT; // need to let shader know what type of light is this
 
-	//lightManager->AddLight(spot);
 	lightManager->AddLight(point);
+	lightManager->AddLight(spot);
 	//lightManager->AddLight(directional);
 }
 
@@ -155,9 +193,6 @@ void testScene::renderUI()
 		break;
 		case AMC::LIGHT:
 			lightManager->renderUI();
-		break;
-		case AMC::SHADOW:
-			lightManager->GetShadowManager()->renderUI();
 		break;
 		case AMC::SPLINE:
 		break;

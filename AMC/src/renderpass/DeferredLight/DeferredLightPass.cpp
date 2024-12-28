@@ -42,10 +42,11 @@ void DeferredPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 	glDepthFunc(GL_LESS);
 	glCullFace(GL_BACK);
 	glViewport(0, 0, context.width, context.height);
-	glm::vec4 clearcolor = glm::vec4(0.0, 0.0, 0.0f, 1.0f);
-	glClearNamedFramebufferfv(m_FBO, GL_COLOR, 0, glm::value_ptr(clearcolor));
+	//glm::vec4 clearcolor = glm::vec4(0.0, 0.0, 0.0f, 1.0f);
+	//glClearNamedFramebufferfv(m_FBO, GL_COLOR, 0, glm::value_ptr(clearcolor));
 
 	m_ProgramDeferredLighting->use();
+	glUniform1i(m_ProgramDeferredLighting->getUniformLocation("IsShadows"), shadow);
 	glUniform1i(m_ProgramDeferredLighting->getUniformLocation("IsVXGI"), context.IsVGXI);
 	if(context.IsSSAO)
 		glBindTextureUnit(5, context.textureSSAOResult);
@@ -71,7 +72,8 @@ const char* DeferredPass::getName() const
 void DeferredPass::renderUI()
 {
 #ifdef _MYDEBUG
-	ImGui::Begin("GBuffer Debug");
+	ImGui::Checkbox("Shadows", &shadow);
+	ImGui::Begin("Deferred Pass Debug");
 	ImGui::Text("Albedo");
 	ImGui::Image((void*)(intptr_t)m_TextureResult, ImVec2(512, 512), ImVec2(0, 1), ImVec2(1, 0));
 	ImGui::End();

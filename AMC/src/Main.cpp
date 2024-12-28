@@ -55,6 +55,12 @@ UINT AMC::DEBUGMODE = AMC::DEBUGMODES::NONE;
 std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Spline", "PostProcess"};
 AMC::Camera* AMC::currentCamera;
 
+float AMC::fade = 0.0f;
+float AMC::bloom_threshold = 1.0f; // threshold for bloom better if untouched
+float AMC::bloom_maxcolor = 2.8f; // intensity of bloom
+float AMC::VolumeScattering = 0.758f; // ideal value is between 0.5 ~ 0.9
+float AMC::VolumeStength = 0.3f; // 0.5 ~ 1.0
+
 void keyboard(AMC::RenderWindow* , char key, UINT keycode);
 void mouse(AMC::RenderWindow*, int button, int action, int x, int y);
 void resize(AMC::RenderWindow*, UINT width, UINT height);
@@ -457,6 +463,10 @@ void RenderFrame(void)
 		(selectedPassIndex >= 0 && selectedPassIndex < passes.size()) ?
 		passes[selectedPassIndex]->getName() : "None")) {
 
+		if (ImGui::Selectable("None", selectedPassIndex == -1)) {
+			selectedPassIndex = -1;
+		}
+
 		for (int i = 0; i < passes.size(); i++) {
 			bool isSelected = (i == selectedPassIndex);
 			if (ImGui::Selectable(passes[i]->getName(), isSelected)) {
@@ -503,7 +513,7 @@ void InitRenderPasses()
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
-	glEnable(GL_MULTISAMPLE);
+	//glEnable(GL_MULTISAMPLE);
 	//glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 	glCreateBuffers(1, &perframeUBO);
@@ -547,9 +557,9 @@ void InitRenderPasses()
 
 void InitScenes(void)
 {
-	//sceneQueue.push_back(new testScene());
+	sceneQueue.push_back(new testScene());
 	//sceneQueue.push_back(new AMCBannerScene());
-	sceneQueue.push_back(new SuperpositionScene());
+	//sceneQueue.push_back(new SuperpositionScene());
 
 	for (auto* scene : sceneQueue) {
 		scene->init();

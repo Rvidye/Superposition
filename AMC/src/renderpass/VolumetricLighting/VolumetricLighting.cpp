@@ -38,9 +38,9 @@ void Volumetric::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	m_programVolumetricLighting->use();
     glUniform3fv(m_programVolumetricLighting->getUniformLocation("Absorbance"), 1, glm::value_ptr(Absorbance));
     glUniform1i(m_programVolumetricLighting->getUniformLocation("SampleCount"), SampleCount);
-    glUniform1f(m_programVolumetricLighting->getUniformLocation("Scattering"), Scattering);
+    glUniform1f(m_programVolumetricLighting->getUniformLocation("Scattering"), AMC::VolumeScattering);
     glUniform1f(m_programVolumetricLighting->getUniformLocation("MaxDist"), MaxDist);
-    glUniform1f(m_programVolumetricLighting->getUniformLocation("Strength"), Strength);
+    glUniform1f(m_programVolumetricLighting->getUniformLocation("Strength"), AMC::VolumeStength);
     GLuint workGroupSizeX = (context.width + 8 - 1) / 8;
     GLuint workGroupSizeY = (context.height + 8 - 1) / 8;
     glDispatchCompute(workGroupSizeX, workGroupSizeY, 1);
@@ -56,7 +56,7 @@ void Volumetric::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 
 const char* Volumetric::getName() const
 {
-	return "nullptr";
+	return "Volumetric Lighting";
 }
 
 void Volumetric::renderUI()
@@ -64,8 +64,16 @@ void Volumetric::renderUI()
 #ifdef _MYDEBUG
 
     ImGui::SliderInt("MaxSamples", &SampleCount, 1, 30);
-    ImGui::SliderFloat("Scattering", &Scattering, 0.0f, 1.0f);
-    ImGui::SliderFloat("Stength", &Strength, 0.0f, 1.0f);
+    if(ImGui::SliderFloat("Scattering", &Scattering, 0.0f, 1.0f)) 
+    {
+        AMC::VolumeScattering = Scattering;
+    }
+
+    if(ImGui::SliderFloat("Stength", &Strength, 0.0f, 1.0f))
+    {
+        AMC::VolumeStength = Strength;
+    }
+
     ImGui::InputFloat3("Absorbance", &Absorbance.x);
     ImGui::Begin("Volumetric Textures");
     ImGui::Text("Volumetric Light Texture");

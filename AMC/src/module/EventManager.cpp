@@ -57,22 +57,27 @@ namespace AMC {
 	void EventManager::recalculateTs(){
 		for (std::pair<std::string, events_t*> ev : eventList) {
 			events_t* e = ev.second;
+
+			if (e->completed)
+				continue;
+
 			float t = (currentTime - e->start) / e->duration;
-			// only pdate if event is active
-			if (t >= 0.0f && t <= 1.0f) {
-				e->deltaT = std::clamp(t, 0.0f, 1.0f);
+			e->deltaT = std::clamp(t, 0.0f, 1.0f);
 
-				float adjustedT = e->deltaT;
-				if (e->easingFunction) {
-					adjustedT = e->easingFunction(e->deltaT);
-				}
-
-				if (e->updateFunction) {
-					e->updateFunction(adjustedT);
-				}
+			float adjustedT = e->deltaT;
+			if (e->easingFunction) {
+				adjustedT = e->easingFunction(e->deltaT);
 			}
+
+			if (e->updateFunction) {
+				e->updateFunction(adjustedT);
+			}
+
+			if (t >= 1.0f)
+				e->completed = true;
 		}
 	}
+
 	EventManager& operator+=(EventManager& e, float t){
 		e.currentTime += t;
 		e.recalculateTs();

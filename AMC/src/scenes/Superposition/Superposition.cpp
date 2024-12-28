@@ -268,9 +268,6 @@ void SuperpositionScene::renderUI()
 	case AMC::LIGHT:
 		lightManager->renderUI();
 		break;
-	case AMC::SHADOW:
-		lightManager->GetShadowManager()->renderUI();
-		break;
 	case AMC::SPLINE:
 		break;
 	case AMC::NONE:

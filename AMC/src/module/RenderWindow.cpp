@@ -231,112 +231,187 @@ namespace AMC {
 		}
 	}
 #endif
-
+	LRESULT CALLBACK WndProcTemp(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+	{
+		switch (message)
+		{
+		case WM_CREATE:
+			return 0;
+		case WM_DESTROY:
+			return 0;
+		}
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
 	void RenderWindow::InitializeGL()
 	{
 
-		HWND dummy = CreateWindowExW(0, L"STATIC", L"DummyWindow", WS_OVERLAPPED, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, NULL, NULL);
-		HDC dc = GetDC(dummy);
-		PIXELFORMATDESCRIPTOR desc =
-		{
-			.nSize = sizeof(desc),
-			.nVersion = 1,
-			.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
-			.iPixelType = PFD_TYPE_RGBA,
-			.cColorBits = 24,
-		};
+		//WNDCLASSEX wc2;
+		//wc2.cbSize = sizeof(WNDCLASSEX);
+		//wc2.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS;
+		//wc2.lpfnWndProc = &WndProcTemp;
+		//wc2.cbClsExtra = 0;
+		//wc2.cbWndExtra = 0;
+		//wc2.hInstance = mInstance;
+		//wc2.hIcon = 0;
+		//wc2.hCursor = LoadCursor(0, IDC_ARROW);
+		//wc2.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+		//wc2.lpszMenuName = 0;
+		//wc2.lpszClassName = TEXT("oglversionchecksample_class1");
+		//wc2.hIconSm = 0;
 
-		int format = ChoosePixelFormat(dc, &desc);
-		if (!format)
-		{
-			LOG_ERROR(L"Pixel Format Failed");
+		//if (RegisterClassEx(&wc2) == 0) {
+		//	fprintf(stderr, "Windows failed to register class `%sl`!\n", wc2.lpszClassName);
+		//	exit(1);
+		//}
+		//HWND temp_hWnd = CreateWindowEx(
+		//	0,										// dwExStyle
+		//	TEXT("oglversionchecksample_class1"),	// lpClassName
+		//	TEXT("oglversionchecksample"),			// lpWindowName
+		//	WS_OVERLAPPEDWINDOW,					// dwStyle
+		//	CW_USEDEFAULT, CW_USEDEFAULT, 640, 480,	// X, Y, nWidth, nHeight
+		//	0, 0, mInstance, 0);
+
+		//if (temp_hWnd == nullptr) {
+		//	fprintf(stderr, "Windows failed to create window `%sl`!\n", wc2.lpszClassName);
+		//	exit(1);
+		//}
+
+		mHDC = GetDC(mWindowHandle);
+		if (mHDC == nullptr) {
+			fprintf(stderr, "Windows failed to provide a display context!\n");
+			exit(1);
+		}
+		PIXELFORMATDESCRIPTOR pfd;
+		pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+		pfd.nVersion = 1;
+		pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+		pfd.iPixelType = PFD_TYPE_RGBA;
+		pfd.cColorBits = 32;
+		pfd.cRedBits = 0;
+		pfd.cRedShift = 0;
+		pfd.cGreenBits = 0;
+		pfd.cGreenShift = 0;
+		pfd.cBlueBits = 0;
+		pfd.cBlueShift = 0;
+		pfd.cAlphaBits = 0;
+		pfd.cAlphaShift = 0;
+		pfd.cAccumBits = 0;
+		pfd.cAccumRedBits = 0;
+		pfd.cAccumGreenBits = 0;
+		pfd.cAccumBlueBits = 0;
+		pfd.cAccumAlphaBits = 0;
+		pfd.cDepthBits = 24;
+		pfd.cStencilBits = 8;
+		pfd.cAuxBuffers = 0;
+		pfd.iLayerType = PFD_MAIN_PLANE;
+		pfd.bReserved = 0;
+		pfd.dwLayerMask = 0;
+		pfd.dwVisibleMask = 0;
+		pfd.dwDamageMask = 0;
+
+		// ChoosePixelFormat https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-choosepixelformat
+		// SetPixelFormat https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat
+		int pixelfmt = ChoosePixelFormat(mHDC, &pfd);
+		if (pixelfmt == 0) {
+			fprintf(stderr, "Failed to choose pixel format!\n");
+			exit(1);
 		}
 
-		int ok = DescribePixelFormat(dc, format, sizeof(desc), &desc);
+		if (!SetPixelFormat(mHDC, pixelfmt, &pfd)) {
+			fprintf(stderr, "Could not set pixel format!\n");
+			exit(1);
+		}
+		printf("Pixel format: %d\n", pixelfmt);
 
-		if (!SetPixelFormat(dc, format, &desc))
-		{
-			LOG_ERROR(L"Set Pixel Format Failed");
-			//AMC::Log::GetInstance()->WriteLogFile(__FUNCTION__, LOG_INFO, L"Set Pixel Format Failed");
+		HGLRC temp_gl_context = wglCreateContext(mHDC);
+		if (temp_gl_context == nullptr) {
+			fprintf(stderr, "Failed to create GL context!\n");
+			exit(1);
 		}
 
-		HGLRC rc = wglCreateContext(dc);
-		ok = wglMakeCurrent(dc, rc);
+		if (!wglMakeCurrent(mHDC, temp_gl_context)) {
+			fprintf(stderr, "Failed to make GL context current!\n");
+			exit(1);
+		}
+
+		PROC proc = wglGetProcAddress("wglGetExtensionsStringEXT");
+		const char* (*_wglGetExtensionsStringEXT)(void) = (const char* (*)(void)) proc;
+		printf("WGL Extensions Available:\n%s\n\n", _wglGetExtensionsStringEXT());
 
 		if (glewInit() != GLEW_OK)
 			LOG_ERROR(L"GLEW INIT Failed");//AMC::Log::GetInstance()->WriteLogFile(__FUNCTION__, LOG_INFO, L"GLEW INIT Failed");
 
-		wglMakeCurrent(NULL, NULL);
-		wglDeleteContext(rc);
-		ReleaseDC(dummy, dc);
-		DestroyWindow(dummy);
+		//mHDC = GetDC(mWindowHandle);
+		//{
+		//	int attrib[] =
+		//	{
+		//		WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
+		//		WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
+		//		WGL_ACCELERATION_ARB,	WGL_FULL_ACCELERATION_ARB,
+		//		WGL_DOUBLE_BUFFER_ARB,  GL_TRUE,
+		//		WGL_PIXEL_TYPE_ARB,     WGL_TYPE_RGBA_ARB,
+		//		WGL_COLOR_BITS_ARB,     32,
+		//		WGL_DEPTH_BITS_ARB,     24,
+		//		WGL_STENCIL_BITS_ARB,   8,
+		//		WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE,
+		//		WGL_SAMPLE_BUFFERS_ARB, 1,
+		//		WGL_SAMPLES_ARB,        4, // 4x MSAA
+		//		0,
+		//	};
 
-		mHDC = GetDC(mWindowHandle);
-		{
-			int attrib[] =
-			{
-				WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-				WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-				WGL_DOUBLE_BUFFER_ARB,  GL_TRUE,
-				WGL_PIXEL_TYPE_ARB,     WGL_TYPE_RGBA_ARB,
-				WGL_COLOR_BITS_ARB,     24,
-				WGL_DEPTH_BITS_ARB,     24,
-				WGL_STENCIL_BITS_ARB,   8,
-				WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE,
-				WGL_SAMPLE_BUFFERS_ARB, 1,
-				WGL_SAMPLES_ARB,        4, // 4x MSAA
-				0,
-			};
+		//	int format;
+		//	UINT formats;
+		//	if (!wglChoosePixelFormatARB(mHDC, attrib, NULL, 1, &format, &formats) || formats == 0) 
+		//	{
+		//		//AMC::Log::GetInstance()->WriteLogFile(__FUNCTION__, LOG_INFO, L"wglChoosePixelFormatARB failed");
+		//		LOG_ERROR(L"wglChoosePixelFormatARB failed");
+		//	}
 
-			int format;
-			UINT formats;
-			if (!wglChoosePixelFormatARB(mHDC, attrib, NULL, 1, &format, &formats) || formats == 0) 
-			{
-				//AMC::Log::GetInstance()->WriteLogFile(__FUNCTION__, LOG_INFO, L"wglChoosePixelFormatARB failed");
-				LOG_ERROR(L"wglChoosePixelFormatARB failed");
-			}
+		//	PIXELFORMATDESCRIPTOR desc = { .nSize = sizeof(desc) };
+		//	int ok = DescribePixelFormat(mHDC, format, sizeof(desc), &desc);
+		//	if (!ok)
+		//	{
+		//		//AMC::Log::GetInstance()->WriteLogFile(__FUNCTION__, LOG_INFO, L"DescribePixelFormat failed");
+		//		LOG_ERROR(L"DescribePixelFormat failed");
+		//	}
 
-			PIXELFORMATDESCRIPTOR desc = { .nSize = sizeof(desc) };
-			int ok = DescribePixelFormat(mHDC, format, sizeof(desc), &desc);
-			if (!ok)
-			{
-				//AMC::Log::GetInstance()->WriteLogFile(__FUNCTION__, LOG_INFO, L"DescribePixelFormat failed");
-				LOG_ERROR(L"DescribePixelFormat failed");
-			}
+		//	if (SetPixelFormat(mHDC, format, &desc) == FALSE)
+		//	{
+		//		//AMC::Log::GetInstance()->WriteLogFile(__FUNCTION__, LOG_INFO, L"SetPixelFormat failed");
+		//		LOG_ERROR(L"SetPixelFormat failed");
+		//	}
+		//}
 
-			if (SetPixelFormat(mHDC, format, &desc) == FALSE)
-			{
-				//AMC::Log::GetInstance()->WriteLogFile(__FUNCTION__, LOG_INFO, L"SetPixelFormat failed");
-				LOG_ERROR(L"SetPixelFormat failed");
-			}
-		}
+		//// Create Modern OpenGL Context
+		//{
+		//	int attrib[] =
+		//	{
+		//		WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
+		//		WGL_CONTEXT_MINOR_VERSION_ARB, 6,
+		//		WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+		//		WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | WGL_CONTEXT_DEBUG_BIT_ARB,
+		//		0,
+		//	};
 
-		// Create Modern OpenGL Context
-		{
-			int attrib[] =
-			{
-				WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
-				WGL_CONTEXT_MINOR_VERSION_ARB, 6,
-				WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-				WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
-				0,
-			};
+		//	mHGLRC = wglCreateContextAttribsARB(mHDC, NULL, attrib);
+		//	if (!mHGLRC)
+		//	{
+		//		//fprintf(gpFile,"wglCreateContextAttribsARB failed ");
+		//		LOG_ERROR(L"wglCreateContextAttribsARB failed");
+		//	}
 
-			mHGLRC = wglCreateContextAttribsARB(mHDC, NULL, attrib);
-			if (!mHGLRC)
-			{
-				//fprintf(gpFile,"wglCreateContextAttribsARB failed ");
-				LOG_ERROR(L"wglCreateContextAttribsARB failed");
-			}
+		//	wglMakeCurrent(mHDC, mHGLRC);
+		//}
 
-			wglMakeCurrent(mHDC, mHGLRC);
-		}
+		//wglDeleteContext(temp_gl_context);
+		//ReleaseDC(temp_hWnd, temp_dc);
+		//DestroyWindow(temp_hWnd);
 
-		glewExperimental = GL_TRUE; // Ensure GLEW uses modern techniques for managing OpenGL functionality
-		GLenum glewStatus = glewInit();
-		if (glewStatus != GLEW_OK) {
-			LOG_ERROR(L"GLEW initialization failed for actual context");
-		}
+		//glewExperimental = GL_TRUE; // Ensure GLEW uses modern techniques for managing OpenGL functionality
+		//GLenum glewStatus = glewInit();
+		//if (glewStatus != GLEW_OK) {
+		//	LOG_ERROR(L"GLEW initialization failed for actual context");
+		//}
 
 #ifdef _MYDEBUG
 

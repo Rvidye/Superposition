@@ -17,8 +17,8 @@ private:
 	VkPipelineLayout computePipelineLayout;
 public:
 	RTPass(const AMC::VkContext* ctx);
-	void create() override;
-	void execute(const AMC::Scene* scene) override;
+	void create(AMC::RenderContext& context) override;
+	void execute(AMC::Scene* scene, AMC::RenderContext& context) override;
 	void writeDescSet() override;
 	~RTPass();
 };

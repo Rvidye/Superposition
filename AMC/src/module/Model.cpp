@@ -428,8 +428,8 @@ namespace AMC {
 			m->vao = VAO;
 			model->meshes.push_back(m);
 
-			model->geomConfigs.push_back(createGeometryConfig(vertexBuffer, indexBuffer, vertices.size()));
-			model->primCounts.push_back(indices.size() / 3);
+			model->geomConfigs.push_back(createGeometryConfig(vertexBuffer, indexBuffer, static_cast<uint32_t>(vertices.size())));
+			model->primCounts.push_back(static_cast<uint32_t>(indices.size()) / 3);
 
 			// AABB
 			meshAABB.mMin = glm::vec3(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z);

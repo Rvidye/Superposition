@@ -27,7 +27,7 @@ class testScene : public AMC::Scene {
 		void moveModel(float);
 
 	public:
-
+		testScene(const AMC::VkContext* ctx) : AMC::Scene(ctx) {}
 		void init() override;
 		//void render() override;
 		void renderDebug() override;

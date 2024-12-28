@@ -6,7 +6,7 @@ RTPass::RTPass(const AMC::VkContext* ctx) : vkctx(ctx), vkcmdbuffer(new AMC::VkC
 	outputImage = {};
 }
 
-void RTPass::create() {
+void RTPass::create(AMC::RenderContext& context) {
 	AMC::MemoryManager mm(vkctx);
 	outputImage = mm.createImage({ 800, 600, 1 }, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_VIEW_TYPE_2D, 1, AMC::MemoryFlags::kVkMemoryBit, VK_IMAGE_USAGE_STORAGE_BIT);
 
@@ -52,7 +52,7 @@ void RTPass::writeDescSet() {
 	vkQueueWaitIdle(vkctx->vkQueue());
 }
 
-void RTPass::execute(const AMC::Scene* scene) {
+void RTPass::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	static uint32_t frameIndex = 0;
 	uint32_t cmdIndex = frameIndex % RTPass::kCommandBufferCount;
 

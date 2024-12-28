@@ -12,8 +12,6 @@ void rtscene::init() {
 	helmet.model = new AMC::Model(RESOURCE_PATH("models\\DamagedHelmet\\DamagedHelmet.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes, ctx);
 	helmet.matrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	addModel("Helmet", helmet);
-
-	lightManager = new AMC::LightManager(1, 1);	
 }
 
 

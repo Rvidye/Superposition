@@ -63,7 +63,7 @@ namespace AMC {
 		asBuildGeomInfo.pGeometries = &asGeometry;
 		asBuildGeomInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
 
-		uint32_t primCount = models.size();
+		uint32_t primCount = static_cast<uint32_t>(models.size());
 		VkAccelerationStructureBuildSizesInfoKHR sizeInfo{};
 		sizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 		vkGetAccelerationStructureBuildSizesKHR(ctx->vkDevice(), VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &asBuildGeomInfo, &primCount, &sizeInfo);
@@ -87,7 +87,7 @@ namespace AMC {
 		cmdBufferManager.begin();
 
 		VkAccelerationStructureBuildRangeInfoKHR buildrangeAS{};
-		buildrangeAS.primitiveCount = models.size();
+		buildrangeAS.primitiveCount = static_cast<uint32_t>(models.size());
 		std::vector<VkAccelerationStructureBuildRangeInfoKHR*> buildRange{ &buildrangeAS };
 		vkCmdBuildAccelerationStructuresKHR(cmdBufferManager.get(), 1, &asBuildGeomInfo, buildRange.data());
 

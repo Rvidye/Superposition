@@ -3,6 +3,7 @@
 RTPass::RTPass(const AMC::VkContext* ctx) : vkctx(ctx), vkcmdbuffer(new AMC::VkCommandBufferManager(ctx)), vkdescmanager(new AMC::VkDescSetLayoutManager(ctx)) {
 	computePipeline = VK_NULL_HANDLE;
 	computePipelineLayout = VK_NULL_HANDLE;
+	outputImage = {};
 }
 
 void RTPass::create() {
@@ -35,10 +36,20 @@ void RTPass::create() {
 void RTPass::writeDescSet() {
 	vkdescmanager->generateDescSet();
 	VkDescriptorImageInfo desc{};
-	desc.imageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	desc.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	desc.imageView = outputImage.view;
 	desc.sampler = VK_NULL_HANDLE;
 	vkdescmanager->writeToDescSet(0, 0, desc);
+
+	vkcmdbuffer->begin();
+	VkImageSubresourceRange range{};
+	range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	range.levelCount = 1;
+	range.layerCount = 1;
+	outputImage.transistionImageLayout(vkcmdbuffer->get(), VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_ACCESS_NONE, VK_ACCESS_MEMORY_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, range);
+	vkcmdbuffer->end();
+	vkcmdbuffer->submit();
+	vkQueueWaitIdle(vkctx->vkQueue());
 }
 
 void RTPass::execute(const AMC::Scene* scene) {
@@ -49,8 +60,8 @@ void RTPass::execute(const AMC::Scene* scene) {
 	VkCommandBuffer cmdBuffer = vkcmdbuffer->get(cmdIndex);
 	vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
 	std::vector<VkDescriptorSet> descSets{ scene->descSet, vkdescmanager->vkDescSet(0) };
-	vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 0, descSets.size(), descSets.data(), 0, nullptr);
-	vkCmdDispatch(cmdBuffer, 1, 1, 1);
+	vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 0, static_cast<uint32_t>(descSets.size()), descSets.data(), 0, nullptr);
+	vkCmdDispatch(cmdBuffer, 800 / 8, 600 / 8, 1);
 
 	vkcmdbuffer->end(cmdIndex);
 

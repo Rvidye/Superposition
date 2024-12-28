@@ -36,6 +36,7 @@ namespace AMC {
 		VkDeviceMemory vkmem;
 		GLuint glmem;
 		HANDLE memhandle;
+		void transistionImageLayout(VkCommandBuffer cmdBuffer, VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage, VkAccessFlags srcAccess, VkAccessFlags dstAccess, VkImageLayout srcLayout, VkImageLayout dstLayout, VkImageSubresourceRange range) const;
 	};
 
 	class MemoryManager {

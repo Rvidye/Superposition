@@ -28,6 +28,20 @@ namespace AMC {
 		}
 	}
 
+	void Image::transistionImageLayout(VkCommandBuffer cmdBuffer, VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage, VkAccessFlags srcAccess, VkAccessFlags dstAccess, VkImageLayout srcLayout, VkImageLayout dstLayout, VkImageSubresourceRange range) const {
+		VkImageMemoryBarrier imageBarrier{};
+		imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageBarrier.srcAccessMask = srcAccess;
+		imageBarrier.dstAccessMask = dstAccess;
+		imageBarrier.oldLayout = srcLayout;
+		imageBarrier.newLayout = dstLayout;
+		imageBarrier.image = vk;
+		imageBarrier.subresourceRange = range;
+		vkCmdPipelineBarrier(cmdBuffer, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
+	}
+
 	static uint32_t getMemoryType(VkPhysicalDevice dev, uint32_t typeBits, VkMemoryPropertyFlags properties) {
 		VkPhysicalDeviceMemoryProperties memoryProperties;
 		vkGetPhysicalDeviceMemoryProperties(dev, &memoryProperties);

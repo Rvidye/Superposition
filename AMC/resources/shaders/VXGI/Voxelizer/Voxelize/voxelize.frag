@@ -21,7 +21,7 @@ layout (binding = 0)uniform sampler2D BaseColorMap;
 layout (binding = 3)uniform sampler2D EmissiveMap;
 layout(binding = 8) uniform samplerCubeArray SamplerPointShadowmap;
 
-in OutData
+in InOutData
 {
     vec3 FragPos;
     vec2 TexCoord;

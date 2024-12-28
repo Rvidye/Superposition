@@ -34,6 +34,7 @@ class testScene : public AMC::Scene {
 		void renderUI() override;
 		void update() override;
 		void keyboardfunc(char key, UINT keycode) override;
+		void updateRenderContext(AMC::RenderContext& context) override;
 		AMC::Camera* getCamera() override;
 };
 

@@ -19,7 +19,7 @@ namespace AMC {
 		gpuLight.intensity = 1.0f;
 		gpuLight.position = glm::vec3(0.0f);
 		gpuLight.direction = glm::vec3(0.0f, -1.0f, 0.0f);
-		gpuLight.range = 1.0f;
+		gpuLight.range = 0.10f;
 		gpuLight.spotAngle = glm::radians(45.0f);
 		gpuLight.spotExponent = 1.0f;
 		gpuLight.shadows = false;
@@ -46,12 +46,18 @@ namespace AMC {
 	{
 		lights.reserve(MAX_LIGHTS);
 		shadowManager = new ShadowManager();
+		Light hack[MAX_LIGHTS];
 		glCreateBuffers(1, &uboLights);
 		glNamedBufferData(uboLights, sizeof(GpuLight) * MAX_LIGHTS + sizeof(int), nullptr, GL_DYNAMIC_DRAW);
+		for (size_t i = 0; i < MAX_LIGHTS; ++i) {
+			glNamedBufferSubData(uboLights, sizeof(GpuLight) * i, sizeof(GpuLight), &hack[i].gpuLight);
+		}
+		int count = 0;
+		glNamedBufferSubData(uboLights, sizeof(GpuLight) * MAX_LIGHTS, sizeof(int), &count);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, uboLights);
 
 		if (!m_program) {
-			m_program = new ShaderProgram({ RESOURCE_PATH("shaders\\model\\model.vert"), RESOURCE_PATH("shaders\\color\\color.frag") });
+			m_program = new ShaderProgram({ RESOURCE_PATH("shaders\\Light\\Light.vert"), RESOURCE_PATH("shaders\\Light\\Light.frag") });
 		}
 
 		if (!directional) {
@@ -125,6 +131,7 @@ namespace AMC {
 
 	ShadowManager* LightManager::GetShadowManager()
 	{
+		if(!shadowManager) return nullptr;
 		return shadowManager;
 	}
 
@@ -267,7 +274,7 @@ namespace AMC {
 
 				// Range control (for Spot and Point lights)
 				if (light.gpuLight.type == LIGHT_TYPE_SPOT || light.gpuLight.type == LIGHT_TYPE_POINT) {
-					if (ImGui::SliderFloat("Range", &light.gpuLight.range, 0.0f, 100.0f)) {
+					if (ImGui::DragFloat("Range", &light.gpuLight.range, 0.05f, 0.001f, 30.0f)) {
 						shouldUpdateBuffer = true;
 					}
 				}
@@ -340,42 +347,42 @@ namespace AMC {
 	void LightManager::drawLights(){
 
 		m_program->use();
+		point->draw(m_program, lights.size(), false);
+		//for (const auto& light : lights) {
 
-		for (const auto& light : lights) {
+		//	if (!light.gpuLight.active) continue;
 
-			if (!light.gpuLight.active) continue;
+		//	glm::mat4 model = glm::mat4(1.0f);
 
-			glm::mat4 model = glm::mat4(1.0f);
+		//	if (light.gpuLight.type == LIGHT_TYPE_DIRECTIONAL) {
+		//		model = glm::translate(model, light.gpuLight.position);
+		//		glm::vec3 direction = glm::normalize(light.gpuLight.direction);
+		//		glm::quat rotation = glm::rotation(glm::vec3(0.0f, -1.0f, 0.0f), direction);
+		//		glm::mat4 rotMatrix = glm::toMat4(rotation);
+		//		model *= rotMatrix;
+		//	}
+		//	else if (light.gpuLight.type == LIGHT_TYPE_SPOT) {
+		//		model = glm::translate(model, light.gpuLight.position);
+		//		glm::vec3 direction = glm::normalize(light.gpuLight.direction);
+		//		glm::quat rotation = glm::rotation(glm::vec3(0.0f, -1.0f, 0.0f), direction);
+		//		glm::mat4 rotMatrix = glm::toMat4(rotation);
+		//		model *= rotMatrix;
+		//	}
+		//	else if (light.gpuLight.type == LIGHT_TYPE_POINT) {
+		//		model = glm::translate(model, light.gpuLight.position);
+		//	}
 
-			if (light.gpuLight.type == LIGHT_TYPE_DIRECTIONAL) {
-				model = glm::translate(model, light.gpuLight.position);
-				glm::vec3 direction = glm::normalize(light.gpuLight.direction);
-				glm::quat rotation = glm::rotation(glm::vec3(0.0f, -1.0f, 0.0f), direction);
-				glm::mat4 rotMatrix = glm::toMat4(rotation);
-				model *= rotMatrix;
-			}
-			else if (light.gpuLight.type == LIGHT_TYPE_SPOT) {
-				model = glm::translate(model, light.gpuLight.position);
-				glm::vec3 direction = glm::normalize(light.gpuLight.direction);
-				glm::quat rotation = glm::rotation(glm::vec3(0.0f, -1.0f, 0.0f), direction);
-				glm::mat4 rotMatrix = glm::toMat4(rotation);
-				model *= rotMatrix;
-			}
-			else if (light.gpuLight.type == LIGHT_TYPE_POINT) {
-				model = glm::translate(model, light.gpuLight.position);
-			}
-
-			glUniformMatrix4fv(m_program->getUniformLocation("modelMat"), 1, GL_FALSE, glm::value_ptr(model));
-			glUniform4fv(m_program->getUniformLocation("color"), 1, glm::value_ptr(light.gpuLight.color));
-			if (light.gpuLight.type == LIGHT_TYPE_DIRECTIONAL) {
-				directional->draw(m_program, 1, false);
-			}
-			else if (light.gpuLight.type == LIGHT_TYPE_SPOT) {
-				spot->draw(m_program, 1, false);
-			}
-			else if (light.gpuLight.type == LIGHT_TYPE_POINT) {
-				point->draw(m_program, 1, false);
-			}
-		}
+		//	glUniformMatrix4fv(m_program->getUniformLocation("modelMat"), 1, GL_FALSE, glm::value_ptr(model));
+		//	glUniform4fv(m_program->getUniformLocation("color"), 1, glm::value_ptr(light.gpuLight.color));
+		//	if (light.gpuLight.type == LIGHT_TYPE_DIRECTIONAL) {
+		//		directional->draw(m_program, 1, false);
+		//	}
+		//	else if (light.gpuLight.type == LIGHT_TYPE_SPOT) {
+		//		spot->draw(m_program, 1, false);
+		//	}
+		//	else if (light.gpuLight.type == LIGHT_TYPE_POINT) {
+		//		point->draw(m_program, 1, false);
+		//	}
+		//}
 	}
 };

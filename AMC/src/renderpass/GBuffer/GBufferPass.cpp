@@ -40,11 +40,12 @@ void GBufferPass::create(AMC::RenderContext& context)
     glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT3, m_textureEmissive, 0);
 
     glCreateTextures(GL_TEXTURE_2D, 1, &m_textureDepth);
-    glTextureParameteri(m_textureDepth, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTextureParameteri(m_textureDepth, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
     glTextureParameteri(m_textureDepth, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTextureParameteri(m_textureDepth, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTextureParameteri(m_textureDepth, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTextureStorage2D(m_textureDepth, 1, GL_DEPTH_COMPONENT32F, context.width, context.height);
+    GLsizei level = AMC::GetMaxMipmapLevel(context.width, context.height, 1);
+    glTextureStorage2D(m_textureDepth, level, GL_DEPTH_COMPONENT32F, context.width, context.height);
     glNamedFramebufferTexture(gbuffer, GL_DEPTH_ATTACHMENT, m_textureDepth, 0);
 
     GLenum drawBuffers[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
@@ -80,6 +81,10 @@ void GBufferPass::create(AMC::RenderContext& context)
 
 void GBufferPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 {
+    if (!context.IsGbuffer) {
+        return;
+    }
+
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -93,6 +98,19 @@ void GBufferPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
     glClearNamedFramebufferfv(gbuffer, GL_COLOR, 3, glm::value_ptr(clear_color));
     glClearNamedFramebufferfv(gbuffer, GL_DEPTH, 0, &depth);
     glBindFramebuffer(GL_FRAMEBUFFER, gbuffer);
+
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glCullFace(GL_BACK);
+    glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glCullFace(GL_BACK);
+    glDepthFunc(GL_LESS);
 
     m_ProgramGBuffer->use();
     for (const auto& [name, obj] : scene->models) {

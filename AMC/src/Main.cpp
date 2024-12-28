@@ -32,6 +32,8 @@
 
 // Scenes
 #include "scenes/testscene/testScene.h"
+#include "scenes/AMCBanner/AMCBanner.h"
+#include "scenes/Superposition/SuperPosition.h"
 
 // Libraries
 #pragma comment(lib,"glew32.lib")
@@ -343,9 +345,9 @@ void resize(AMC::RenderWindow*, UINT width, UINT height)
 	AMC::Renderer::context.screenHeight = (GLsizei)height;
 }
 
+AMC::PerFrameData data = {};
 void RenderFrame(void)
 {
-	AMC::PerFrameData data = {};
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -360,16 +362,12 @@ void RenderFrame(void)
 			AMC::currentCamera = gpDebugCamera; // just  in case someone fucks up and getCamera returns null we'll fallback to debugcam
 		}
 		//AMC::currentCamera->setNearFarPlane();
-		glm::mat4 view = AMC::currentCamera->getViewMatrix();
-		glm::mat4 projection = AMC::currentCamera->getProjectionMatrix();
-		glm::mat4 projView = projection * view;
-
-		data.View = view;
-		data.Projection = projection;
-		data.ProjView = projection * view;
-		data.InvView = glm::inverse(view);
-		data.InvProjection = glm::inverse(projection);
-		data.InvProjView = glm::inverse(projView);
+		data.View = AMC::currentCamera->getViewMatrix();
+		data.InvView = glm::inverse(data.View);
+		data.Projection = AMC::currentCamera->getProjectionMatrix();
+		data.InvProjection = glm::inverse(data.Projection);
+		data.ProjView = data.Projection * data.View;
+		data.InvProjView = glm::inverse(data.ProjView);
 		data.NearPlane = AMC::currentCamera->getNearPlane();
 		data.FarPlane = AMC::currentCamera->getFarPlane();
 		data.ViewPos = AMC::currentCamera->getViewPosition();
@@ -423,6 +421,17 @@ void RenderFrame(void)
 		ImGui::SliderFloat("Speed", &gpDebugCamera->movementSpeed, 0.1f, 100.0f);
 		ImGui::SliderFloat("Sensitivity", &gpDebugCamera->mouseSensitivity, 0.1f, 1.0f);
 	}
+
+	ImGui::Text("Renderer Properties");
+	ImGui::Checkbox("IsVXGI", &gpRenderer->context.IsVGXI);
+	ImGui::Checkbox("IsGenerateShadowMaps", &gpRenderer->context.IsGenerateShadowMaps);
+	ImGui::Checkbox("IsSSAO", &gpRenderer->context.IsSSAO);
+	ImGui::Checkbox("IsSSR", &gpRenderer->context.IsSSR);
+	ImGui::Checkbox("IsSkyBox", &gpRenderer->context.IsSkyBox);
+	ImGui::Checkbox("IsBloom", &gpRenderer->context.IsBloom);
+	ImGui::Checkbox("IsVolumetric", &gpRenderer->context.IsVolumetric);
+	ImGui::Checkbox("IsToneMap", &gpRenderer->context.IsToneMap);
+	ImGui::Separator();
 
 	ImGui::Text("Select Debug Mode:");
 	if (ImGui::BeginCombo("  ", debugModes[AMC::DEBUGMODE].c_str())) {
@@ -538,7 +547,9 @@ void InitRenderPasses()
 
 void InitScenes(void)
 {
-	sceneQueue.push_back(new testScene());
+	//sceneQueue.push_back(new testScene());
+	//sceneQueue.push_back(new AMCBannerScene());
+	sceneQueue.push_back(new SuperpositionScene());
 
 	for (auto* scene : sceneQueue) {
 		scene->init();

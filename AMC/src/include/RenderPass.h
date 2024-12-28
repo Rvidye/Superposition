@@ -6,24 +6,32 @@
 namespace AMC {
 	// Store Extra Data that can be accesses by all render passes
 	struct RenderContext {
-		GLsizei width = 1024, height = 1024;
+
+		bool IsVGXI = false;
+		bool IsGenerateShadowMaps = true;
+		bool IsGbuffer = true;
+		bool IsDeferredLighting = true;
+		bool IsSSAO = false;
+		bool IsSkyBox = false;
+		bool IsSSR = false;
+		bool IsBloom = false;
+		bool IsVolumetric = false;
+		bool IsToneMap = true;
+
+		GLsizei width = 2048, height = 2048;
 		GLsizei screenWidth, screenHeight;
-		//glm::vec3 GridMin, GridMax;
 		//GBuffer
 		GLuint textureGBuffer[5]; // albedo, normal, metalroughness, emissive, depth
-
 		GBufferDataUBO gBufferData;
 		GLuint gBufferUBO;
-
 		SkyBoxUBO SkyBoxData;
 		GLuint skyBoxUBO;
-
 		GLuint textureDeferredResult = 0;
 		GLuint textureSSAOResult = 0;
 		GLuint textureSSRResult = 0;
 		GLuint textureVolumetricResult = 0;
 		GLuint textureBloomResult = 0;
-		GLuint textureTonemapResult = 0;
+		GLuint textureTonemapResult = 0; // Final Result Pass
 		GLuint textureAtmosphere = 0;
 		GLuint textureVolxelResult = 0;
 		GLuint textureVXGIResult = 0;
@@ -58,6 +66,7 @@ namespace AMC {
 			}
 
 			void render(Scene* scene) {
+				scene->updateRenderContext(context);
 				for (auto pass : passes) {
 					pass->execute(scene, context);
 				}

@@ -15,12 +15,13 @@ void ConeTracer::create(AMC::RenderContext& context) {
 
 void ConeTracer::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 
-
+	if (!context.IsVGXI)
+		return;
 	////GBuffer
 	//glBindTextureUnit(1, context.textureGBuffer[1]); // normal
 	//glBindTextureUnit(2, context.textureGBuffer[2]); // metal-roughness
 	//glBindTextureUnit(3, context.textureGBuffer[4]); // depth
-	glBindTextureUnit(0, context.textureAtmosphere); // skyAlbedo
+	//glBindTextureUnit(0, context.textureAtmosphere); // skyAlbedo
 	glBindTextureUnit(1, context.textureVolxelResult);
 	glBindImageTexture(2, textureResultConeTrace, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F);
 

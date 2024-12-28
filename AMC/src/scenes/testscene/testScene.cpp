@@ -195,6 +195,10 @@ void testScene::keyboardfunc(char key, UINT keycode)
 	}
 }
 
+void testScene::updateRenderContext(AMC::RenderContext& context)
+{
+}
+
 AMC::Camera* testScene::getCamera()
 {
 	return sceneCam;

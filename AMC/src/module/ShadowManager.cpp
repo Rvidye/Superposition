@@ -9,6 +9,20 @@ static const int SHADOWMAP_SIZE = 512;
 namespace AMC {
 
     Shadow::Shadow() {
+        gpuShadow.ProjViewMatrices[0] = glm::mat4(1.0f);
+        gpuShadow.ProjViewMatrices[1] = glm::mat4(1.0f);
+        gpuShadow.ProjViewMatrices[2] = glm::mat4(1.0f);
+        gpuShadow.ProjViewMatrices[3] = glm::mat4(1.0f);
+        gpuShadow.ProjViewMatrices[4] = glm::mat4(1.0f);
+        gpuShadow.ProjViewMatrices[5] = glm::mat4(1.0f);
+        gpuShadow.Position = glm::vec3(0.0f);
+        gpuShadow.NearPlane = 0.15f;
+        gpuShadow.FarPlane = 60.0f;
+        gpuShadow.LightIndex = -1;
+        gpuShadow.NearestSampler = 0;
+        gpuShadow.ShadowSampler = 0;
+        fbo = 0;
+        texture = 0;
     }
 
     Shadow::~Shadow()
@@ -144,8 +158,14 @@ namespace AMC {
     ShadowManager::ShadowManager()
     {
         shadows.reserve(MAX_SHADOWS);
+        Shadow hack[MAX_SHADOWS];
         glCreateBuffers(1, &shadowsUBO);
         glNamedBufferData(shadowsUBO, sizeof(GpuShadow) * MAX_SHADOWS + sizeof(int), nullptr, GL_DYNAMIC_DRAW);
+        for (size_t i = 0; i < MAX_SHADOWS; ++i) {
+            glNamedBufferSubData(shadowsUBO, sizeof(GpuShadow) * i, sizeof(GpuShadow), &hack[i].gpuShadow);
+        }
+        int count = 0;
+        glNamedBufferSubData(shadowsUBO, sizeof(GpuShadow) * MAX_SHADOWS, sizeof(int), &count);
         glBindBufferBase(GL_UNIFORM_BUFFER, 2, shadowsUBO);
     }
 
@@ -171,10 +191,6 @@ namespace AMC {
         newShadow.UpdateViewMatrices();
         glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &newShadow.texture);
         glTextureStorage2D(newShadow.texture, 1, GL_DEPTH_COMPONENT16, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
-        glTextureParameteri(newShadow.texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTextureParameteri(newShadow.texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTextureParameteri(newShadow.texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTextureParameteri(newShadow.texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         glCreateFramebuffers(1, &newShadow.fbo);
         glNamedFramebufferTexture(newShadow.fbo, GL_DEPTH_ATTACHMENT, newShadow.texture, 0);
@@ -260,6 +276,15 @@ namespace AMC {
             float depthClear = 1.0f;
             glClearNamedFramebufferfv(shadow.fbo, GL_DEPTH, 0, &depthClear);
             glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbo);
+            glDisable(GL_CULL_FACE);
+            glDisable(GL_DEPTH_TEST);
+            glDisable(GL_BLEND);
+            glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+            glEnable(GL_DEPTH_TEST);
+            glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            glCullFace(GL_BACK);
+            glDepthFunc(GL_LESS);
             glViewport(0, 0, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
             program->use();
             glUniform1i(program->getUniformLocation("shadowIndex"), shadowIndex);

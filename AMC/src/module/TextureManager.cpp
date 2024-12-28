@@ -15,10 +15,10 @@ namespace AMC {
     {
         // Check if the texture is already loaded
         auto it = textureMap.find(filename);
-        if (it != textureMap.end())
-        {
-            return it->second;
-        }
+        //if (it != textureMap.end())
+        //{
+        //    return it->second;
+        //}
 
         // Load the image using stb_image
         int width, height, nchannels;

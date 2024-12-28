@@ -25,16 +25,24 @@ void SkyBoxPass::create(AMC::RenderContext& context) {
 }
 
 void SkyBoxPass::execute(AMC::Scene* scene, AMC::RenderContext& context) {
-
+	if (!context.IsSkyBox)
+		return;
 	//glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
 	glBindFramebuffer(GL_FRAMEBUFFER, context.fboPostDeferred);
-	glDepthMask(GL_FALSE);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
+	glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+	glEnable(GL_DEPTH_TEST);
+	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glDepthFunc(GL_LEQUAL);
+	glCullFace(GL_BACK);
+	//glDepthMask(GL_FALSE);
 	m_ProgramSkybox->use();
 	glBindVertexArray(context.emptyVAO);
 	glDrawArrays(GL_TRIANGLES,0,36);
-	glDepthMask(GL_TRUE);
+	//glDepthMask(GL_TRUE);
 }
 
 const char* SkyBoxPass::getName() const

@@ -28,17 +28,33 @@ void DeferredPass::create(AMC::RenderContext& context)
 
 void DeferredPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 {
+	if (!context.IsDeferredLighting) {
+		return;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
-	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+	glDisable(GL_BLEND);
+	glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glDepthFunc(GL_LESS);
+	glCullFace(GL_BACK);
 	glViewport(0, 0, context.width, context.height);
-	glm::vec4 clearcolor = glm::vec4(0.0, 0.5, 0.5f, 1.0f);
+	glm::vec4 clearcolor = glm::vec4(0.0, 0.0, 0.0f, 1.0f);
 	glClearNamedFramebufferfv(m_FBO, GL_COLOR, 0, glm::value_ptr(clearcolor));
 
 	m_ProgramDeferredLighting->use();
-	glUniform1i(m_ProgramDeferredLighting->getUniformLocation("IsVXGI"), vxgi);
-	glBindTextureUnit(5, context.textureSSAOResult);
-	glBindTextureUnit(6, context.textureVXGIResult);
+	glUniform1i(m_ProgramDeferredLighting->getUniformLocation("IsVXGI"), context.IsVGXI);
+	if(context.IsSSAO)
+		glBindTextureUnit(5, context.textureSSAOResult);
+	else
+		glBindTextureUnit(5, 0);
+	if (context.IsVGXI)
+		glBindTextureUnit(6, context.textureVXGIResult);
+	else
+		glBindTextureUnit(6, 0);	
 	scene->lightManager->BindUBO();
 	scene->lightManager->GetShadowManager()->BindUBO();
 	glBindVertexArray(context.emptyVAO);
@@ -55,6 +71,9 @@ const char* DeferredPass::getName() const
 void DeferredPass::renderUI()
 {
 #ifdef _MYDEBUG
-	ImGui::Checkbox("VXGI", &vxgi);
+	ImGui::Begin("GBuffer Debug");
+	ImGui::Text("Albedo");
+	ImGui::Image((void*)(intptr_t)m_TextureResult, ImVec2(512, 512), ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::End();
 #endif
 }

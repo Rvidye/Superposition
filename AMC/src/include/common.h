@@ -89,18 +89,16 @@ namespace AMC {
 
 	struct PerFrameData
 	{
-		glm::mat4 ProjView;     
-		glm::mat4 View;         
-		glm::mat4 InvView;      
-		glm::vec3 ViewPos;      
-		float padding1;         
-		glm::mat4 Projection;   
+		glm::mat4 ProjView;
+		glm::mat4 View;
+		glm::mat4 InvView;
+		glm::mat4 Projection;
 		glm::mat4 InvProjection;
-		glm::mat4 InvProjView;  
+		glm::mat4 InvProjView;
+		glm::vec3 ViewPos;
 		float NearPlane;        
 		float FarPlane;         
-		float padding2;         
-		float padding3;         
+		float pad[2];
 	};
 
 	int GetMaxMipmapLevel(int width, int height, int depth = 1); 

@@ -14,14 +14,14 @@ void SSR::create(AMC::RenderContext& context) {
 }
 
 void SSR::execute(AMC::Scene* scene, AMC::RenderContext& context) {
-	if (!enableSSR) return;
+	if (!context.IsSSR) return;
 	//glBindTextureUnit(0, context.textureGBuffer[0]); // albedo
 	//glBindTextureUnit(1, context.textureGBuffer[1]); // normal
 	//glBindTextureUnit(2, context.textureGBuffer[2]); // metal-roughness
 	//glBindTextureUnit(3, context.textureGBuffer[4]); // depth
 	//glBindTextureUnit(5, context.textureAtmosphere); // skyAlbedo
-	glBindTextureUnit(4, context.textureDeferredResult); // sampler src
 	glBindImageTexture(0, textureSSR, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F); // ImgResult
+	glBindTextureUnit(4, context.textureDeferredResult); // sampler src
 	m_ProgramSSR->use();
 	glUniform1i(m_ProgramSSR->getUniformLocation("SampleCount"), 30);
 	glUniform1i(m_ProgramSSR->getUniformLocation("BinarySearchCount"), 8);
@@ -50,7 +50,6 @@ const char* SSR::getName() const
 void SSR::renderUI()
 {
 #ifdef _MYDEBUG
-	ImGui::Checkbox("Enable SSR", &enableSSR);
 	ImGui::SliderInt("Samples", &SampleCount, 1, 100);
 	ImGui::SliderInt("Binary Seach Samples", &BinarySearchCount, 0, 40);
 	ImGui::SliderFloat("Max Dist", &MaxDist, 1, 100);

@@ -13,6 +13,7 @@ namespace AMC {
 		float deltaT; // Interpolation factor between 0.0 and 1.0
 		EasingFunction easingFunction;
 		UpdateCallback updateFunction;
+		bool completed = false;
 	};
 
 	class EventManager {

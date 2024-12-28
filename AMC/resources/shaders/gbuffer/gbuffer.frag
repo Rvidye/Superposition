@@ -36,7 +36,7 @@ void main(void)
     vec3 interpNormal = normalize(inData.Normal);
     mat3 tbn = GetTBN(interpTangent,interpNormal);
     surface.Normal = tbn * surface.Normal;
-    //sampledNormal = normalize(mix(interpNormal, sampledNormal,0.0));
+    surface.Normal = normalize(mix(interpNormal, surface.Normal, material.TransmissionFactor));
     // Output to GBuffer
     OutAlbedoAlpha = vec4(surface.Albedo, surface.Alpha);
     OutNormal = EncodeUnitVec(surface.Normal);

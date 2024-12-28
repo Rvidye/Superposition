@@ -16,7 +16,7 @@ public:
 	GLuint textureResult = 0, textureVolumetricLighting = 0, textureDepth = 0;
 
 	glm::vec3 Absorbance = glm::vec3(0.025f);
-	int SampleCount = 5;
+	int SampleCount = 15;
 	float Scattering = 0.758f;
 	float MaxDist = 50.0f;
 	float Strength = 0.1f;

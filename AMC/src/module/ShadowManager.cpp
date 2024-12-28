@@ -190,6 +190,9 @@ namespace AMC {
         newShadow.gpuShadow.Position = light.gpuLight.position;
         newShadow.UpdateViewMatrices();
         glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &newShadow.texture);
+        //glTextureParameteri(newShadow.texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        //glTextureParameteri(newShadow.texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        //glTextureParameteri(newShadow.texture, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
         glTextureStorage2D(newShadow.texture, 1, GL_DEPTH_COMPONENT16, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
 
         glCreateFramebuffers(1, &newShadow.fbo);
@@ -205,12 +208,20 @@ namespace AMC {
         glCreateSamplers(1, &shadowSampler);
         glSamplerParameteri(shadowSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glSamplerParameteri(shadowSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glSamplerParameteri(shadowSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glSamplerParameteri(shadowSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glSamplerParameteri(shadowSampler, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
         glSamplerParameteri(shadowSampler, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
         glSamplerParameteri(shadowSampler, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
 
         glCreateSamplers(1, &nearestSampler);
         glSamplerParameteri(nearestSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glSamplerParameteri(nearestSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        glSamplerParameteri(nearestSampler, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+        glSamplerParameteri(nearestSampler, GL_TEXTURE_COMPARE_FUNC, GL_ALWAYS);
 
         newShadow.gpuShadow.NearestSampler = glGetTextureSamplerHandleARB(newShadow.texture, nearestSampler);
         glMakeTextureHandleResidentARB(newShadow.gpuShadow.NearestSampler);

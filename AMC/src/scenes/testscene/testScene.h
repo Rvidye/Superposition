@@ -25,6 +25,8 @@ class testScene : public AMC::Scene {
 
 		void sceneEnd(float);
 		void moveModel(float);
+		void fadeIn(float);
+		void fadeOut(float);
 
 	public:
 

@@ -19,6 +19,7 @@ vec3 EvaluateLighting(Light light, Surface surface, vec3 fragPos, vec3 viewPos, 
 float Visibility(Shadows light, vec3 normal, vec3 lightToSample);
 float GetLightSpaceDepth(Shadows light, vec3 lightSpaceSamplePos);
 
+layout(location = 0) uniform bool IsShadows;
 layout(location = 1) uniform bool IsVXGI;
 
 in InOutData
@@ -48,7 +49,7 @@ void main()
     vec3 normal = DecodeUnitVec(texelFetch(gBufferDataUBO.Normal, imgCoord, 0).rg);
     float metallic = texelFetch(gBufferDataUBO.MetallicRoughness, imgCoord, 0).r;
     float roughness = texelFetch(gBufferDataUBO.MetallicRoughness, imgCoord, 0).g;
-    vec3 emissive = texelFetch(gBufferDataUBO.Emissive, imgCoord, 0).rgb;
+    //vec3 emissive = texelFetch(gBufferDataUBO.Emissive, imgCoord, 0).rgb; directly add in bloom pass
     float ambientOcclusion = 1.0 - texelFetch(SamplerAO, imgCoord, 0).r;
 
     Surface surface = GetDefaultSurface();
@@ -66,19 +67,19 @@ void main()
 
         vec3 contribution = EvaluateLighting(light, surface, fragPos, perFrameDataUBO.ViewPos, ambientOcclusion);
 
-        if (contribution != vec3(0.0))
+        if (contribution != vec3(0.0) && IsShadows)
         {
             float shadow = 0.0;
-            // if (light.shadowMapIndex == -1)
-            // {
-            //     shadow = 0.0;
-            // }
-            // else
-            // {
-            //     Shadows lightShadow = shadows[light.shadowMapIndex];
-            //     vec3 lightToSample = unjitteredFragPos - light.position;
-            //     shadow = 1.0 - Visibility(lightShadow, normal, lightToSample);
-            // }
+            if (light.shadowMapIndex == -1)
+            {
+                shadow = 0.0;
+            }
+            else
+            {
+                Shadows lightShadow = shadows[light.shadowMapIndex];
+                vec3 lightToSample = unjitteredFragPos - light.position;
+                shadow = 1.0 - Visibility(lightShadow, normal, lightToSample);
+            }
             contribution *= (1.0 - shadow);
         }
         directLighting += contribution;
@@ -95,7 +96,7 @@ void main()
         indirectLight = ambient * albedo;
     }
 
-    OutFragColor = vec4((directLighting + indirectLight) + emissive, 1.0);
+    OutFragColor = vec4((directLighting + indirectLight), 1.0);
 }
 
 vec3 EvaluateLighting(Light light, Surface surface, vec3 fragPos, vec3 viewPos, float ambientOcclusion)

@@ -16,8 +16,9 @@ void BlitPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glBindTextureUnit(0, context.textureTonemapResult);
 	m_ProgramBlit->use();
-	glBindTextureUnit(10, context.textureTonemapResult);
+	glUniform1f(m_ProgramBlit->getUniformLocation("fade"), AMC::fade);
 	glBindVertexArray(context.emptyVAO);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	glBindVertexArray(0);
@@ -25,11 +26,12 @@ void BlitPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 
 const char* BlitPass::getName() const
 {
-	return "##";
+	return "To screen";
 }
 
 void BlitPass::renderUI()
 {
 #ifdef _MYDEBUG
+	ImGui::SliderFloat("fade", &AMC::fade, 0.0f, 1.0f);
 #endif
 }

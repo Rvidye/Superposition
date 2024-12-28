@@ -79,6 +79,7 @@ namespace AMC {
 			}
 
 			// Normal Map
+			float normalStrength = 0.0f;
 			if (mat->GetTextureCount(aiTextureType_NORMALS) > 0)
 			{
 				mat->GetTexture(aiTextureType_NORMALS, 0, &name);
@@ -94,6 +95,7 @@ namespace AMC {
 					//tex.texture = normalmap;
 					//material->textures.push_back(tex);
 				}
+				normalStrength = 1.0f;
 				textureFlag |= (1 << 1);
 			}
 
@@ -163,7 +165,7 @@ namespace AMC {
 			gmaterial.BaseColorFactor = AMC::Compression::CompressUR8G8B8A8(glm::vec4(albedo.r, albedo.g, albedo.b, alpha));
 			gmaterial.Absorbance = glm::vec3(0.0);
 			gmaterial.IOR = 1.50f;
-			gmaterial.TransmissionFactor = 0.0f;
+			gmaterial.TransmissionFactor = normalStrength;
 			gmaterial.RoughnessFactor = roughness;
 			gmaterial.MetallicFactor = metallic;
 			gmaterial.AlphaCutoff = 0.5f; //default

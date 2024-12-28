@@ -9,7 +9,7 @@
 
 layout(location = 0) out vec4 OutFragColor;
 layout(location = 1) out vec2 OutNormal;
-layout(location = 2) out vec3 OutEmissive;
+layout(location = 3) out vec3 OutEmissive;
 
 in InOutData
 {

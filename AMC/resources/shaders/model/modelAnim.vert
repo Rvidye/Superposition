@@ -1,3 +1,4 @@
+// Unused shader we do skinning in compute shader instead
 #version 460 core 
 
 layout(location = 0)in vec3 vPos;

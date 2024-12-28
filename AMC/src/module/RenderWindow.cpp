@@ -190,7 +190,7 @@ namespace AMC {
 			strcpy_s(debugType, "Undefined behavior");
 			break;
 		case GL_DEBUG_TYPE_PORTABILITY:
-			strcpy_s(debugType, "Portability");
+			//strcpy_s(debugType, "Portability");
 			break;
 		case GL_DEBUG_TYPE_PERFORMANCE:
 			strcpy_s(debugType, "Performance");
@@ -330,6 +330,12 @@ namespace AMC {
 			}
 
 			wglMakeCurrent(mHDC, mHGLRC);
+		}
+
+		glewExperimental = GL_TRUE; // Ensure GLEW uses modern techniques for managing OpenGL functionality
+		GLenum glewStatus = glewInit();
+		if (glewStatus != GLEW_OK) {
+			LOG_ERROR(L"GLEW initialization failed for actual context");
 		}
 
 #ifdef _MYDEBUG

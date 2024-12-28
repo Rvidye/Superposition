@@ -27,11 +27,21 @@ namespace AMC {
 	}
 
 	const glm::mat4 DebugCamera::getProjectionMatrix() const {
-		return glm::perspective(glm::radians(fov), aspectRatio, 0.1f, 10000.0f);
+		return glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
 	}
 
 	const glm::vec3 DebugCamera::getViewPosition() const {
 		return position;
+	}
+
+	const float DebugCamera::getNearPlane() const
+	{
+		return nearPlane;
+	}
+
+	const float DebugCamera::getFarPlane() const
+	{
+		return farPlane;
 	}
 
 	void DebugCamera::setPerspectiveParameters(float ifov, float iaspectRatio) {
@@ -124,11 +134,21 @@ namespace AMC {
 	}
 
 	const glm::mat4 SplineCamera::getProjectionMatrix() const{
-		return glm::perspective(glm::radians(fov), aspectRatio, 0.1f, 10000.0f);
+		return glm::perspective(glm::radians(fov), aspectRatio, nearPlane, farPlane);
 	}
 
 	const glm::vec3 SplineCamera::getViewPosition() const{
 		return m_positionSpline->interpolate(t);
+	}
+
+	const float SplineCamera::getNearPlane() const
+	{
+		return nearPlane;
+	}
+
+	const float SplineCamera::getFarPlane() const
+	{
+		return farPlane;
 	}
 
 	void SplineCamera::keyboard(char key, UINT keycode){

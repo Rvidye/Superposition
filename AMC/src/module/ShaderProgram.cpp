@@ -13,11 +13,16 @@ namespace AMC {
 			GLuint shader = compileShader(filepath);
 			if (shader != 0) {
 				glAttachShader(program, shader);
-				glDeleteShader(shader);
+				//glDeleteShader(shader);
 			}
 		}
 
-		linkProgram();
+		std::string shaderCombination;
+		for (const auto& filepath : shaderFilePaths) {
+			shaderCombination += std::filesystem::path(filepath).filename().string() + " ";
+		}
+
+		linkProgram(shaderCombination);
 		queryUniforms();
 	}
 
@@ -91,6 +96,15 @@ namespace AMC {
 			glGetShaderInfoLog(shader, infoLogLength, nullptr, infoLog.data());
 			LOG(AMC::LogLevel::LOG_ERROR);
 			std::cout << "Shader compilation error in " << filePath << ":\n" << infoLog.data() << std::endl;
+			std::ofstream dumpFile("dump.txt");
+			if (dumpFile) {
+				dumpFile << "Shader Source from " << filePath << ":\n";
+				dumpFile << finalSource;
+				std::cout << "Shader source dumped to dump.txt" << std::endl;
+			}
+			else {
+				std::cout << "Failed to create dump.txt" << std::endl;
+			}
 			LOG(AMC::LogLevel::LOG_INFO);
 			glDeleteShader(shader);
 			return 0;
@@ -161,7 +175,7 @@ namespace AMC {
 		}
 	}
 
-	void ShaderProgram::linkProgram() 
+	void ShaderProgram::linkProgram(const std::string& shaderCombination)
 	{
 		glLinkProgram(program);
 
@@ -178,7 +192,8 @@ namespace AMC {
 				glGetProgramInfoLog(program, infoLogLength, nullptr, infoLog.data());
 				//LOG_ERROR(L"Program link error:\n : %s\n", infoLog.data());
 				LOG(AMC::LogLevel::LOG_ERROR);
-				std::cout << "Program link error:\n" << infoLog.data() << std::endl;
+				std::cout << "Program link error:\n" << infoLog.data() << "\n" << "Shaders used in program: " << shaderCombination << std::endl;
+				LOG(AMC::LogLevel::LOG_INFO);
 			}
 		}
 	}
@@ -216,7 +231,7 @@ namespace AMC {
 		else 
 		{
 			//LOG_WARNING(L"Uniform '%s' not found.\n",name.c_str());
-			std::cout << "Warning: Uniform '" << name << "' not found." << std::endl;
+			//std::cout << "Warning: Uniform '" << name << "' not found." << std::endl;
 			return -1;
 		}
 	}

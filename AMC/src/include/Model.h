@@ -6,7 +6,7 @@
 #include<assimp/postprocess.h>
 #include<VulkanHelperClasses.h>
 
-#define MAX_BONE_COUNT 100
+#define MAX_BONE_COUNT 125
 #define MAX_BONE_INFLUENCE 4
 
 namespace AMC {
@@ -16,9 +16,9 @@ namespace AMC {
 		TextureTypeDiffuse = 0,
 		TextureTypeNormalMap,
 		TextureTypeMetallicRoughnessMap,
+		TextureTypeEmissive,
 		TextureTypeSpecularMap,
 		TextureTypeAmbient,
-		TextureTypeEmissive,
 		TextureTypeEnd
 	};
 
@@ -43,7 +43,7 @@ namespace AMC {
 			glm::vec3 albedo;
 			float metallic;
 			float roughness;
-			float ao;
+			float emissiveFactor;
 			glm::vec3 emission;
 			float alpha;
 			GLuint textureFlag;
@@ -51,29 +51,28 @@ namespace AMC {
 
 			Material();
 			void Apply(ShaderProgram* program);
+			void ReleseTextures();
 			void LoadMaterialTexturesFromFile(const std::string& path, TextureType type);
 			void LoadMaterialTexturesFromMemory(const aiTexture* t, TextureType type);
 			//void Bind(ShaderProgram* program);
 	};
 
 	__declspec(align(16)) struct Vertex {
-		glm::vec4 position;
-		glm::vec4 normal;
-		glm::vec4 texCoords;
-		glm::vec4 tangent;
-		glm::vec4 bitangent;
-		glm::ivec4 boneIDs;
-		glm::vec4 weights;
+		glm::vec4 position; // 16 bytes
+		GLuint normal; // 4 bytes
+		GLuint tangent; // 4 bytes
+		glm::vec2 texCoords; // 8 bytes
+		glm::ivec4 boneIDs; // 16 bytes
+		glm::vec4 weights; // 16 bytes
 	};
 
-	static_assert(sizeof(Vertex) == 112, "Vertex Struct must be 112 bytes");
+	static_assert(sizeof(Vertex) == 64, "Vertex Struct must be 112 bytes");
 	static_assert(offsetof(Vertex, position) == 0, "Position offset incorrect");
 	static_assert(offsetof(Vertex, normal) == 16, "Normal offset incorrect");
-	static_assert(offsetof(Vertex, texCoords) == 32, "Tangent offset incorrect");
-	static_assert(offsetof(Vertex, tangent) == 48, "Bitangent offset incorrect");
-	static_assert(offsetof(Vertex, bitangent) == 64, "TexCoords offset incorrect");
-	static_assert(offsetof(Vertex, boneIDs) == 80, "BoneIDs offset incorrect");
-	static_assert(offsetof(Vertex, weights) == 96, "Weights offset incorrect");
+	static_assert(offsetof(Vertex, tangent) == 20, "Bitangent offset incorrect");
+	static_assert(offsetof(Vertex, texCoords) == 24, "Tangent offset incorrect");
+	static_assert(offsetof(Vertex, boneIDs) == 32, "BoneIDs offset incorrect");
+	static_assert(offsetof(Vertex, weights) == 48, "Weights offset incorrect");
 
 	class Mesh {
 	public:
@@ -182,7 +181,8 @@ namespace AMC {
 			std::vector<Mesh*> meshes;
 			std::vector<VkAccelerationStructureGeometryKHR> geomConfigs{};
 			std::vector<uint32_t> primCounts{};
-			std::vector<Material*> materials;
+			GLuint materialSSBO;
+			//std::vector<Material*> materials;
 			NodeData rootNode;
 
 			BOOL haveAnimation = FALSE;

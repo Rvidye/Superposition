@@ -80,17 +80,30 @@ namespace AMC {
 		LIGHT,
 		SHADOW,
 		SPLINE,
+		GBUFFER,
 		POSTPROCESS
 	};
 
 	class Camera;
 	extern Camera* currentCamera;
 
-	struct CameraBuffer {
-		glm::mat4 view;
-		glm::mat4 projection;
-		glm::vec3 viewposition;
+	struct PerFrameData
+	{
+		glm::mat4 ProjView;     
+		glm::mat4 View;         
+		glm::mat4 InvView;      
+		glm::vec3 ViewPos;      
+		float padding1;         
+		glm::mat4 Projection;   
+		glm::mat4 InvProjection;
+		glm::mat4 InvProjView;  
+		float NearPlane;        
+		float FarPlane;         
+		float padding2;         
+		float padding3;         
 	};
 
+	int GetMaxMipmapLevel(int width, int height, int depth = 1); 
+	glm::ivec3 GetMipmapLevelSize(int width, int height, int depth, int level);
 };
 

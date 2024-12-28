@@ -14,9 +14,22 @@
 #include<MemoryManager.h>
 
 // Render Passes
-#include "renderpass/TestPass.h"
 #include "renderpass/RTPass.h"
-#include "renderpass/ShadowMapPass.h"
+#include "renderpass/TestPass/TestPass.h"
+#include "renderpass/Shadows/ShadowMapPass.h"
+#include "renderpass/GBuffer/GBufferPass.h"
+#include "renderpass/DebugPass/DebugDrawPass.h"
+#include "renderpass/SSAO/SSAOPass.h"
+#include "renderpass/SSR/SSR.h"
+#include "renderpass/DeferredLight/DeferredLightPass.h"
+#include "renderpass/BlitPass/BlitPass.h"
+#include "renderpass/AtmosphericScattering/AtmosphericScatter.h"
+#include "renderpass/Skybox/SkyBoxPass.h"
+#include "renderpass/Bloom/Bloom.h"
+#include "renderpass/Tonemap/Tonemap.h"
+#include "renderpass/VXGI/Voxelizer.h"
+#include "renderpass/VXGI/ConeTracer.h"
+#include "renderpass/VolumetricLighting/VolumetricLighting.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -39,7 +52,7 @@ BOOL AMC::ANIMATING = FALSE;
 BOOL AMC::DEBUGCAM = TRUE;
 BOOL AMC::MUTE = FALSE;
 UINT AMC::DEBUGMODE = AMC::DEBUGMODES::NONE;
-std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Shadow","Spline" ,"PostProcess"};
+std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Spline", "PostProcess"};
 AMC::Camera* AMC::currentCamera;
 
 void keyboard(AMC::RenderWindow* , char key, UINT keycode);
@@ -68,9 +81,15 @@ AMC::Scene* currentScene = nullptr;
 AMC::Renderer* gpRenderer;
 GLsizei AMC::Renderer::width = 0;
 GLsizei AMC::Renderer::height = 0;
+AMC::RenderContext AMC::Renderer::context;
 
 DOUBLE fps = 0.0;
 BOOL bPlayAudio = TRUE;
+
+GLuint perframeUBO;
+//GBufferPass* gpass;
+//DeferredPass* defferedPass;
+//BlitPass* finalpass;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow) {
 	WNDCLASSEX wc;
@@ -111,6 +130,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 
 	window->InitializeWindow();
 	window->InitializeGL();
+	if(!glewIsSupported("GL_NV_geometry_shader_passthrough"))
+		LOG_ERROR(L"GL_NV_geometry_shader_passthrough Not Supported");
+	if (!glewIsSupported("GL_NV_viewport_swizzle"))
+		LOG_ERROR(L"GL_NV_viewport_swizzle Not Supported");
+
+	const GLubyte* renderer = glGetString(GL_RENDERER);
+	const GLubyte* vendor = glGetString(GL_VENDOR);
+	const GLubyte* version = glGetString(GL_VERSION);
+	const GLubyte* glslVer = glGetString(GL_SHADING_LANGUAGE_VERSION);
+	GLint major = 0, minor = 0;
+	glGetIntegerv(GL_MAJOR_VERSION, &major);
+	glGetIntegerv(GL_MINOR_VERSION, &minor);
+	LOG(AMC::LogLevel::LOG_WARNING);
+	std::cout << "GPU Renderer   : " << renderer << std::endl;
+	std::cout << "Vendor		 : " << vendor << std::endl;
+	std::cout << "OpenGL Version : " << version << std::endl;
+	std::cout << "GLSL Version   : " << glslVer << std::endl;
+	std::cout << "OpenGL Version : " << major << "." << minor << std::endl;
+	LOG(AMC::LogLevel::LOG_INFO);
 
 	// Setup Input Handling system
 	window->SetKeyboardFunc(keyboard);
@@ -306,6 +344,8 @@ void mouse(AMC::RenderWindow*, int button, int action, int x, int y)
 #ifdef _MYDEBUG
 	if ((!ImGui::GetIO().WantCaptureMouse) && (gpDebugCamera))
 		gpDebugCamera->mouse(button, action, x, y);
+#else
+	gpDebugCamera->mouse(button, action, x, y);
 #endif
 }
 
@@ -323,10 +363,14 @@ void resize(AMC::RenderWindow*, UINT width, UINT height)
 	}
 	AMC::Renderer::width = (GLsizei)width;
 	AMC::Renderer::height = (GLsizei) height;
+	AMC::Renderer::context.screenWidth = (GLsizei)width;
+	AMC::Renderer::context.screenHeight = (GLsizei)height;
 }
 
 void RenderFrame(void)
 {
+	AMC::PerFrameData data = {};
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (currentScene) {
@@ -339,15 +383,29 @@ void RenderFrame(void)
 		if (!AMC::currentCamera) { 
 			AMC::currentCamera = gpDebugCamera; // just  in case someone fucks up and getCamera returns null we'll fallback to debugcam
 		}
+		//AMC::currentCamera->setNearFarPlane();
+		glm::mat4 view = AMC::currentCamera->getViewMatrix();
+		glm::mat4 projection = AMC::currentCamera->getProjectionMatrix();
+		glm::mat4 projView = projection * view;
+
+		data.View = view;
+		data.Projection = projection;
+		data.ProjView = projection * view;
+		data.InvView = glm::inverse(view);
+		data.InvProjection = glm::inverse(projection);
+		data.InvProjView = glm::inverse(projView);
+		data.NearPlane = AMC::currentCamera->getNearPlane();
+		data.FarPlane = AMC::currentCamera->getFarPlane();
+		data.ViewPos = AMC::currentCamera->getViewPosition();
+
+		glNamedBufferSubData(perframeUBO, 0, sizeof(AMC::PerFrameData), &data);
 
 		gpRenderer->render(currentScene);
 		//currentScene->render();
 	}
 
 #ifdef _MYDEBUG
-
-	if (currentScene)
-		currentScene->renderDebug();
+	//finalpass->execute(currentScene, gpRenderer->context);
 
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplWin32_NewFrame();
@@ -406,6 +464,31 @@ void RenderFrame(void)
 
 	if (currentScene) currentScene->renderUI();
 
+	ImGui::Separator();
+	static int selectedPassIndex = -1;
+	const std::vector<AMC::RenderPass*>& passes = gpRenderer->getPasses();
+
+	if (ImGui::BeginCombo("Render Pass",
+		(selectedPassIndex >= 0 && selectedPassIndex < passes.size()) ?
+		passes[selectedPassIndex]->getName() : "None")) {
+
+		for (int i = 0; i < passes.size(); i++) {
+			bool isSelected = (i == selectedPassIndex);
+			if (ImGui::Selectable(passes[i]->getName(), isSelected)) {
+				selectedPassIndex = i;
+			}
+			if (isSelected) {
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+
+	if (selectedPassIndex >= 0 && selectedPassIndex < passes.size()) {
+		ImGui::Separator();
+		passes[selectedPassIndex]->renderUI();
+	}
+
 	ImGui::End();
 	ImGui::EndFrame();
 	ImGui::Render();
@@ -430,22 +513,52 @@ void InitRenderPasses()
 {
 	glClearDepth(1.0f);
 	glClearColor(0.0, 0.5, 0.5f, 1.0f);
+	glDisable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
+	glDepthFunc(GL_LESS);
+	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 	glEnable(GL_MULTISAMPLE);
+	//glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+	glCreateBuffers(1, &perframeUBO);
+	glNamedBufferData(perframeUBO, sizeof(AMC::PerFrameData), nullptr, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, perframeUBO);
 
 	gpDebugCamera = new AMC::DebugCamera();
 	gpAudioPlayer = new AMC::AudioPlayer();
 
 	gpRenderer = new AMC::Renderer();
+	glCreateVertexArrays(1,&AMC::Renderer::context.emptyVAO);
+
+	//gpass = new GBufferPass();
+	//defferedPass = new DeferredPass();
+	//finalpass = new BlitPass();
 
 	// Add passes here
-	//gpRenderer->addPass(new ShadowMapPass());
-	gpRenderer->addPass(new TestPass());
+	gpRenderer->addPass(new AtmosphericScatterer());
+	gpRenderer->addPass(new ShadowMapPass());
+	gpRenderer->addPass(new Voxelizer());
+	gpRenderer->addPass(new GBufferPass());
+#ifdef _MYDEBUG
+	gpRenderer->addPass(new DebugDrawPass());
+#endif
+	gpRenderer->addPass(new SSAO());
+	gpRenderer->addPass(new ConeTracer());
 	gpRenderer->addPass(new RTPass(vkcontext));
+	gpRenderer->addPass(new DeferredPass());
+	gpRenderer->addPass(new SkyBoxPass());
+	gpRenderer->addPass(new SSR());
+	gpRenderer->addPass(new Bloom());
+	gpRenderer->addPass(new Volumetric());
+	gpRenderer->addPass(new Tonemap());
+	gpRenderer->addPass(new BlitPass());
+
+	//gpRenderer->addPass(new TestPass());
 
 	// Create Resouces for all passes
 	gpRenderer->initPasses();
+	//finalpass->create(gpRenderer->context);
 }
 
 void InitScenes()

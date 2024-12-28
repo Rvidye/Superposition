@@ -5,6 +5,8 @@
 #include<assimp/postprocess.h>
 #include<VulkanHelperClasses.h>
 #include<MemoryManager.h>
+#include<UBO.h>
+#include<Compression.h>
 
 namespace AMC {
 
@@ -25,6 +27,8 @@ namespace AMC {
 			return std::string(fileName.begin(), fileName.end());
 		};
 
+		std::vector<GPUMaterial> gpumaterials;
+
 		for (UINT i = 0; i < scene->mNumMaterials; i++){
 
 			aiMaterial* mat = scene->mMaterials[i];
@@ -44,14 +48,18 @@ namespace AMC {
 			FLOAT roughness;
 			mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
 
+			FLOAT IOR;
+			mat->Get(AI_MATKEY_REFRACTI, IOR);
+
 			FLOAT alpha;
 			mat->Get(AI_MATKEY_OPACITY, alpha);
 
-			Material * material = new Material();
+			//Material * material = new Material();
 
 			// Loading Texture Manually For Now
 			aiString name;
 			UINT textureFlag = 0;
+			GLuint basecolor = 0, metallicroughness = 0, normalmap = 0, emissivemap = 0;
 			// Diffuse Map
 			if (mat->GetTextureCount(aiTextureType_DIFFUSE) > 0)
 			{
@@ -59,10 +67,15 @@ namespace AMC {
 				//check if embedded texture otherwise load from file
 				const aiTexture* embeddedTex = scene->GetEmbeddedTexture(name.C_Str());
 				if (embeddedTex != nullptr) {
-					material->LoadMaterialTexturesFromMemory(embeddedTex, TextureType::TextureTypeDiffuse);
+					//material->LoadMaterialTexturesFromMemory(embeddedTex, TextureType::TextureTypeDiffuse);
 				}
 				else {
-					material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeDiffuse);
+					//material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeDiffuse);
+					basecolor = AMC::TextureManager::LoadTexture(GetTexturePath(name, directory));
+					//AMC::ModelTexture tex;
+					//tex.type = TextureType::TextureTypeDiffuse;
+					//tex.texture = basecolor;
+					//material->textures.push_back(tex);
 				}
 				textureFlag |= (1 << 0);
 			}
@@ -73,10 +86,15 @@ namespace AMC {
 				mat->GetTexture(aiTextureType_NORMALS, 0, &name);
 				const aiTexture* embeddedTex = scene->GetEmbeddedTexture(name.C_Str());
 				if (embeddedTex != nullptr) {
-					material->LoadMaterialTexturesFromMemory(embeddedTex, TextureType::TextureTypeNormalMap);
+					//material->LoadMaterialTexturesFromMemory(embeddedTex, TextureType::TextureTypeNormalMap);
 				}
 				else {
-					material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeNormalMap);
+					//material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeNormalMap);
+					normalmap = AMC::TextureManager::LoadTexture(GetTexturePath(name, directory));
+					//AMC::ModelTexture tex;
+					//tex.type = TextureType::TextureTypeNormalMap;
+					//tex.texture = normalmap;
+					//material->textures.push_back(tex);
 				}
 				textureFlag |= (1 << 1);
 			}
@@ -87,10 +105,16 @@ namespace AMC {
 				mat->GetTexture(aiTextureType_METALNESS, 0, &name);
 				const aiTexture* embeddedTex = scene->GetEmbeddedTexture(name.C_Str());
 				if (embeddedTex != nullptr) {
-					material->LoadMaterialTexturesFromMemory(embeddedTex, TextureType::TextureTypeMetallicRoughnessMap);
+					//material->LoadMaterialTexturesFromMemory(embeddedTex, TextureType::TextureTypeMetallicRoughnessMap);
 				}
 				else {
-					material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeMetallicRoughnessMap);
+					//material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeMetallicRoughnessMap);
+					metallicroughness = AMC::TextureManager::LoadTexture(GetTexturePath(name, directory));
+					glTextureParameteri(metallicroughness, GL_TEXTURE_SWIZZLE_R, GL_BLUE); // Red channel for metallic and Green for roughness
+					//AMC::ModelTexture tex;
+					//tex.type = TextureType::TextureTypeMetallicRoughnessMap;
+					//tex.texture = metallicroughness;
+					//material->textures.push_back(tex);
 				}
 				textureFlag |= (1 << 2);
 			}
@@ -101,10 +125,15 @@ namespace AMC {
 				mat->GetTexture(aiTextureType_EMISSIVE, 0, &name);
 				const aiTexture* embeddedTex = scene->GetEmbeddedTexture(name.C_Str());
 				if (embeddedTex != nullptr) {
-					material->LoadMaterialTexturesFromMemory(embeddedTex, TextureType::TextureTypeEmissive);
+					//material->LoadMaterialTexturesFromMemory(embeddedTex, TextureType::TextureTypeEmissive);
 				}
 				else {
-					material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeEmissive);
+					//material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeEmissive);
+					emissivemap = AMC::TextureManager::LoadTexture(GetTexturePath(name, directory));
+					//AMC::ModelTexture tex;
+					//tex.type = TextureType::TextureTypeEmissive;
+					//tex.texture = emissivemap;
+					//material->textures.push_back(tex);
 				}
 				textureFlag |= (1 << 3);
 			}
@@ -114,21 +143,60 @@ namespace AMC {
 				mat->GetTexture(aiTextureType_LIGHTMAP, 0, &name);
 				const aiTexture* embeddedTex = scene->GetEmbeddedTexture(name.C_Str());
 				if (embeddedTex != nullptr) {
-					material->LoadMaterialTexturesFromMemory(embeddedTex, TextureType::TextureTypeAmbient);
+					//material->LoadMaterialTexturesFromMemory(embeddedTex, TextureType::TextureTypeAmbient);
 				}
 				else {
-					material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeAmbient);
+					//material->LoadMaterialTexturesFromFile(GetTexturePath(name, directory), TextureType::TextureTypeAmbient);
 				}
 				textureFlag |= (1 << 4);
 			}
 
-			material->albedo = glm::vec3(albedo.r, albedo.g, albedo.b);
-			material->metallic = metallic;
-			material->roughness = roughness;
-			material->emission = glm::vec3(emission.r, emission.g, emission.b);
-			material->alpha = alpha;
-			material->textureFlag = textureFlag;
-			model->materials.push_back(material);
+			//material->albedo = glm::vec3(albedo.r, albedo.g, albedo.b);
+			//material->metallic = 1.0f;
+			//material->roughness = 1.0f;
+			//material->emissiveFactor = emissiveIntensity;
+			//material->emission = glm::vec3(emission.r, emission.g, emission.b);
+			//material->alpha = alpha;
+			//material->textureFlag = textureFlag;
+			//model->materials.push_back(material);
+
+			GPUMaterial gmaterial;
+			gmaterial.EmissiveFactor = glm::vec3(emission.r, emission.g, emission.b);
+			gmaterial.BaseColorFactor = AMC::Compression::CompressUR8G8B8A8(glm::vec4(1.0f));
+			gmaterial.Absorbance = glm::vec3(0.0);
+			gmaterial.IOR = 1.5f;
+			gmaterial.TransmissionFactor = 0.0f;
+			gmaterial.RoughnessFactor = 1.0f;
+			gmaterial.MetallicFactor = 1.0f;
+			gmaterial.AlphaCutoff = 0.5f; //default
+
+			if (basecolor) {
+				gmaterial.BaseColor = glGetTextureHandleARB(basecolor);
+				glMakeTextureHandleResidentARB(gmaterial.BaseColor);
+			}
+
+			if (normalmap) {
+				gmaterial.Normal = glGetTextureHandleARB(normalmap);
+				glMakeTextureHandleResidentARB(gmaterial.Normal);
+			}
+
+			if (metallicroughness) {
+				gmaterial.MetallicRoughness = glGetTextureHandleARB(metallicroughness);
+				glMakeTextureHandleResidentARB(gmaterial.MetallicRoughness);
+			}
+
+			if (emissivemap) {
+				gmaterial.Emissive = glGetTextureHandleARB(emissivemap);
+				glMakeTextureHandleResidentARB(gmaterial.Emissive);
+			}
+
+			gmaterial.Transmission = 0;
+			gpumaterials.push_back(gmaterial);
+		}
+
+		if (gpumaterials.size() > 0) {
+			glCreateBuffers(1, &model->materialSSBO);
+			glNamedBufferData(model->materialSSBO, sizeof(GPUMaterial) * gpumaterials.size(), gpumaterials.data(), GL_STATIC_DRAW);
 		}
 	}
 
@@ -221,10 +289,10 @@ namespace AMC {
 				vertices[i].position = glm::vec4(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z,1.0f);
 
 				if (mesh->HasNormals()) {
-					vertices[i].normal = glm::vec4(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, 0.0f);
+					vertices[i].normal = AMC::Compression::CompressSR11G11B10(glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z));//glm::vec4(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z, 0.0f);
 				}
 				else {
-					vertices[i].normal = glm::vec4(0.0f);
+					vertices[i].normal = 0;//glm::vec4(0.0f);
 				}
 
 
@@ -236,12 +304,10 @@ namespace AMC {
 				}
 
 				if (mesh->HasTangentsAndBitangents()) {
-					vertices[i].tangent = glm::vec4(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z,0.0f);
-					vertices[i].bitangent = glm::vec4(mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z,0.0f);
+					vertices[i].tangent = AMC::Compression::CompressSR11G11B10(glm::vec3(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z));//glm::vec4(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z,0.0f);
 				}
 				else {
-					vertices[i].tangent = glm::vec4(0.0f);
-					vertices[i].bitangent = glm::vec4(0.0f);
+					vertices[i].tangent = 0;//glm::vec4(0.0f);
 				}
 
 				// Initialize bone IDs and weights to zero
@@ -304,7 +370,7 @@ namespace AMC {
 			// Normals
 			if (mesh->HasNormals()) {
 				glEnableVertexArrayAttrib(VAO, 1);
-				glVertexArrayAttribFormat(VAO, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+				glVertexArrayAttribIFormat(VAO, 1, 1, GL_UNSIGNED_INT, offsetof(Vertex, normal));
 				glVertexArrayAttribBinding(VAO, 1, 0);
 			}
 			// Texture Coordinates
@@ -316,24 +382,19 @@ namespace AMC {
 			// Tangents
 			if (mesh->HasTangentsAndBitangents()) {
 				glEnableVertexArrayAttrib(VAO, 3);
-				glVertexArrayAttribFormat(VAO, 3, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, tangent));
+				glVertexArrayAttribIFormat(VAO, 3, 1, GL_UNSIGNED_INT, offsetof(Vertex, tangent));
 				glVertexArrayAttribBinding(VAO, 3, 0);
-
-				// Bitangents
-				glEnableVertexArrayAttrib(VAO, 4);
-				glVertexArrayAttribFormat(VAO, 4, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, bitangent));
-				glVertexArrayAttribBinding(VAO, 4, 0);
 			}
 			// Bone IDs
 			if (mesh->HasBones()) {
-				glEnableVertexArrayAttrib(VAO, 5);
-				glVertexArrayAttribIFormat(VAO, 5, 4, GL_INT, offsetof(Vertex, boneIDs));
-				glVertexArrayAttribBinding(VAO, 5, 0);
+				glEnableVertexArrayAttrib(VAO, 4);
+				glVertexArrayAttribIFormat(VAO, 4, 4, GL_INT, offsetof(Vertex, boneIDs));
+				glVertexArrayAttribBinding(VAO, 4, 0);
 
 				// Weights
-				glEnableVertexArrayAttrib(VAO, 6);
-				glVertexArrayAttribFormat(VAO, 6, 4, GL_FLOAT, GL_FALSE, offsetof(Vertex, weights));
-				glVertexArrayAttribBinding(VAO, 6, 0);
+				glEnableVertexArrayAttrib(VAO, 5);
+				glVertexArrayAttribFormat(VAO, 5, 4, GL_FLOAT, GL_FALSE, offsetof(Vertex, weights));
+				glVertexArrayAttribBinding(VAO, 5, 0);
 			}
 
 			std::vector<UINT> indices;
@@ -831,7 +892,7 @@ namespace AMC {
 		albedo = glm::vec3(0.0f);
 		metallic = 0.0f;
 		roughness = 0.0f;
-		ao = 0.0f;
+		emissiveFactor = 0.0f;
 		emission = glm::vec3(0.0f);
 		alpha = 0.0f;
 		textureFlag = 0;
@@ -840,6 +901,16 @@ namespace AMC {
 	void Material::Apply(ShaderProgram* program)
 	{
 		// Upload Material Data Here
+
+		glUniform3fv(program->getUniformLocation("material.albedo"), 1, glm::value_ptr(albedo));
+		glUniform3fv(program->getUniformLocation("material.emissive"), 1, glm::value_ptr(albedo));
+		glUniform1f(program->getUniformLocation("material.metallicFactor"), metallic);
+		glUniform1f(program->getUniformLocation("material.roughnessFactor"), roughness);
+		glUniform1f(program->getUniformLocation("material.emissiveFactor"), emissiveFactor);
+		glUniform1f(program->getUniformLocation("material.alpha"), alpha);
+		glUniform1ui(program->getUniformLocation("material.textureFlag"), textureFlag);
+
+		//bind all textures
 		for (auto t : textures) {
 			switch (t.type){
 				case TextureTypeDiffuse:
@@ -863,11 +934,22 @@ namespace AMC {
 		}
 	}
 
+	void Material::ReleseTextures()
+	{
+		glBindTextureUnit(TextureTypeDiffuse,0);
+		glBindTextureUnit(TextureTypeNormalMap, 0);
+		glBindTextureUnit(TextureTypeMetallicRoughnessMap, 0);
+		glBindTextureUnit(TextureTypeEmissive, 0);
+		glBindTextureUnit(TextureTypeAmbient, 0);
+	}
+
 	void Material::LoadMaterialTexturesFromFile(const std::string& path, TextureType type)
 	{
 		ModelTexture tex;
 		tex.type = type;
-		tex.texture = AMC::TextureManager::LoadTexture(path);
+		std::filesystem::path fileName = std::filesystem::path(path).filename();
+		bool isKTX = fileName.extension() == ".ktx2";
+		tex.texture = isKTX ? AMC::TextureManager::LoadKTX2Texture(path) : AMC::TextureManager::LoadTexture(path);
 		this->textures.push_back(tex);
 	}
 
@@ -915,7 +997,7 @@ namespace AMC {
 		}
 
 		if (!programGPUSkin) {
-			programGPUSkin = new ShaderProgram({ RESOURCE_PATH("shaders\\model\\spv\\SkinCompute.comp.spv") });
+			programGPUSkin = new ShaderProgram({ RESOURCE_PATH("shaders\\model\\SkinCompute.comp") });
 		}
 
 		//Print Info
@@ -923,7 +1005,7 @@ namespace AMC {
 		LOG_INFO(L" Model Details %s", CString(path.c_str()));
 		LOG_INFO(L" Number Of Nodes : %d", rootNode.children.size());
 		LOG_INFO(L" Number Of Meshes : %d", meshes.size());
-		LOG_INFO(L" Number Of Materials : %d", materials.size());
+		//LOG_INFO(L" Number Of Materials : %d", materials.size());
 		if (haveAnimation) {
 			switch (animType){
 				case AMC::SKELETALANIM:
@@ -955,32 +1037,31 @@ namespace AMC {
 		meshes.clear();
 
 		// Clean up materials
-		for (Material* material : materials) {
-			if (material) {
-				for (const ModelTexture& texture : material->textures) {
-					glDeleteTextures(1, &texture.texture);  // Delete textures
-				}
-				delete material;
-			}
-		}
-		materials.clear();
+		//for (Material* material : materials) {
+		//	if (material) {
+		//		for (const ModelTexture& texture : material->textures) {
+		//			glDeleteTextures(1, &texture.texture);  // Delete textures
+		//		}
+		//		delete material;
+		//	}
+		//}
+		//materials.clear();
 	}
 
 	void Model::drawNodes(const NodeData& node, const glm::mat4& parentTransform, ShaderProgram* program, UINT iNumInstance, bool iUseMaterial) {
 
 		glm::mat4 globalTransform = parentTransform * node.globalTransform;
-
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, materialSSBO);
 		//TODO:  set Node matrix here
 		glUniformMatrix4fv(program->getUniformLocation("nodeMat"), 1, GL_FALSE, glm::value_ptr(globalTransform));
 		for (UINT meshIndex : node.meshIndices) {
 			Mesh* mesh = meshes[meshIndex];
-
-			if (iUseMaterial)
-				materials[mesh->mMaterial]->Apply(program);
-
+			if (iUseMaterial) {
+				glUniform1i(program->getUniformLocation("materialIndex"), mesh->mMaterial);
+				//materials[mesh->mMaterial]->Apply(program);
+			}
 			glBindVertexArray(mesh->vao);
 			glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, mesh->mTriangleCount, GL_UNSIGNED_INT, 0, iNumInstance, 0, 0);
-			//glDrawArrays(GL_TRIANGLES, 0, mesh->mVertexCount);
 		}
 
 		// Recursively draw all child nodes

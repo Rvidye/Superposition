@@ -19,8 +19,6 @@ private:
 	// Defined Callbacks for events
 	void sceneStart(float);
 	void sceneEnd(float);
-	void RenderBanner1(float);
-	void RenderBanner2(float);
 
 public:
 	GLuint textureBanner1;

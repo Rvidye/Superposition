@@ -78,7 +78,9 @@ void main()
             {
                 Shadows lightShadow = shadows[light.shadowMapIndex];
                 vec3 lightToSample = unjitteredFragPos - light.position;
-                shadow = 1.0 - Visibility(lightShadow, normal, lightToSample);
+
+                // shadow = 1.0 - Visibility(lightShadow, normal, lightToSample);  <-- bug that caused `inverted' shadows
+                shadow = Visibility(lightShadow, normal, lightToSample);  // bug fix
             }
             contribution *= (1.0 - shadow);
         }

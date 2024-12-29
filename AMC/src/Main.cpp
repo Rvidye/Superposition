@@ -563,8 +563,8 @@ void InitRenderPasses()
 void InitScenes(void)
 {
 	//sceneQueue.push_back(new testScene());
-	sceneQueue.push_back(new AMCBannerScene());
-	//sceneQueue.push_back(new SuperpositionScene());
+	//sceneQueue.push_back(new AMCBannerScene());
+	sceneQueue.push_back(new SuperpositionScene());
 
 	for (auto* scene : sceneQueue) {
 		scene->init();

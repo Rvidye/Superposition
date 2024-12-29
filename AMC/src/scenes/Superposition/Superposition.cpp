@@ -52,7 +52,7 @@ void SuperpositionScene::init()
 	//addModel("cube", cubeobj);
 
 	AMC::RenderModel roomModel;
-	roomModel.model = new AMC::Model(RESOURCE_PATH("models\\Sponza1\\Sponza.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	roomModel.model = new AMC::Model(RESOURCE_PATH("models\\Apple\\Apple.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 	roomModel.matrix = mp->getModelMatrix();
 	addModel("room", roomModel);
 
@@ -252,7 +252,7 @@ void SuperpositionScene::renderDebug()
 		break;
 	}
 }
-
+float t = 0.0f;
 void SuperpositionScene::renderUI()
 {
 #if defined(_MYDEBUG)
@@ -260,6 +260,9 @@ void SuperpositionScene::renderUI()
 	ImGui::Text("Scene Time : %0.1f", events->getCurrentTime());
 	switch (AMC::DEBUGMODE) {
 	case AMC::MODEL:
+		if (ImGui::SliderFloat("Lerp Animation", &t, 0.0f, 1.0f, "%.2f")) {
+			models["room"].model->lerpAnimation(t);
+		}
 		mp->renderUI();
 		break;
 	case AMC::CAMERA:
@@ -280,7 +283,7 @@ void SuperpositionScene::update()
 {
 	events->update();
 	//models["cube"].model->update((float)AMC::deltaTime);
-	//models["man"].model->update((float)AMC::deltaTime);
+	//models["room"].model->update((float)AMC::deltaTime);
 	models["room"].matrix = mp->getModelMatrix();
 	reCalculateSceneAABB(); // cannot find better way to do it for now
 	//modelAnim->update((float)AMC::deltaTime);

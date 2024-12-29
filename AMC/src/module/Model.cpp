@@ -1067,16 +1067,19 @@ namespace AMC {
 		switch (animType) {
 			case SKELETALANIM:
 				if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->skeletonAnimator.size()) {
-					this->skeletonAnimator[this->CurrentAnimation].currentTime += this->skeletonAnimator[this->CurrentAnimation].ticksPerSecond * t;
+					this->skeletonAnimator[this->CurrentAnimation].currentTime = this->skeletonAnimator[this->CurrentAnimation].duration * t;
 					this->skeletonAnimator[this->CurrentAnimation].currentTime = fmod(this->skeletonAnimator[this->CurrentAnimation].currentTime, this->skeletonAnimator[this->CurrentAnimation].duration);
-					//calculateBoneTransform(this, &this->skeletonAnimator[this->CurrentAnimation], &this->skeletonAnimator[this->CurrentAnimation].rootNode, DirectX::XMMatrixIdentity());
+					CalculateBoneTransform(this, &this->skeletonAnimator[this->CurrentAnimation], &this->skeletonAnimator[this->CurrentAnimation].rootNode, glm::mat4(1.0f));
+					glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->skeletonAnimator[this->CurrentAnimation].boneSSBO);
+					glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, MAX_BONE_COUNT * sizeof(glm::mat4), this->skeletonAnimator[this->CurrentAnimation].finalBoneMatrices.data());
+					ComputeSkin();
 				}
 			break;
 			case KEYFRAMEANIM:
 				if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->nodeAnimator.size()) {
-					this->nodeAnimator[this->CurrentAnimation].currentTime += this->nodeAnimator[this->CurrentAnimation].ticksPerSecond * t;
+					this->nodeAnimator[this->CurrentAnimation].currentTime = this->nodeAnimator[this->CurrentAnimation].duration * t;
 					this->nodeAnimator[this->CurrentAnimation].currentTime = fmod(this->nodeAnimator[this->CurrentAnimation].currentTime, this->nodeAnimator[this->CurrentAnimation].duration);
-					//calculateNodeTransform();
+					CalculateNodeTransform(&this->rootNode, glm::mat4(1.0f), this->nodeAnimator[this->CurrentAnimation]);
 				}
 			break;
 			case MORPHANIM:

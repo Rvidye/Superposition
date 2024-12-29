@@ -7,17 +7,18 @@
 #include<Scene.h>
 #include<SplineCameraAdjuster.h>
 #include<EventManager.h>
+#include<VideoPlayer.h>
 
 class AMCBannerScene : public AMC::Scene {
 
 private:
 	AMC::ModelPlacer* mp;
 	AMC::EventManager* events;
+	AMC::VideoPlayer* videoPlayer;
 
 	// Defined Callbacks for events
+	void sceneStart(float);
 	void sceneEnd(float);
-	void RenderBanner1(float);
-	void RenderBanner2(float);
 
 public:
 	GLuint textureBanner1;

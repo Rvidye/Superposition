@@ -2,20 +2,26 @@
 #include<TextureManager.h>
 #include "AMCBanner.h"
 
+void AMCBannerScene::sceneStart(float t)
+{
+	videoPlayer->update(events->getCurrentTime());
+	outputTex = videoPlayer->getTexture();
+}
+
 void AMCBannerScene::sceneEnd(float t)
 {
-	if (t > 0.99f)
+	if (t >= 1.0f)
 		completed = true;
 }
 
 void AMCBannerScene::RenderBanner2(float)
 {
-	outputTex = textureBanner2;
+	//outputTex = textureBanner2;
 }
 
 void AMCBannerScene::RenderBanner1(float t)
 {
-	outputTex = textureBanner1;
+	//outputTex = textureBanner1;
 }
 
 void AMCBannerScene::init()
@@ -24,26 +30,37 @@ void AMCBannerScene::init()
 
 	// event manager setup
 
+	videoPlayer = new AMC::VideoPlayer(RESOURCE_PATH("textures\\AMC.mp4"));
+	videoPlayer->play();
+
 	textureBanner1 = AMC::TextureManager::LoadTexture(RESOURCE_PATH("textures\\GL-2.png"));
 	textureBanner2 = AMC::TextureManager::LoadTexture(RESOURCE_PATH("textures\\temp.jpg"));
 
 	events = new AMC::EventManager();
+
+	AMC::events_t* videoEvent = new AMC::events_t();
+	videoEvent->start = 0.0f;
+	videoEvent->duration = videoPlayer->getDuration();
+	videoEvent->easingFunction = nullptr;
+	videoEvent->updateFunction = [this](float t) { this->sceneStart(t); };
+	events->AddEvent("VideoPlayBackEvent", videoEvent);
+
 	AMC::events_t *endEvent = new AMC::events_t();
-	endEvent->start = 15.0f;
-	endEvent->duration = 5.0f;
+	endEvent->start = 0.0f;
+	endEvent->duration = videoPlayer->getDuration() + 10.0f;
 	endEvent->easingFunction = nullptr;
 	endEvent->updateFunction = [this](float t) { this->sceneEnd(t); }; // Bind the member function using a lambda ! did not think this through so here is an ugly hack !!!
 	events->AddEvent("SceneEndEvent", endEvent);
 
 	AMC::events_t* event1 = new AMC::events_t();
-	event1->start = 0.0f;
+	event1->start = videoPlayer->getDuration();
 	event1->duration = 1.0f;
 	event1->easingFunction = nullptr;
 	event1->updateFunction = [this](float t) { this->RenderBanner1(t); };
 	events->AddEvent("BannerRender1", event1);
 
 	AMC::events_t* event2 = new AMC::events_t();
-	event2->start = 10.0f;
+	event2->start = videoPlayer->getDuration() + 2.0f;
 	event2->duration = 1.0f;
 	event2->easingFunction = nullptr;
 	event2->updateFunction = [this](float t) { this->RenderBanner2(t); };
@@ -95,6 +112,7 @@ void AMCBannerScene::renderUI()
 void AMCBannerScene::update()
 {
 	events->update();
+	//
 	//models["cube"].model->update((float)AMC::deltaTime);
 	//models["man"].model->update((float)AMC::deltaTime);
 	//models["man"].matrix = mp->getModelMatrix();

@@ -42,6 +42,11 @@
 #pragma comment(lib,"OpenAL32.lib")
 #pragma	comment(lib,"ktx.lib")
 #pragma comment(lib,"volk.lib")
+#pragma comment(lib, "avutil.lib")
+#pragma comment(lib, "avcodec.lib")
+#pragma comment(lib, "avformat.lib")
+#pragma comment(lib, "swresample.lib")
+#pragma comment(lib, "swscale.lib")
 
 
 static AMC::RenderWindow* window;
@@ -557,8 +562,8 @@ void InitRenderPasses()
 
 void InitScenes(void)
 {
-	sceneQueue.push_back(new testScene());
-	//sceneQueue.push_back(new AMCBannerScene());
+	//sceneQueue.push_back(new testScene());
+	sceneQueue.push_back(new AMCBannerScene());
 	//sceneQueue.push_back(new SuperpositionScene());
 
 	for (auto* scene : sceneQueue) {

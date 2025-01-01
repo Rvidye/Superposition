@@ -1,11 +1,39 @@
 #version 460 core
 #extension GL_EXT_ray_query : enable
 
+#include<..\..\..\resources\shaders\include\Transformations.glsl>
+
 layout(local_size_x = 8, local_size_y = 8) in;
 
 layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;
-layout(set = 1, binding = 0) uniform writeonly image2D opImage;
+layout(set = 1, binding = 0) uniform sampler2D ipImage;
+layout(set = 1, binding = 1) uniform writeonly image2D opImage;
+
+layout(push_constant) uniform invVPMat {
+	mat4 invMat;
+};
 
 void main(void) {
-	imageStore(opImage, ivec2(gl_GlobalInvocationID.xy), vec4(1.0));
+	float depth = texelFetch(ipImage, ivec2(gl_GlobalInvocationID.xy), 0).r;
+	vec2 uv = ivec2(gl_GlobalInvocationID.xy) / vec2(imageSize(opImage));
+    vec3 ndc = vec3(uv * 2.0 - 1.0, depth);
+    vec3 fragPos = PerspectiveTransform(ndc, invMat);
+
+	vec3 lightPos = vec3(-4.0f, 3.90f, 0.0f);
+
+	vec3 org = vec3(0.0, 0.0, 0.0);
+	vec3 dir = normalize(vec3(ndc.xy, -1.0));
+	float m = length(dir);
+	dir = normalize(dir);
+
+	rayQueryEXT query;
+	rayQueryInitializeEXT(query, tlas, gl_RayFlagsTerminateOnFirstHitEXT, 0xff, org, 0.01, dir, 1e6);
+	rayQueryProceedEXT(query);
+	float dist = 1.0;
+	if (rayQueryGetIntersectionTypeEXT(query, true) != gl_RayQueryCommittedIntersectionNoneEXT)
+	{
+		dist = 0.0;
+	}
+
+	imageStore(opImage, ivec2(gl_GlobalInvocationID.xy), vec4(dist, 0.2, 0.2, 1.0));
 }

@@ -80,6 +80,8 @@ namespace AMC {
 		UINT mTriangleCount;
 		UINT mVertexCount;
 		UINT mMaterial;
+		VkAccelerationStructureGeometryKHR geomConfig;
+		VkAccelerationStructureKHR blas;
 	};
 
 	struct BoneInfo {
@@ -176,11 +178,8 @@ namespace AMC {
 			void lerpAnimation(float t);
 			void setActiveAnimation(int indel = 0);
 
-			VkAccelerationStructureKHR blas;
 			AABB aabb;
 			std::vector<Mesh*> meshes;
-			std::vector<VkAccelerationStructureGeometryKHR> geomConfigs{};
-			std::vector<uint32_t> primCounts{};
 			GLuint materialSSBO;
 			//std::vector<Material*> materials;
 			NodeData rootNode;

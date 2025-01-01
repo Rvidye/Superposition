@@ -285,13 +285,15 @@ namespace AMC {
 				descSetWrite.descriptorType = descBind.descriptorType;
 				descSetWrite.dstBinding = descBind.binding;
 				descSetWrite.dstSet = descSet[index];
+				VkDescriptorImageInfo descInfo;
 				switch(descBind.descriptorType) {
 				case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
 					writeDescAS.pAccelerationStructures = &std::get<VkAccelerationStructureKHR>(obj);
 					descSetWrite.pNext = &writeDescAS;
 					break;
 				case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE: case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-					descSetWrite.pImageInfo = &std::get<VkDescriptorImageInfo>(obj);
+					descInfo = std::get<VkDescriptorImageInfo>(obj);
+					descSetWrite.pImageInfo = &descInfo;
 					break;
 				}
 				vkUpdateDescriptorSets(ctx->vkDevice(), 1, &descSetWrite, 0, nullptr);

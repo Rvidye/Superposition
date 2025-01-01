@@ -24,6 +24,7 @@ public:
 	GLuint textureBanner1;
 	GLuint textureBanner2;
 	GLuint outputTex;
+	AMCBannerScene(AMC::VkContext* ctx) : Scene(ctx) {}
 	void init() override;
 	//void render() override;
 	void renderDebug() override;

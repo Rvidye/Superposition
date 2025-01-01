@@ -587,8 +587,11 @@ void InitRenderPasses()
 
 void InitScenes()
 {
+	//sceneQueue.push_back(new testScene());
+	//sceneQueue.push_back(new AMCBannerScene(vkcontext));
+	sceneQueue.push_back(new SuperpositionScene(vkcontext));
 	//sceneQueue.push_back(new testScene(vkcontext));
-	sceneQueue.push_back(new rtscene(vkcontext));
+	//sceneQueue.push_back(new rtscene(vkcontext));
 
 	for (auto* scene : sceneQueue) {
 		scene->init();

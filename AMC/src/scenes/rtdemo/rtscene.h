@@ -14,6 +14,7 @@ public:
 	void renderDebug() override;
 	void renderUI() override;
 	void update() override;
+	void updateRenderContext(AMC::RenderContext& context) override {};
 	void keyboardfunc(char key, UINT keycode) override;
 	AMC::Camera* getCamera() override;
 };

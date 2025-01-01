@@ -41,15 +41,9 @@ void GBufferPass::create(AMC::RenderContext& context)
     glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT3, m_textureEmissive, 0);
 
     //TODO: Fix
-    glCreateTextures(GL_TEXTURE_2D, 1, &m_textureDepth);
-    glTextureParameteri(m_textureDepth, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-    glTextureParameteri(m_textureDepth, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTextureParameteri(m_textureDepth, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteri(m_textureDepth, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    GLsizei level = AMC::GetMaxMipmapLevel(context.width, context.height, 1);
-    glTextureStorage2D(m_textureDepth, level, GL_DEPTH_COMPONENT32F, context.width, context.height);
-    glNamedFramebufferTexture(gbuffer, GL_DEPTH_ATTACHMENT, m_textureDepth, 0);
     glCreateTextures(GL_TEXTURE_2D, 1, &m_textureDepth.gl);
+    //GLsizei level = AMC::GetMaxMipmapLevel(context.width, context.height, 1);
+    //Level use if reqiured.
     m_textureDepth = mm.createImage({ static_cast<uint32_t>(context.width), static_cast<uint32_t>(context.height), 1 }, VK_FORMAT_D32_SFLOAT, VK_IMAGE_VIEW_TYPE_2D, 1, AMC::MemoryFlags::kGlMemoryBit | AMC::MemoryFlags::kVkMemoryBit, VK_IMAGE_USAGE_SAMPLED_BIT);
     glTextureParameteri(m_textureDepth.gl, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTextureParameteri(m_textureDepth.gl, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

@@ -202,17 +202,16 @@ namespace AMC {
 		}
 	}
 
-	static VkAccelerationStructureKHR BuildBLAS(const AMC::VkContext* ctx, std::vector<VkAccelerationStructureGeometryKHR>& geomConfigs, std::vector<uint32_t> primCounts) {
+	static VkAccelerationStructureKHR BuildBLAS(const AMC::VkContext* ctx, VkAccelerationStructureGeometryKHR& geomConfigs, uint32_t primCount) {
 		AMC::MemoryManager* mem = new AMC::MemoryManager(ctx);
 
 		VkAccelerationStructureBuildGeometryInfoKHR asBuildGeomInfo{};
 		asBuildGeomInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
-		asBuildGeomInfo.geometryCount = static_cast<uint32_t>(geomConfigs.size());
+		asBuildGeomInfo.geometryCount = 1;
 		asBuildGeomInfo.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-		asBuildGeomInfo.pGeometries = geomConfigs.data();
+		asBuildGeomInfo.pGeometries = &geomConfigs;
 		asBuildGeomInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
 
-		uint32_t primCount = *std::max_element(primCounts.begin(), primCounts.end());
 		VkAccelerationStructureBuildSizesInfoKHR sizeInfo{};
 		sizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 		vkGetAccelerationStructureBuildSizesKHR(ctx->vkDevice(), VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &asBuildGeomInfo, &primCount, &sizeInfo);
@@ -237,14 +236,9 @@ namespace AMC {
 		cmdBufferManager.allocate(1);
 		cmdBufferManager.begin();
 
-		std::vector<VkAccelerationStructureBuildRangeInfoKHR> buildRangesAS(geomConfigs.size());
-		for (int i = 0; i < buildRangesAS.size(); i++) {
-			buildRangesAS[i].firstVertex = 0;
-			buildRangesAS[i].primitiveCount = primCounts[i];
-			buildRangesAS[i].primitiveOffset = 0;
-			buildRangesAS[i].transformOffset = 0;
-		}
-		std::vector<VkAccelerationStructureBuildRangeInfoKHR*> buildRange{ buildRangesAS.data() };
+		VkAccelerationStructureBuildRangeInfoKHR buildRangesAS{};
+		buildRangesAS.primitiveCount = primCount;
+		std::vector<VkAccelerationStructureBuildRangeInfoKHR*> buildRange{ &buildRangesAS };
 		vkCmdBuildAccelerationStructuresKHR(cmdBufferManager.get(), 1, &asBuildGeomInfo, buildRange.data());
 
 		cmdBufferManager.end();
@@ -428,22 +422,19 @@ namespace AMC {
 			m->ibo = indexBuffer.gl;
 			m->vbo = vertexBuffer.gl;
 			m->vao = VAO;
+			m->geomConfig = createGeometryConfig(vertexBuffer, indexBuffer, static_cast<uint32_t>(vertices.size()));
+#if defined(RT_ENABLE)
+			if (ctx != nullptr) {
+				m->blas = BuildBLAS(ctx, m->geomConfig, m->mTriangleCount / 3);
+			}
+#endif // defined(RT_ENABLE)
 			model->meshes.push_back(m);
-
-			model->geomConfigs.push_back(createGeometryConfig(vertexBuffer, indexBuffer, static_cast<uint32_t>(vertices.size())));
-			model->primCounts.push_back(static_cast<uint32_t>(indices.size()) / 3);
 
 			// AABB
 			meshAABB.mMin = glm::vec3(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z);
 			meshAABB.mMax = glm::vec3(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
 			aabbs.push_back(meshAABB);
 		}
-		
-#if defined(RT_ENABLE)
-		if (ctx != nullptr) {
-			model->blas = BuildBLAS(ctx, model->geomConfigs, model->primCounts);
-		}
-#endif // defined(RT_ENABLE)
 
 		AABB modelAABB{};
 		modelAABB.mMin = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
@@ -962,7 +953,7 @@ namespace AMC {
 
 	ShaderProgram* Model::programGPUSkin = nullptr;
 
-	Model::Model(std::string path, int iAssimpFlags, const AMC::VkContext* ctx) : aabb({}), animType(AMC::AnimationType::SKELETALANIM), blas(VK_NULL_HANDLE) {
+	Model::Model(std::string path, int iAssimpFlags, const AMC::VkContext* ctx) : aabb({}), animType(AMC::AnimationType::SKELETALANIM) {
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path, iAssimpFlags);
 		if (!scene) {

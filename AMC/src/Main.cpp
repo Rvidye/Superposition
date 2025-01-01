@@ -539,13 +539,13 @@ void InitRenderPasses()
 	gpRenderer->addPass(new AtmosphericScatterer());
 	gpRenderer->addPass(new ShadowMapPass());
 	gpRenderer->addPass(new Voxelizer());
-	gpRenderer->addPass(new GBufferPass());
+	gpRenderer->addPass(new GBufferPass(vkcontext));
 #ifdef _MYDEBUG
 	gpRenderer->addPass(new DebugDrawPass());
 #endif
 	gpRenderer->addPass(new SSAO());
 	gpRenderer->addPass(new ConeTracer());
-	//gpRenderer->addPass(new RTPass(vkcontext));
+	gpRenderer->addPass(new RTPass(vkcontext));
 	gpRenderer->addPass(new DeferredPass());
 	gpRenderer->addPass(new SkyBoxPass());
 	gpRenderer->addPass(new SSR());
@@ -563,12 +563,12 @@ void InitRenderPasses()
 
 void InitScenes()
 {
-	sceneQueue.push_back(new testScene(vkcontext));
-	//sceneQueue.push_back(new rtscene(vkcontext));
+	//sceneQueue.push_back(new testScene(vkcontext));
+	sceneQueue.push_back(new rtscene(vkcontext));
 
 	for (auto* scene : sceneQueue) {
 		scene->init();
-		//scene->BuildTLAS();
+		scene->BuildTLAS();
 	}
 	playNextScene();
 

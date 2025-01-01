@@ -17,7 +17,7 @@ void SSAO::create(AMC::RenderContext& context) {
 void SSAO::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	if (!enableSSAO) return;
 	//glBindTextureUnit(0, context.textureGBuffer[1]);
-	//glBindTextureUnit(1, context.textureGBuffer[4]);
+	//glBindTextureUnit(1, context.textureGBufferDepth);
 	glBindImageTexture(2, m_textureResult, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R8);
 	m_ProgramCompuetSSAO->use();
 	glUniform1i(m_ProgramCompuetSSAO->getUniformLocation("SampleCount"), SampleCount);

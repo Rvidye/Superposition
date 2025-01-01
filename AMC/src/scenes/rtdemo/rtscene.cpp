@@ -6,12 +6,17 @@ void rtscene::init() {
 	AMC::RenderModel cube;
 	cube.model = new AMC::Model(RESOURCE_PATH("models\\BoxAnimated.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes, ctx);
 	cube.matrix = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -2.0f, 0.0f)), glm::vec3(10.0f, 0.5f, 10.0f));
-	addModel("Cube", cube);
+	//addModel("Cube", cube);
 
 	AMC::RenderModel helmet;
 	helmet.model = new AMC::Model(RESOURCE_PATH("models\\DamagedHelmet\\DamagedHelmet.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes, ctx);
-	helmet.matrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	helmet.matrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, 0.0f));
 	addModel("Helmet", helmet);
+
+	helmet.matrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	addModel("Helmet 2", helmet);
+
+	lightManager = new AMC::LightManager();
 }
 
 

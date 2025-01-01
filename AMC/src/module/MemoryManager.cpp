@@ -155,6 +155,8 @@ namespace AMC {
 			switch (format) {
 			case VK_FORMAT_R32G32B32A32_SFLOAT:
 				return GL_RGBA32F;
+			case VK_FORMAT_D32_SFLOAT:
+				return GL_DEPTH_COMPONENT32F;
 			default:
 				LOG_ERROR(L"Unknown Format, Please add this format to Lambda");
 				return GL_INVALID_ENUM;
@@ -175,6 +177,15 @@ namespace AMC {
 			}
 		};
 
+		const auto aspectMap = [](const VkFormat format) -> const VkImageAspectFlags {
+			switch (format) {
+			case VK_FORMAT_D32_SFLOAT:
+				return VK_IMAGE_ASPECT_DEPTH_BIT;
+			default:
+				return VK_IMAGE_ASPECT_COLOR_BIT;
+			}
+		};
+
 		const bool isGl = memoryFlags & kGlMemoryBit;
 		const bool isVk = (memoryFlags & kVkMemoryBit) && ctx != nullptr;
 		if (isVk && ctx == nullptr) {
@@ -184,7 +195,7 @@ namespace AMC {
 
 		if (isVk) {
 			VkExternalMemoryImageCreateInfo externalMemoryImageCI{};
-			externalMemoryImageCI.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO;
+			externalMemoryImageCI.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
 			externalMemoryImageCI.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
 
 			VkImageCreateInfo imageCI{};
@@ -237,7 +248,7 @@ namespace AMC {
 			imageViewCI.components.a = VK_COMPONENT_SWIZZLE_A;
 			imageViewCI.format = format;
 			imageViewCI.image = image.vk;
-			imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageViewCI.subresourceRange.aspectMask = aspectMap(format);
 			imageViewCI.subresourceRange.layerCount = 1;
 			imageViewCI.subresourceRange.levelCount = mipLevels;
 			vkCreateImageView(ctx->vkDevice(), &imageViewCI, nullptr, &image.view);

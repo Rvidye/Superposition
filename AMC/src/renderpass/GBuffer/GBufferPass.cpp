@@ -3,6 +3,7 @@
 
 void GBufferPass::create(AMC::RenderContext& context)
 {
+    AMC::MemoryManager mm(ctx);
 	m_ProgramGBuffer = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\gbuffer\\gbuffer.vert"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.frag") });
 
 	glCreateFramebuffers(1, &gbuffer);
@@ -39,13 +40,13 @@ void GBufferPass::create(AMC::RenderContext& context)
     glTextureStorage2D(m_textureEmissive, 1, GL_R11F_G11F_B10F, context.width, context.height);
     glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT3, m_textureEmissive, 0);
 
-    glCreateTextures(GL_TEXTURE_2D, 1, &m_textureDepth);
-    glTextureParameteri(m_textureDepth, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTextureParameteri(m_textureDepth, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTextureParameteri(m_textureDepth, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteri(m_textureDepth, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTextureStorage2D(m_textureDepth, 1, GL_DEPTH_COMPONENT32F, context.width, context.height);
-    glNamedFramebufferTexture(gbuffer, GL_DEPTH_ATTACHMENT, m_textureDepth, 0);
+    glCreateTextures(GL_TEXTURE_2D, 1, &m_textureDepth.gl);
+    m_textureDepth = mm.createImage({ static_cast<uint32_t>(context.width), static_cast<uint32_t>(context.height), 1 }, VK_FORMAT_D32_SFLOAT, VK_IMAGE_VIEW_TYPE_2D, 1, AMC::MemoryFlags::kGlMemoryBit | AMC::MemoryFlags::kVkMemoryBit, VK_IMAGE_USAGE_SAMPLED_BIT);
+    glTextureParameteri(m_textureDepth.gl, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTextureParameteri(m_textureDepth.gl, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTextureParameteri(m_textureDepth.gl, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(m_textureDepth.gl, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glNamedFramebufferTexture(gbuffer, GL_DEPTH_ATTACHMENT, m_textureDepth.gl, 0);
 
     GLenum drawBuffers[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
     glNamedFramebufferDrawBuffers(gbuffer, 4, drawBuffers);
@@ -59,13 +60,13 @@ void GBufferPass::create(AMC::RenderContext& context)
     context.textureGBuffer[1] = m_textureNormal;
     context.textureGBuffer[2] = m_textureMetallicRoughness;
     context.textureGBuffer[3] = m_textureEmissive;
-    context.textureGBuffer[4] = m_textureDepth;
+    context.textureGBufferDepth = m_textureDepth;
 
     context.gBufferData.AlbedoAlphaTexture = glGetTextureHandleARB(m_textureAlbedoAlpha);
     context.gBufferData.NormalTexture = glGetTextureHandleARB(m_textureNormal);
     context.gBufferData.MetallicRoughnessTexture = glGetTextureHandleARB(m_textureMetallicRoughness);
     context.gBufferData.EmissiveTexture = glGetTextureHandleARB(m_textureEmissive);
-    context.gBufferData.DepthTexture = glGetTextureHandleARB(m_textureDepth);
+    context.gBufferData.DepthTexture = glGetTextureHandleARB(m_textureDepth.gl);
 
     glMakeTextureHandleResidentARB(context.gBufferData.AlbedoAlphaTexture);
     glMakeTextureHandleResidentARB(context.gBufferData.NormalTexture);
@@ -123,7 +124,7 @@ void GBufferPass::renderUI()
     ImGui::Text("Emissive");
     ImGui::Image((void*)(intptr_t)m_textureEmissive, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
     ImGui::Text("Depth");
-    ImGui::Image((void*)(intptr_t)m_textureDepth, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+    ImGui::Image((void*)(intptr_t)m_textureDepth.gl, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
     ImGui::End();
 #endif
 }

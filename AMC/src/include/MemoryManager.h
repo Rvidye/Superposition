@@ -20,14 +20,32 @@ namespace AMC {
 		VkDeviceMemory vkmem;
 		GLuint glmem;
 		HANDLE memhandle;
+		VkDeviceAddress deviceAddress;
+		//Just for VK for now
+		void copyFromCpu(const VkContext* ctx, const void* data, size_t size, size_t offset, bool useStaging = false) const;
+		template<typename T>
+		void copyFromCpu(const VkContext* ctx, const std::vector<T>& dataVec, size_t offset, bool useStaging = false) const {
+			copyFromCpu(ctx, dataVec.data(), dataVec.size() * sizeof(T), offset, useStaging);
+		}
+	};
+
+	struct Image {
+		GLuint gl;
+		VkImage vk;
+		VkImageView view;
+		VkDeviceMemory vkmem;
+		GLuint glmem;
+		HANDLE memhandle;
+		void transistionImageLayout(VkCommandBuffer cmdBuffer, VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage, VkAccessFlags srcAccess, VkAccessFlags dstAccess, VkImageLayout srcLayout, VkImageLayout dstLayout, VkImageSubresourceRange range) const;
 	};
 
 	class MemoryManager {
 	public:
-		MemoryManager(const VkContext& ctx) : ctx(ctx) {}
+		MemoryManager(const VkContext* ctx) : ctx(ctx) {}
 		//TODO: Make MemoryFlags a Template argument to improve perf, Low Priority
-		Buffer createBuffer(uint64_t size, MemoryFlagBits memoryFlags, VkBufferUsageFlags bufferUsage);
+		Buffer createBuffer(uint64_t size, MemoryFlagBits memoryFlags, VkBufferUsageFlags bufferUsage = 0, bool getAddress = false);
+		Image createImage(VkExtent3D extent, VkFormat format, VkImageViewType type, uint32_t mipLevels, MemoryFlagBits memoryFlags, VkImageUsageFlags imageUsage = 0);
 	private:
-		const VkContext& ctx;
+		const VkContext* ctx;
 	};
 };

@@ -8,6 +8,8 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #include<volk.h>
 
+#define RT_ENABLE
+
 namespace AMC {
 	class VkContext
 	{
@@ -53,37 +55,47 @@ namespace AMC {
 		VkQueue queue;
 		uint32_t queueFamilyIndex;
 		VkCommandPool commandPool;
+		VkDebugUtilsMessengerEXT callback;
 	};
 
-	class VkDescSetManager {
+	class VkDescSetLayoutManager {
 	public:
-		class Builder {
-		public:
-			Builder(const VkContext* context);
-			Builder& addToDescSet(std::string key, uint32_t binding, VkDescriptorType descType, VkShaderStageFlags stageFlags, std::vector<VkBuffer> bufferVector);
-			VkDescSetManager* build();
-		private:
-			struct DescriptorSetData {
-				uint32_t binding;
-				VkDescriptorType type;
-				VkShaderStageFlags shaderStages;
-				std::vector<std::variant<VkBuffer, VkImageView>> resourceVec;
-
-				DescriptorSetData(uint32_t binding, VkDescriptorType type, VkShaderStageFlags shaderStages, std::vector<VkBuffer> bufferVector)
-				: binding(binding), type(type), shaderStages(shaderStages), resourceVec(bufferVector.begin(), bufferVector.end())
-				{
-				}
-			};
-			const VkContext* ctx;
-			std::unordered_map<std::string, std::vector<DescriptorSetData>> descSetData;
-		};
-
-		VkDescriptorSetLayout vkDescriptorSetLayout(std::string key) const { return descriptorSet.at(key).first; }
+		VkDescSetLayoutManager(const AMC::VkContext* vkctx, uint32_t count = 1) : ctx(vkctx), descSetLayout(VK_NULL_HANDLE), descSetCount(count) {}
+		void addBinding(uint32_t binding, VkDescriptorType type, VkShaderStageFlags shaderStages);
+		void generateDescSetLayout();
+		static void generateDescSetPool(const VkContext* ctx);
+		void generateDescSet();
+		void writeToDescSet(uint32_t index, uint32_t binding, std::variant<VkAccelerationStructureKHR, VkDescriptorImageInfo> obj);
+		VkDescriptorSetLayout vkDescSetLayout() const { return descSetLayout; };
+		VkDescriptorSet vkDescSet(uint32_t index) { return descSet[index]; }
 	private:
-		VkDescSetManager() : descriptorSet({}), pool(VK_NULL_HANDLE) {};
-
-		std::unordered_map<std::string, std::pair<VkDescriptorSetLayout, std::vector<VkDescriptorSet>>> descriptorSet;
-		VkDescriptorPool pool;
+		const VkContext* ctx;
+		std::vector<VkDescriptorSetLayoutBinding> bindings;
+		VkDescriptorSetLayout descSetLayout;
+		uint32_t descSetCount;
+		std::vector<VkDescriptorSet> descSet;
+		//Currently It is made for a single pool for all contexts. 
+		//TODO: convert this to be a pool for each context
+		static std::unordered_map<VkDescriptorType, uint32_t> poolsizeMap;
+		static VkDescriptorPool descPool;
+		static uint32_t maxSetCount;
 	};
+
+	class VkCommandBufferManager {
+	public:
+		static constexpr uint32_t kFreeAll = UINT32_MAX;
+		VkCommandBufferManager(const VkContext* ctx);
+		void allocate(uint32_t count = 1);
+		VkCommandBuffer get(uint32_t index = 0) const;
+		VkResult submit(uint32_t index = 0);
+		VkResult begin(uint32_t index = 0);
+		VkResult end(uint32_t index = 0);
+		void free(uint32_t count = kFreeAll);
+	private:
+		const VkContext* vkctx;
+		std::vector<VkCommandBuffer> commandBufferList{};
+	};
+
+	VkShaderModule loadShaderModule(const VkContext* ctx, std::string fileName);
 }
 

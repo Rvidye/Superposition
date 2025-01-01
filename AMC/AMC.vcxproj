@@ -214,6 +214,9 @@ copy /Y "$(ProjectDir)lib\release\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\module\Scene.cpp" />
+    <ClCompile Include="src\renderpass\RTPass.cpp" />
+    <ClCompile Include="src\scenes\rtdemo\rtscene.cpp" />
     <ClCompile Include="src\include\glm\detail\glm.cpp" />
     <ClCompile Include="src\include\glm\glm.cppm" />
     <ClCompile Include="src\include\imgui\imgui.cpp" />
@@ -262,6 +265,8 @@ copy /Y "$(ProjectDir)lib\release\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$
     <ClCompile Include="src\module\VulkanHelperClasses.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\renderpass\RTPass.h" />
+    <ClInclude Include="src\scenes\rtdemo\rtscene.h" />
     <ClInclude Include="src\include\AL\al.h" />
     <ClInclude Include="src\include\AL\alc.h" />
     <ClInclude Include="src\include\assimp\aabb.h" />

@@ -44,6 +44,7 @@ namespace AMC {
 			virtual ~RenderPass() = default;
 			virtual void create(RenderContext& context) = 0;
 			virtual void execute(Scene* scene, RenderContext &context) = 0;
+			virtual void writeDescSet() {}
 			virtual const char* getName() const = 0;
 			virtual void renderUI() = 0;
 	};
@@ -69,6 +70,12 @@ namespace AMC {
 				scene->updateRenderContext(context);
 				for (auto pass : passes) {
 					pass->execute(scene, context);
+				}
+			}
+
+			void writeDescSets() {
+				for (auto pass : passes) {
+					pass->writeDescSet();
 				}
 			}
 

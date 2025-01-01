@@ -27,15 +27,15 @@ void AtmosphericScatterer::create(AMC::RenderContext& context) {
 void AtmosphericScatterer::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 
 	// Compute Atmospheric Scattering
-	if (!modified)
-		return;
+	//if (!modified)
+	//	return;
 	glBindImageTexture(0, textureAtmosphericResult, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 	m_ProgramAtmosphericScatter->use();
 	glUniform1i(m_ProgramAtmosphericScatter->getUniformLocation("ISteps"), ISteps);
 	glUniform1i(m_ProgramAtmosphericScatter->getUniformLocation("JSteps"), JSteps);
 	glUniform1f(m_ProgramAtmosphericScatter->getUniformLocation("LightIntensity"), LightIntensity);
 	glUniform1f(m_ProgramAtmosphericScatter->getUniformLocation("Azimuth"), Azimuth);
-	glUniform1f(m_ProgramAtmosphericScatter->getUniformLocation("Elevation"), Elevation);
+	glUniform1f(m_ProgramAtmosphericScatter->getUniformLocation("Elevation"), AMC::AtmosphericElevation);
 	GLuint workGroupSizeX = (128 + 8 - 1) / 8;
 	GLuint workGroupSizeY = (128 + 8 - 1) / 8;
 	glDispatchCompute(workGroupSizeX, workGroupSizeY, 6);
@@ -52,6 +52,7 @@ void AtmosphericScatterer::renderUI()
 {
 #ifdef _MYDEBUG
 	if (ImGui::SliderFloat("Elevation", &Elevation, -glm::pi<float>(), glm::pi<float>())) {
+		AMC::AtmosphericElevation = Elevation;
 		modified = true;
 	}
 

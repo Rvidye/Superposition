@@ -163,7 +163,7 @@ namespace AMC {
 			GPUMaterial gmaterial;
 			gmaterial.EmissiveFactor = glm::vec3(emission.r, emission.g, emission.b);
 			gmaterial.BaseColorFactor = AMC::Compression::CompressUR8G8B8A8(glm::vec4(albedo.r, albedo.g, albedo.b, alpha));
-			gmaterial.Absorbance = glm::vec3(0.0);
+			gmaterial.Absorbance = glm::vec3(emissiveIntensity,0.0f,0.0f);
 			gmaterial.IOR = 1.50f;
 			gmaterial.TransmissionFactor = normalStrength;
 			gmaterial.RoughnessFactor = roughness;
@@ -1081,6 +1081,11 @@ namespace AMC {
 					this->nodeAnimator[this->CurrentAnimation].currentTime = fmod(this->nodeAnimator[this->CurrentAnimation].currentTime, this->nodeAnimator[this->CurrentAnimation].duration);
 					CalculateNodeTransform(&this->rootNode, glm::mat4(1.0f), this->nodeAnimator[this->CurrentAnimation]);
 				}
+				//for (int i = 0; i < this->nodeAnimator.size(); i++) {
+				//	this->nodeAnimator[i].currentTime = this->nodeAnimator[i].duration * t;
+				//	this->nodeAnimator[i].currentTime = fmod(this->nodeAnimator[i].currentTime, this->nodeAnimator[i].duration);
+				//	CalculateNodeTransform(&this->rootNode, glm::mat4(1.0f), this->nodeAnimator[i]);
+				//}
 			break;
 			case MORPHANIM:
 				if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->nodeAnimator.size()) {

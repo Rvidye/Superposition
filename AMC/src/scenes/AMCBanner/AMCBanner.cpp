@@ -4,7 +4,7 @@
 
 void AMCBannerScene::sceneStart(float t)
 {
-	videoPlayer->update(events->getCurrentTime());
+	videoPlayer->update(0.1f);
 	outputTex = videoPlayer->getTexture();
 }
 
@@ -31,23 +31,23 @@ void AMCBannerScene::init()
 
 	// event manager setup
 
-	videoPlayer = new AMC::VideoPlayer(RESOURCE_PATH("textures\\AMC.mp4"));
+	videoPlayer = new AMC::VideoPlayer(RESOURCE_PATH("textures\\DemoIntro.mp4"));
 	videoPlayer->play();
 
 	events = new AMC::EventManager();
 
 	AMC::events_t* videoEvent = new AMC::events_t();
 	videoEvent->start = 0.0f;
-	videoEvent->duration = 20.0f;
+	videoEvent->duration = 53.0f;
 	videoEvent->easingFunction = nullptr;
 	videoEvent->updateFunction = [this](float t) { this->sceneStart(t); };
 	events->AddEvent("VideoPlayBackEvent", videoEvent);
 
 	AMC::events_t *endEvent = new AMC::events_t();
-	endEvent->start = 20.0f;
+	endEvent->start = 53.0f;
 	endEvent->duration = 1.0f;
 	endEvent->easingFunction = nullptr;
-	endEvent->updateFunction = [this](float t) { this->sceneEnd(t); }; // Bind the member function using a lambda ! did not think this through so here is an ugly hack !!!
+	endEvent->updateFunction = [this](float t) { this->sceneEnd(t); };
 	events->AddEvent("SceneEndEvent", endEvent);
 }
 
@@ -79,7 +79,7 @@ void AMCBannerScene::renderUI()
 	case AMC::CAMERA:
 		break;
 	case AMC::LIGHT:
-		lightManager->renderUI();
+		//lightManager->renderUI();
 		break;
 	//case AMC::SHADOW:
 	//	lightManager->GetShadowManager()->renderUI();

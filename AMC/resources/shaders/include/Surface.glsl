@@ -43,7 +43,7 @@ Surface GetSurface(GpuMaterial gpuMaterial, vec2 uv, float baseColorLodBias)
     surface.Alpha = baseColorAndAlpha.a;
 
     surface.Normal = ReconstructPackedNormal(texture(gpuMaterial.Normal, uv).rg);
-    surface.Emissive = texture(gpuMaterial.Emissive, uv).rgb * gpuMaterial.EmissiveFactor;
+    surface.Emissive = texture(gpuMaterial.Emissive, uv).rgb * gpuMaterial.EmissiveFactor * gpuMaterial.Absorbance.r;
     surface.Absorbance = gpuMaterial.Absorbance;
 
     surface.Metallic = texture(gpuMaterial.MetallicRoughness, uv).r * gpuMaterial.MetallicFactor;

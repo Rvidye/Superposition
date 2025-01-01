@@ -56,7 +56,7 @@ DOUBLE AMC::deltaTime = 0;
 BOOL AMC::ANIMATING = FALSE;
 BOOL AMC::DEBUGCAM = TRUE;
 BOOL AMC::MUTE = FALSE;
-UINT AMC::DEBUGMODE = AMC::DEBUGMODES::NONE;
+UINT AMC::DEBUGMODE = AMC::DEBUGMODES::LIGHT;
 std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Spline", "PostProcess"};
 AMC::Camera* AMC::currentCamera;
 
@@ -65,6 +65,8 @@ float AMC::bloom_threshold = 1.0f; // threshold for bloom better if untouched
 float AMC::bloom_maxcolor = 2.8f; // intensity of bloom
 float AMC::VolumeScattering = 0.758f; // ideal value is between 0.5 ~ 0.9
 float AMC::VolumeStength = 0.3f; // 0.5 ~ 1.0
+float AMC::GlobalGIBoost = 0.7f; // 0.5 ~ 1.0
+float AMC::AtmosphericElevation = 1.85f; // 0.5 ~ 1.0
 
 void keyboard(AMC::RenderWindow* , char key, UINT keycode);
 void mouse(AMC::RenderWindow*, int button, int action, int x, int y);
@@ -400,6 +402,7 @@ void RenderFrame(void)
 	ImGui::Text("Common Controls:");
 	ImGui::Text("F : toggle fullscreen");
 	ImGui::Text("%.3lf FPS", fps);
+	ImGui::Text("%.3lf DT", AMC::deltaTime);
 
 	if (ImGui::Button(AMC::ANIMATING ? "Stop Animation" : "Start Animation")) {
 		AMC::ANIMATING = !AMC::ANIMATING;

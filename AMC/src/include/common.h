@@ -105,6 +105,8 @@ namespace AMC {
 	extern float bloom_maxcolor; // intensity of bloom
 	extern float VolumeScattering; // ideal value is between 0.5 ~ 0.9
 	extern float VolumeStength; // 0.5 ~ 1.0
+	extern float GlobalGIBoost;
+	extern float AtmosphericElevation;
 
 	int GetMaxMipmapLevel(int width, int height, int depth = 1); 
 	glm::ivec3 GetMipmapLevelSize(int width, int height, int depth, int level);

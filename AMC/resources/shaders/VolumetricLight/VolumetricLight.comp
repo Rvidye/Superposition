@@ -104,10 +104,23 @@ vec3 UniformScatter(Light light, Shadows pointShadow, vec3 origin, vec3 viewDir,
 // Only binaries shadow because soft shadows are not worth it in this case
 bool Shadow(Shadows pointShadow, vec3 lightToSample)
 {
-    float depth = GetLightSpaceDepth(pointShadow, lightToSample);
-    float closestDepth = texture(pointShadow.ShadowMapTexture, lightToSample).r;
-
-    return depth > closestDepth;
+    // Calculate the linear distance from the light to the sample point
+    float distance = length(lightToSample);
+    
+    // Normalize the distance by the far plane to match the shadow map's stored depth
+    float normalizedDepth = distance / pointShadow.FarPlane;
+    
+    // Normalize the direction vector for cubemap sampling
+    vec3 direction = normalize(lightToSample);
+    
+    // Sample the shadow map using the normalized direction
+    float closestDepth = texture(pointShadow.ShadowMapTexture, direction).r;
+    
+    // Optional: Apply a small bias to prevent shadow acne
+    float bias = 0.001;
+    
+    // Compare the normalized depth with the closest depth from the shadow map
+    return (normalizedDepth - bias) > closestDepth;
 }
 
 float GetLightSpaceDepth(Shadows pointShadow, vec3 lightSpaceSamplePos)

@@ -28,7 +28,7 @@ void ConeTracer::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	m_programConeTrace->use();
 	glUniform1i(m_programConeTrace->getUniformLocation("MaxSamples"), MaxSamples);
 	glUniform1f(m_programConeTrace->getUniformLocation("StepMultiplier"), StepMultiplier);
-	glUniform1f(m_programConeTrace->getUniformLocation("GIBoost"), GIBoost);
+	glUniform1f(m_programConeTrace->getUniformLocation("GIBoost"), AMC::GlobalGIBoost);
 	glUniform1f(m_programConeTrace->getUniformLocation("GISkyBoxBoost"), GISkyBoxBoost);
 	glUniform1f(m_programConeTrace->getUniformLocation("NormalRayOffset"), NormalRayOffset);
 	GLuint workGroupSizeX = (context.width + 8 - 1) / 8;
@@ -46,7 +46,9 @@ void ConeTracer::renderUI()
 #ifdef _MYDEBUG
 	ImGui::SliderInt("MaxSamples", &MaxSamples, 1, 24);
 	ImGui::SliderFloat("StepMultiplier", &StepMultiplier, 0.01f, 1.0f);
-	ImGui::SliderFloat("GIBoost", &GIBoost, 0.0f, 5.0f);
+	if (ImGui::SliderFloat("GIBoost", &GIBoost, 0.0f, 5.0f)) {
+		AMC::GlobalGIBoost = GIBoost;
+	}
 	ImGui::SliderFloat("GISkyBoxBoost", &GISkyBoxBoost, 0.0f, 5.0f);
 	ImGui::SliderFloat("NormalRayOffset", &NormalRayOffset, 1.0f, 3.0f);
 	if (ImGui::CollapsingHeader("Contracer Texture")) {

@@ -30,9 +30,9 @@ void Voxelizer::execute(AMC::Scene* scene, AMC::RenderContext& context){
 	if (!context.IsVGXI)
 		return;
 	// Maybe we should take scene aabb into accound as well.
-	float granularity = 8.0f;
-	glm::vec3 quantizedMin = ((AMC::currentCamera->getViewPosition() - glm::vec3(35.0f, 20.0f, 35.0f)) / granularity)* granularity;
-	glm::vec3 quantizedMax = ((AMC::currentCamera->getViewPosition() + glm::vec3(35.0f, 20.0f, 35.0f)) / granularity) * granularity;
+	float granularity = 15.0f;
+	glm::vec3 quantizedMin = scene->sceneAABB.mMin;//((AMC::currentCamera->getViewPosition() - glm::vec3(35.0f, 20.0f, 35.0f)) / granularity)* granularity;
+	glm::vec3 quantizedMax = scene->sceneAABB.mMax;//((AMC::currentCamera->getViewPosition() + glm::vec3(35.0f, 20.0f, 35.0f)) / granularity) * granularity;
 
 	GridData.GridMin = quantizedMin;
 	GridData.GridMax = quantizedMax;

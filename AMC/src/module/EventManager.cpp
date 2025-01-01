@@ -31,6 +31,9 @@ namespace AMC {
 
 	void EventManager::resetEvents(){
 		currentTime = 0.0f;
+		for (auto& e : eventList) {
+			e.second->completed = false;
+		}
 		recalculateTs();
 	}
 
@@ -64,16 +67,18 @@ namespace AMC {
 			float t = (currentTime - e->start) / e->duration;
 			e->deltaT = std::clamp(t, 0.0f, 1.0f);
 
-			float adjustedT = e->deltaT;
-			if (e->easingFunction) {
-				adjustedT = e->easingFunction(e->deltaT);
+			if (t >= 0.0f && t <= 1.0f) {
+				float adjustedT = e->deltaT;
+				if (e->easingFunction) {
+					adjustedT = e->easingFunction(e->deltaT);
+				}
+
+				if (e->updateFunction) {
+					e->updateFunction(adjustedT);
+				}
 			}
 
-			if (e->updateFunction) {
-				e->updateFunction(adjustedT);
-			}
-
-			if (t >= 1.0f)
+			if (t > 1.0f)
 				e->completed = true;
 		}
 	}

@@ -18,7 +18,7 @@ void SSR::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	//glBindTextureUnit(0, context.textureGBuffer[0]); // albedo
 	//glBindTextureUnit(1, context.textureGBuffer[1]); // normal
 	//glBindTextureUnit(2, context.textureGBuffer[2]); // metal-roughness
-	//glBindTextureUnit(3, context.textureGBuffer[4]); // depth
+	//glBindTextureUnit(3, context.textureGBufferDepth); // depth
 	//glBindTextureUnit(5, context.textureAtmosphere); // skyAlbedo
 	glBindImageTexture(0, textureSSR, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F); // ImgResult
 	glBindTextureUnit(4, context.textureDeferredResult); // sampler src

@@ -17,7 +17,7 @@ void SkyBoxPass::create(AMC::RenderContext& context) {
 
 	glCreateFramebuffers(1, &context.fboPostDeferred);
 	glNamedFramebufferTexture(context.fboPostDeferred, GL_COLOR_ATTACHMENT0, context.textureDeferredResult, 0);
-	glNamedFramebufferTexture(context.fboPostDeferred, GL_DEPTH_ATTACHMENT, context.textureGBuffer[4], 0);
+	glNamedFramebufferTexture(context.fboPostDeferred, GL_DEPTH_ATTACHMENT, context.textureGBufferDepth.gl, 0);
 	GLenum status = glCheckNamedFramebufferStatus(context.fboPostDeferred, GL_FRAMEBUFFER);
 	if (status != GL_FRAMEBUFFER_COMPLETE) {
 		LOG_ERROR(L"PostDeferred framebuffer is not complete! %d", status);

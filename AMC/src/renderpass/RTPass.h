@@ -15,11 +15,14 @@ private:
 	AMC::Image outputImage;
 	VkPipeline computePipeline;
 	VkPipelineLayout computePipelineLayout;
+	VkSampler sampler;
 public:
 	RTPass(const AMC::VkContext* ctx);
 	void create(AMC::RenderContext& context) override;
 	void execute(AMC::Scene* scene, AMC::RenderContext& context) override;
-	void writeDescSet() override;
+	void writeDescSet(AMC::RenderContext& context) override;
+	const char* getName() const override;
+	void renderUI() override;
 	~RTPass();
 };
 

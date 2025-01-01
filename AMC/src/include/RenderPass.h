@@ -2,6 +2,7 @@
 
 #include <Scene.h>
 #include <UBO.h>
+#include <MemoryManager.h>
 
 namespace AMC {
 	// Store Extra Data that can be accesses by all render passes
@@ -21,7 +22,10 @@ namespace AMC {
 		GLsizei width = 2048, height = 2048;
 		GLsizei screenWidth, screenHeight;
 		//GBuffer
-		GLuint textureGBuffer[5]; // albedo, normal, metalroughness, emissive, depth
+		GLuint textureGBuffer[4]; // albedo, normal, metalroughness, emissive
+		//Need Depth to be seperate texture instead of part of array so Vulkan can use it
+		Image textureGBufferDepth;
+
 		GBufferDataUBO gBufferData;
 		GLuint gBufferUBO;
 		SkyBoxUBO SkyBoxData;
@@ -44,7 +48,7 @@ namespace AMC {
 			virtual ~RenderPass() = default;
 			virtual void create(RenderContext& context) = 0;
 			virtual void execute(Scene* scene, RenderContext &context) = 0;
-			virtual void writeDescSet() {}
+			virtual void writeDescSet(RenderContext& context) {}
 			virtual const char* getName() const = 0;
 			virtual void renderUI() = 0;
 	};
@@ -75,7 +79,7 @@ namespace AMC {
 
 			void writeDescSets() {
 				for (auto pass : passes) {
-					pass->writeDescSet();
+					pass->writeDescSet(context);
 				}
 			}
 

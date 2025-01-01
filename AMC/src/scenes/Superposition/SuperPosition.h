@@ -13,7 +13,7 @@ class SuperpositionScene : public AMC::Scene {
 private:
 
 	AMC::ModelPlacer* mp;
-	AMC::SplineCamera* sceneCam, *sceneCam1, *sceneCam2, *sceneCam3, *sceneCam4, *sceneCam5, *finalCam;
+	AMC::SplineCamera* sceneCam, *sceneCam1_a, *sceneCam1_b, *sceneCam2, *sceneCam3, *sceneCam4, *sceneCam5, *finalCam;
 	AMC::SplineCameraAdjuster* camAdjuster;
 	AMC::EventManager* events;
 

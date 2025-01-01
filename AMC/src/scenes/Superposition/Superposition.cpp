@@ -12,8 +12,8 @@ void SuperpositionScene::Cam1(float t)
 
 void SuperpositionScene::Cam2(float t)
 {
-	sceneCam1->update(t);
-	finalCam = sceneCam1;
+	sceneCam1_a->update(t);
+	finalCam = sceneCam1_a;
 }
 
 void SuperpositionScene::Cam3(float t)
@@ -149,21 +149,33 @@ void SuperpositionScene::init()
 
 	std::vector<glm::vec3> posVec1 = {
 	{-1.099971f, -0.400000f, -4.699995f},
+	{-1.399999f, -0.199999f, -3.900027f},
+	{-0.799928f, 0.200000f, -2.200001f},
+	{1.299979f, -0.100000f, -1.099996f}
+	};
+	/*{
+	{-1.099971f, -0.400000f, -4.699995f},
 	{-1.699999f, 0.100001f, -4.200027f},
 	{-0.899928f, -0.100000f, -3.899999f},
 	{-0.100021f, -0.100000f, -3.499995f},
 	{0.599979f, -0.100000f, -3.499995f},
 	{1.300001f, 0.200000f, -3.900013f}
-	};
+	};*/
 
 	std::vector<glm::vec3> frontVec1 = {
+	{-1.899940f, -0.400000f, -4.600002f},
+	{-2.999990f, -0.100000f, -4.100019f},
+	{-2.599931f, 0.800000f, -5.100004f},
+	{-1.100022f, 0.600000f, -5.499996f}
+	};
+	/*{
 	{-4.399938f, -0.700000f, -4.500002f},
 	{-10.799995f, -1.500000f, -0.600021f},
 	{-7.599927f, 1.300000f, -6.900002f},
 	{-0.500022f, 0.700000f, -5.799996f},
 	{1.499978f, 0.900000f, -5.799996f},
 	{1.099998f, -1.100000f, -3.600014f}
-	};
+	};*/
 
 	std::vector<glm::vec3> posVec2 = {
 	{-1.799971f, -0.700000f, -2.499997f},
@@ -230,13 +242,13 @@ void SuperpositionScene::init()
 
 
 	sceneCam = new AMC::SplineCamera(posVec, frontVec);
-	sceneCam1 = new AMC::SplineCamera(posVec1, frontVec1);
+	sceneCam1_a = new AMC::SplineCamera(posVec1, frontVec1);
 	sceneCam2 = new AMC::SplineCamera(posVec2, frontVec2);
 	sceneCam3 = new AMC::SplineCamera(posvec3, frontvec3);
 	sceneCam4 = new AMC::SplineCamera(posvec4, frontvec4);
 	sceneCam5 = new AMC::SplineCamera(posvec5, frontvec5);
-	camAdjuster = new AMC::SplineCameraAdjuster(sceneCam);
-	finalCam = sceneCam;
+	camAdjuster = new AMC::SplineCameraAdjuster(sceneCam2);
+	finalCam = sceneCam2;
 
 	// event manager setup
 	float sequence = 0.0f;
@@ -260,7 +272,7 @@ void SuperpositionScene::init()
 
 	AMC::events_t* camevent2 = new AMC::events_t();
 	camevent2->start = sequence;
-	camevent2->duration = 30.0f;
+	camevent2->duration = 18.0f;
 	camevent2->easingFunction = nullptr;
 	camevent2->updateFunction = [this](float t) { this->Cam2(t); };
 	events->AddEvent("Camera2", camevent2);

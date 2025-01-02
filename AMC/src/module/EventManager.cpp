@@ -67,7 +67,7 @@ namespace AMC {
 			float t = (currentTime - e->start) / e->duration;
 			e->deltaT = std::clamp(t, 0.0f, 1.0f);
 
-			if (t >= 0.0f && t <= 1.0f) {
+			if (t >= 0.0f && t <= 1.1f) {
 				float adjustedT = e->deltaT;
 				if (e->easingFunction) {
 					adjustedT = e->easingFunction(e->deltaT);

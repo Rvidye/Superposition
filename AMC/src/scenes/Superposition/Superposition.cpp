@@ -40,6 +40,12 @@ void SuperpositionScene::Cam6(float t)
 	finalCam = sceneCam5;
 }
 
+void SuperpositionScene::Cam7(float t)
+{
+	sceneCam6->update(t);
+	finalCam = sceneCam6;
+}
+
 void SuperpositionScene::Apple(float t)
 {
 	models["apple"].model->lerpAnimation(std::lerp(1.0f, 0.0f, t));
@@ -93,12 +99,12 @@ void SuperpositionScene::init()
 	// Shader Program Setup
 	OverrideRenderer = true;
 	// ModelPlacer
-	mp = new AMC::ModelPlacer(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1.0f);
+	mp = new AMC::ModelPlacer(glm::vec3(0.9f, -0.4f, -3.6f), glm::vec3(0.0f, 0.0f, 0.0f), 0.20f);
 
 	// Models Setup
 	AMC::RenderModel apple;
 	apple.model = new AMC::Model(RESOURCE_PATH("models\\Apple\\Apple.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
-	apple.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.9f, -0.4f, -3.6f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(0.20f));//mp->getModelMatrix();
+	apple.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(-2.400000f, -0.517000f, 1.400000f)) * glm::yawPitchRoll(0.000000f, 0.000000f, -0.890118f) * glm::scale(glm::mat4(1.0f), glm::vec3(0.200000f));//mp->getModelMatrix();//glm::translate(glm::mat4(1.0f), glm::vec3(0.9f, -0.4f, -3.6f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(0.20f));//mp->getModelMatrix();
 	addModel("apple", apple);
 
 	AMC::RenderModel roomModel;
@@ -178,66 +184,149 @@ void SuperpositionScene::init()
 	};*/
 
 	std::vector<glm::vec3> posVec2 = {
+	{-0.999971f, -0.200000f, -3.899996f},
+	{-0.399984f, -0.099999f, -4.200025f},
+	{0.600072f, 0.100000f, -4.199998f},
+	{1.999979f, 0.100000f, -3.499995f},
+	{1.399979f, 0.100000f, -2.499996f},
+	{-0.199999f, -0.300000f, -1.000014f},
+	{-0.199999f, -0.600000f, 2.299986f}
+	};
+	/*{
 	{-1.799971f, -0.700000f, -2.499997f},
 	{-2.099984f, 0.300001f, -4.000025f},
 	{-0.899928f, 0.100000f, -4.199998f},
 	{2.399979f, 0.000000f, -3.499995f},
 	{-0.199999f, -0.300000f, -1.000014f},
 	{-0.199999f, -0.600000f, 2.299986f}
-	};
+	};*/
 
 	std::vector<glm::vec3> frontVec2 = {
+	{-0.699939f, -0.300000f, -3.600003f},
+	{-0.499991f, -0.300000f, -3.400020f},
+	{-0.499991f, -0.300000f, -3.600020f},
+	{0.100067f, -0.200000f, -3.500004f},
+	{0.299978f, -0.100000f, -3.699998f},
+	{0.199998f, -0.200000f, -4.800010f},
+	{-0.600002f, -1.500000f, -14.000030f}
+	};
+	/*{
 	{-0.899939f, -0.700000f, -3.400003f},
 	{-1.299991f, -0.300000f, -5.400018f},
 	{-0.099933f, -0.900000f, -2.600005f},
 	{-1.900022f, -0.700000f, -3.299998f},
 	{-0.600002f, -0.200000f, -5.600009f},
 	{-0.600002f, -1.500000f, -14.000030f}
-	};
+	};*/
 
 	std::vector<glm::vec3> posvec3 = {
+	{1.900029f, -1.000000f, 4.900001f},
+	{1.000072f, 0.300000f, 6.399996f},
+	{-1.199928f, -0.000000f, 5.799997f},
+	{-2.300021f, 0.000000f, 3.800003f},
+	{-0.299999f, -0.100000f, 0.799986f},
+	{-0.199999f, -1.200000f, -0.600014f}
+	};
+	/*{
 	{1.900029f, -1.000000f, 4.900001f},
 	{0.000072f, 0.000000f, 5.799997f},
 	{-2.300021f, 0.000000f, 3.800003f},
 	{-0.299999f, -0.100000f, 0.799986f},
 	{-0.199999f, -1.200000f, -0.600014f}
-	};
+	};*/
 
 	std::vector<glm::vec3> frontvec3 = {
+	{1.000061f, -0.400000f, 4.899994f},
+	{0.500067f, -0.000000f, 4.899992f},
+	{-0.300022f, 0.600000f, 4.300000f},
+	{-1.400022f, -0.100000f, 4.300000f},
+	{-1.400002f, -0.300000f, 3.899987f},
+	{-0.600002f, -0.200000f, 4.199986f}
+	};
+	/*{
 	{-0.299939f, 0.400000f, 4.699994f},
 	{0.900067f, -0.300000f, 5.499992f},
 	{-1.000022f, -0.700000f, 6.099998f},
 	{-3.000001f, 0.100000f, 3.599987f},
 	{-0.600002f, -0.200000f, 4.199986f}
-	};
+	};*/
 
 	std::vector<glm::vec3> posvec4 = {
+	{-1.599971f, -0.200000f, 1.200003f},
+	{-1.499971f, -0.300000f, 1.300003f},
+	{-1.099971f, -0.300000f, 1.200003f},
+	{-0.699999f, -0.499999f, 0.999971f},
+	{-0.299928f, -0.600000f, 0.900000f},
+	{0.299979f, -0.700000f, 0.700004f},
+	{0.199979f, -0.700000f, 1.500004f}
+	};
+	/*{
 	{0.900029f, -0.200000f, -4.399995f},
 	{1.400001f, -0.299999f, -2.400029f},
 	{0.300072f, -0.400000f, -0.900000f},
 	{0.099979f, 0.500000f, 1.500004f}
-	};
+	};*/
 
 	std::vector<glm::vec3> frontvec4 = {
+	{-3.199939f, -0.300000f, 2.499996f},
+	{-2.499940f, -0.400000f, 1.699996f},
+	{-2.299940f, -0.400000f, 1.399996f},
+	{-2.299940f, -0.400000f, 0.999996f},
+	{-2.199940f, -0.300000f, -0.100004f},
+	{-1.799991f, -0.200000f, -2.100022f},
+	{-0.999932f, -0.100000f, -3.500006f},
+	{0.099978f, -0.000000f, -4.399997f}
+	};
+	/*{
 	{0.900060f, -0.300000f, 2.599996f},
 	{-2.099991f, 0.000000f, -5.400019f},
 	{-0.799932f, -0.300000f, -7.200002f},
 	{-0.100022f, -0.500000f, -4.399997f}
-	};
+	};*/
 
 	std::vector<glm::vec3> posvec5 = {
-	{-0.500021f, 1.200000f, -0.999996f},
-	{2.000072f, 0.900000f, -2.100000f},
-	{1.900001f, 0.900001f, -3.800028f},
-	{-1.699971f, 0.600000f, -4.499995f},
-	{-1.599971f, -0.500000f, -0.499997f}
+	{0.199979f, -0.700000f, 1.500004f},
+	{1.400072f, 0.200000f, -2.000000f},
+	{0.900001f, 0.900001f, -3.800028f},
+	{-1.099971f, 0.800000f, -4.499995f},
+	{-2.299971f, 0.200000f, -2.399997f},
+	{-1.599971f, -0.000000f, -0.499997f}
 	};
+	//{
+	//// {-0.500021f, 1.200000f, -0.999996f},
+	//{0.199979f, -0.700000f, 1.500004f},
+	//{2.000072f, 0.900000f, -2.100000f},
+	//{1.900001f, 0.900001f, -3.800028f},
+	//{-1.699971f, 0.600000f, -4.499995f},
+	//{-1.599971f, -0.500000f, -0.499997f}
+	//};
 
 	std::vector<glm::vec3> frontvec5 = {
-	{0.499978f, 0.300000f, -4.699997f},
-	{-2.899932f, -0.100000f, -4.500005f},
-	{-2.599991f, 0.000000f, -2.300022f},
-	{0.700060f, -0.100000f, -5.800001f}
+	{0.099978f, -0.000000f, -4.399997f},
+	{-0.399932f, 0.400000f, -3.500006f},
+	{-0.099991f, 0.500000f, -3.000021f},
+	{0.700060f, 0.500000f, -4.700002f}
+	};
+	//{
+	//// {0.499978f, 0.300000f, -4.699997f},
+	//{0.099978f, -0.000000f, -4.399997f},
+	//{-2.899932f, -0.100000f, -4.500005f},
+	//{-2.599991f, 0.000000f, -2.300022f},
+	//{0.700060f, -0.100000f, -5.800001f}
+	//};
+
+	std::vector<glm::vec3> posvec6 = {
+	{-2.69f, -0.24f, -2.2f},
+	{-2.26f, -0.13f, -1.3f},
+	{-1.82f, -0.03f, -0.41f},
+	{-1.6f, 0.02f, 0.04f}
+	};
+
+	std::vector<glm::vec3> frontvec6 = {
+	{-2.26f, -0.13f, -1.3f},
+	{-1.82f, -0.03f, -0.41f},
+	{-1.6f, 0.02f, 0.04f},
+	{-1.39f, 0.08f, 0.48f}
 	};
 
 
@@ -247,8 +336,9 @@ void SuperpositionScene::init()
 	sceneCam3 = new AMC::SplineCamera(posvec3, frontvec3);
 	sceneCam4 = new AMC::SplineCamera(posvec4, frontvec4);
 	sceneCam5 = new AMC::SplineCamera(posvec5, frontvec5);
-	camAdjuster = new AMC::SplineCameraAdjuster(sceneCam2);
-	finalCam = sceneCam2;
+	sceneCam6 = new AMC::SplineCamera(posvec6, frontvec6);
+	camAdjuster = new AMC::SplineCameraAdjuster(sceneCam6);
+	finalCam = sceneCam6;
 
 	// event manager setup
 	float sequence = 0.0f;
@@ -280,7 +370,7 @@ void SuperpositionScene::init()
 	sequence = camevent2->start + camevent2->duration;
 
 	AMC::events_t* camevent3 = new AMC::events_t();
-	camevent3->start = sequence;
+	camevent3->start = sequence + 1.0f;
 	camevent3->duration = 30.0f;
 	camevent3->easingFunction = nullptr;
 	camevent3->updateFunction = [this](float t) { this->Cam3(t); };
@@ -289,8 +379,8 @@ void SuperpositionScene::init()
 	sequence = camevent3->start + camevent3->duration;
 
 	AMC::events_t* camevent4 = new AMC::events_t();
-	camevent4->start = sequence;
-	camevent4->duration = 25.0f;
+	camevent4->start = sequence + 1.0f;
+	camevent4->duration = 35.0f;
 	camevent4->easingFunction = nullptr;
 	camevent4->updateFunction = [this](float t) { this->Cam4(t); };
 	events->AddEvent("Camera4", camevent4);
@@ -298,8 +388,8 @@ void SuperpositionScene::init()
 	sequence = camevent4->start + camevent4->duration;
 
 	AMC::events_t* LightEvent = new AMC::events_t();
-	LightEvent->start =sequence;
-	LightEvent->duration = 10.0f;
+	LightEvent->start = sequence + 1.0f;
+	LightEvent->duration = 19.0f;
 	LightEvent->easingFunction = nullptr;
 	LightEvent->updateFunction = [this](float t) { this->LightRed(t); };
 	events->AddEvent("Light1", LightEvent);
@@ -325,7 +415,7 @@ void SuperpositionScene::init()
 	sequence = MachineEvent2->start + MachineEvent2->duration;
 
 	AMC::events_t* appleevent = new AMC::events_t();
-	appleevent->start = sequence;
+	appleevent->start = sequence + 1.0f;
 	appleevent->duration = 10.0f;
 	appleevent->easingFunction = nullptr;
 	appleevent->updateFunction = [this](float t) { this->Apple(t); };
@@ -333,9 +423,10 @@ void SuperpositionScene::init()
 
 	sequence = appleevent->start + appleevent->duration;
 
+	// Loook at objects before foating
 	AMC::events_t* camevent5 = new AMC::events_t();
 	camevent5->start = sequence;
-	camevent5->duration = 5.0f;
+	camevent5->duration = 10.0f;
 	camevent5->easingFunction = nullptr;
 	camevent5->updateFunction = [this](float t) { this->Cam5(t); };
 	events->AddEvent("camevent5", camevent5);
@@ -344,7 +435,7 @@ void SuperpositionScene::init()
 
 	AMC::events_t* objfloat = new AMC::events_t();
 	objfloat->start = sequence;
-	objfloat->duration = 3.0f;
+	objfloat->duration = 6.0f;
 	objfloat->easingFunction = nullptr;
 	objfloat->updateFunction = [this](float t) { this->ObjectFloat(t); };
 	events->AddEvent("floatevent", objfloat);
@@ -352,8 +443,8 @@ void SuperpositionScene::init()
 	sequence = objfloat->start + objfloat->duration;
 
 	AMC::events_t* camevent6 = new AMC::events_t();
-	camevent6->start = sequence;
-	camevent6->duration = 5.0f;
+	camevent6->start = sequence + 5.0f;
+	camevent6->duration = 10.0f;
 	camevent6->easingFunction = nullptr;
 	camevent6->updateFunction = [this](float t) { this->Cam6(t); };
 	events->AddEvent("camevent6", camevent6);
@@ -361,7 +452,7 @@ void SuperpositionScene::init()
 	sequence = camevent6->start + camevent6->duration;
 
 	AMC::events_t* objfall = new AMC::events_t();
-	objfall->start = sequence;
+	objfall->start = sequence + 2.0f;
 	objfall->duration = 2.0f;
 	objfall->easingFunction = nullptr;
 	objfall->updateFunction = [this](float t) { this->ObjectFall(t); };
@@ -370,13 +461,20 @@ void SuperpositionScene::init()
 	sequence = objfall->start + objfall->duration;
 
 	AMC::events_t* objreverse = new AMC::events_t();
-	objreverse->start = sequence;
-	objreverse->duration = 8.0f;
+	objreverse->start = sequence + 7.0f;
+	objreverse->duration = 10.0f;
 	objreverse->easingFunction = nullptr;
 	objreverse->updateFunction = [this](float t) { this->ObjectReverse(t); };
 	events->AddEvent("reverseevent", objreverse);
 
 	sequence = objreverse->start + objreverse->duration;
+
+	AMC::events_t* camevent7 = new AMC::events_t();
+	camevent7->start = sequence + 5.0f;
+	camevent7->duration = 16.0f;
+	camevent7->easingFunction = nullptr;
+	camevent7->updateFunction = [this](float t) { this->Cam7(t); };
+	events->AddEvent("camevent7", camevent7);
 
 	lightManager = new AMC::LightManager();
 
@@ -463,7 +561,7 @@ void SuperpositionScene::renderUI()
 {
 #if defined(_MYDEBUG)
 	ImGui::Text("Superposition Scene ");
-	ImGui::Text("Scene Time : %0.1f", events->getCurrentTime());
+	ImGui::Text("Scene Time : %0.1f", events->getCurrentTime() + 35.0f);
 	switch (AMC::DEBUGMODE) {
 	case AMC::MODEL:
 		if (ImGui::SliderFloat("Lerp Animation", &t, 0.0f, 1.0f, "%.2f")) {
@@ -490,7 +588,7 @@ void SuperpositionScene::update()
 	events->update();
 	//models["cube"].model->update((float)AMC::deltaTime);
 	//models["room"].model->update((float)AMC::deltaTime);
-	//models["apple"].matrix = mp->getModelMatrix();
+	// models["apple"].matrix = mp->getModelMatrix();
 	reCalculateSceneAABB(); // cannot find better way to do it for now
 	//modelAnim->update((float)AMC::deltaTime);
 }

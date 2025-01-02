@@ -206,8 +206,8 @@ void SuperpositionScene::init()
 	{-0.499991f, -0.300000f, -3.400020f},
 	{-0.499991f, -0.300000f, -3.600020f},
 	{0.100067f, -0.200000f, -3.500004f},
-	{0.299978f, -0.100000f, -3.699998f},
-	{0.199998f, -0.200000f, -4.800010f},
+	{0.299978f, 0.100000f, -3.699998f},
+	{0.199998f, -0.100000f, -4.800010f},
 	{-0.600002f, -1.500000f, -14.000030f}
 	};
 	/*{
@@ -241,7 +241,7 @@ void SuperpositionScene::init()
 	{-0.300022f, 0.600000f, 4.300000f},
 	{-1.400022f, -0.100000f, 4.300000f},
 	{-1.400002f, -0.300000f, 3.899987f},
-	{-0.600002f, -0.200000f, 4.199986f}
+	{-0.300002f, 0.200000f, 4.199986f}
 	};
 	/*{
 	{-0.299939f, 0.400000f, 4.699994f},
@@ -337,8 +337,8 @@ void SuperpositionScene::init()
 	sceneCam4 = new AMC::SplineCamera(posvec4, frontvec4);
 	sceneCam5 = new AMC::SplineCamera(posvec5, frontvec5);
 	sceneCam6 = new AMC::SplineCamera(posvec6, frontvec6);
-	camAdjuster = new AMC::SplineCameraAdjuster(sceneCam6);
-	finalCam = sceneCam6;
+	camAdjuster = new AMC::SplineCameraAdjuster(sceneCam2);
+	finalCam = sceneCam2;
 
 	// event manager setup
 	float sequence = 0.0f;

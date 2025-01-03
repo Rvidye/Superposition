@@ -17,9 +17,11 @@ out InOutData
     float Radius;
 } outData;
 
+layout(location = 0)uniform int lightIndex;
+
 void main(void) {
 
-    Light light = u_Lights[gl_InstanceID];
+    Light light = u_Lights[lightIndex];
 
     mat4x3 modelMatrix = mat4x3(
     vec3(light.range, 0.0, 0.0),

@@ -43,7 +43,8 @@ namespace AMC {
             LOG_ERROR(L"Failed to load WAV file: ");
             return false;
         }
-
+        int frameSize = channels * (bitsPerSample / 8);
+        size -= size % frameSize;
         // Generate OpenAL Buffer
         ALuint bufferID;
         alGenBuffers(1, &bufferID);
@@ -63,7 +64,13 @@ namespace AMC {
         alSourcei(sourceID, AL_BUFFER, bufferID);
 
         // Clean up buffer data
-        alDeleteBuffers(1, &bufferID);
+        //if (sourceID) {
+        //    ALint bufferID;
+        //    alGetSourcei(sourceID, AL_BUFFER, &bufferID);
+        //    alSourcei(sourceID, AL_BUFFER, 0); // Detach the buffer
+        //    alDeleteBuffers(1, &bufferID); // Now it's safe to delete
+        //    alDeleteSources(1, &sourceID);
+        //}
         free(data);
         return true;
     }
@@ -146,43 +153,66 @@ namespace AMC {
 
     char* AudioPlayer::loadWAV(const std::string& filename, int* channels, int* samplerate, int* bitsPerSample, int* size) 
     {
-        // Open the file
         std::ifstream inFile(filename, std::ios::binary);
         if (!inFile) {
-            LOG_ERROR(L"Unable to open WAV file:");
+            LOG_ERROR(L"Unable to open WAV file.");
             return nullptr;
         }
 
-        // Read the header
         char buffer[4];
+
+        // Read RIFF header
         inFile.read(buffer, 4);
         if (std::strncmp(buffer, "RIFF", 4) != 0) {
-            LOG_ERROR(L"Invalid WAV file format.");
+            LOG_ERROR(L"Invalid RIFF header.");
             return nullptr;
         }
 
-        inFile.seekg(22);
-        inFile.read(buffer, 2);
-        *channels = convertToInt(buffer, 2);
-
+        // Skip "WAVE" header
+        inFile.seekg(8);
         inFile.read(buffer, 4);
-        *samplerate = convertToInt(buffer, 4);
+        if (std::strncmp(buffer, "WAVE", 4) != 0) {
+            LOG_ERROR(L"Invalid WAVE format.");
+            return nullptr;
+        }
 
-        inFile.seekg(34);
-        inFile.read(buffer, 2);
-        *bitsPerSample = convertToInt(buffer, 2);
+        // Read chunks
+        while (inFile.read(buffer, 4)) {
+            int chunkSize = 0;
+            inFile.read(reinterpret_cast<char*>(&chunkSize), 4);
 
-        // Find the data chunk
-        inFile.seekg(40);
-        inFile.read(buffer, 4);
-        *size = convertToInt(buffer, 4);
+            if (std::strncmp(buffer, "fmt ", 4) == 0) {
+                // Read format chunk
+                char fmtBuffer[16];
+                inFile.read(fmtBuffer, chunkSize);
 
-        // Read the data
-        char* data = (char*)malloc(*size);
-        inFile.read(data, *size);
-        inFile.close();
+                int audioFormat = convertToInt(fmtBuffer, 2);
+                if (audioFormat != 1) { // PCM format
+                    LOG_ERROR(L"Unsupported WAV format (only PCM is supported).");
+                    return nullptr;
+                }
 
-        return data;
+                *channels = convertToInt(fmtBuffer + 2, 2);
+                *samplerate = convertToInt(fmtBuffer + 4, 4);
+                *bitsPerSample = convertToInt(fmtBuffer + 14, 2);
+
+            }
+            else if (std::strncmp(buffer, "data", 4) == 0) {
+                // Read data chunk
+                *size = chunkSize;
+                char* data = (char*)malloc(*size);
+                inFile.read(data, *size);
+                return data;
+
+            }
+            else {
+                // Skip other chunks
+                inFile.seekg(chunkSize, std::ios::cur);
+            }
+        }
+
+        LOG_ERROR(L"Missing 'data' chunk in WAV file.");
+        return nullptr;
     }
 
     int AudioPlayer::convertToInt(char* buffer, int length) 

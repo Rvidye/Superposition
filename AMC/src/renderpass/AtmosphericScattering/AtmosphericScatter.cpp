@@ -34,7 +34,7 @@ void AtmosphericScatterer::execute(AMC::Scene* scene, AMC::RenderContext& contex
 	glUniform1i(m_ProgramAtmosphericScatter->getUniformLocation("ISteps"), ISteps);
 	glUniform1i(m_ProgramAtmosphericScatter->getUniformLocation("JSteps"), JSteps);
 	glUniform1f(m_ProgramAtmosphericScatter->getUniformLocation("LightIntensity"), LightIntensity);
-	glUniform1f(m_ProgramAtmosphericScatter->getUniformLocation("Azimuth"), Azimuth);
+	glUniform1f(m_ProgramAtmosphericScatter->getUniformLocation("Azimuth"), AMC::AtmosphericAzimuth);
 	glUniform1f(m_ProgramAtmosphericScatter->getUniformLocation("Elevation"), AMC::AtmosphericElevation);
 	GLuint workGroupSizeX = (128 + 8 - 1) / 8;
 	GLuint workGroupSizeY = (128 + 8 - 1) / 8;
@@ -57,6 +57,7 @@ void AtmosphericScatterer::renderUI()
 	}
 
 	if (ImGui::SliderFloat("Azimuth", &Azimuth, -glm::pi<float>(), glm::pi<float>())) {
+		AMC::AtmosphericAzimuth = Azimuth;
 		modified = true;
 	}
 

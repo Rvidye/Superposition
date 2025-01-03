@@ -107,6 +107,7 @@ namespace AMC {
 	extern float VolumeStength; // 0.5 ~ 1.0
 	extern float GlobalGIBoost;
 	extern float AtmosphericElevation;
+	extern float AtmosphericAzimuth;
 
 	int GetMaxMipmapLevel(int width, int height, int depth = 1); 
 	glm::ivec3 GetMipmapLevelSize(int width, int height, int depth, int level);

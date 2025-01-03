@@ -5,13 +5,15 @@
 void SuperpositionScene::Cam1(float t)
 {
 	sceneCam->update(t);
-	AMC::GlobalGIBoost = std::lerp(AMC::GlobalGIBoost, 1.3f, t);
-	AMC::AtmosphericElevation = std::lerp(AMC::AtmosphericElevation, 1.0f, t);
+	//AMC::GlobalGIBoost = std::lerp(AMC::GlobalGIBoost, 1.3f, t);
+	//AMC::AtmosphericElevation = std::lerp(AMC::AtmosphericElevation, 1.0f, t);
 	finalCam = sceneCam;
 }
 
 void SuperpositionScene::Cam2(float t)
 {
+	AMC::GlobalGIBoost = std::lerp(0.3f, 1.3f, t);
+	AMC::AtmosphericElevation = std::lerp(1.57, -1.0f, t);
 	sceneCam1_a->update(t);
 	finalCam = sceneCam1_a;
 }
@@ -30,8 +32,13 @@ void SuperpositionScene::Cam4(float t)
 
 void SuperpositionScene::Cam5(float t)
 {
+	AMC::AtmosphericElevation = std::lerp(-1.57, 1.57, t);
 	sceneCam4->update(t);
 	finalCam = sceneCam4;
+	if (t >= 0.9)
+	{
+		models["apple"].visible = false;
+	}
 }
 
 void SuperpositionScene::Cam6(float t)
@@ -42,20 +49,31 @@ void SuperpositionScene::Cam6(float t)
 
 void SuperpositionScene::Cam7(float t)
 {
+	AMC::AtmosphericElevation = std::lerp(1.57f, 2.0f, t);
+	lightManager->GetLight(1)->gpuLight.color = glm::lerp(glm::vec3(300.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), t * 0.05f);
+	lightManager->UpdateUBO();
+	AMC::GlobalGIBoost = std::lerp(AMC::GlobalGIBoost, 0.3f, t * 0.05f);
 	sceneCam6->update(t);
 	finalCam = sceneCam6;
 }
 
 void SuperpositionScene::Apple(float t)
 {
-	models["apple"].model->lerpAnimation(std::lerp(1.0f, 0.0f, t));
-	finalCam = sceneCam4;
+	models["apple"].model->lerpAnimation(std::lerp(0.0f, 0.99f, t));
+	//finalCam = sceneCam4;
+}
+
+void SuperpositionScene::AppleBook(float t)
+{
+	models["applebook"].model->lerpAnimation(std::lerp(0.0f, 0.99f, t));
 }
 
 void SuperpositionScene::LightRed(float t)
 {
 	lightManager->GetLight(1)->gpuLight.color = glm::lerp(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(300.0f, 0.0f, 0.0f), t);
-	lightManager->GetLight(1)->gpuLight.position = glm::lerp(glm::vec3(-0.200f, -2.0f, 4.60f), glm::vec3(-0.200f, 1.3f, 4.60f), t);
+	glm::vec3 res = glm::lerp(glm::vec3(-0.200f, -2.0f, 4.60f), glm::vec3(-0.200f, 1.3f, 4.60f), t);
+	lightManager->GetLight(1)->gpuLight.position = res;
+	//models["sphere"].matrix = glm::translate(glm::mat4(1.0f), res);
 	lightManager->UpdateUBO();
 	AMC::VolumeStength = 0.792f;
 	AMC::VolumeScattering = 0.826;
@@ -63,13 +81,17 @@ void SuperpositionScene::LightRed(float t)
 
 void SuperpositionScene::MachineStart(float t)
 {
-	lightManager->GetLight(1)->gpuLight.range = std::lerp(0.650f, 10.0f, t);
+	float scale = std::lerp(0.650f, 10.0f, t);
+	lightManager->GetLight(1)->gpuLight.range = scale;
+	//models["sphere"].matrix = glm::scale(glm::mat4(1.0f), glm::vec3(scale));
 	lightManager->UpdateUBO();
 }
 
 void SuperpositionScene::MachineStop(float t)
 {
-	lightManager->GetLight(1)->gpuLight.range = std::lerp(10.f, 0.200f, t);
+	float scale = std::lerp(10.f, 0.200f, t);
+	lightManager->GetLight(1)->gpuLight.range = scale;
+	//models["sphere"].matrix = glm::scale(glm::mat4(1.0f), glm::vec3(scale));
 	lightManager->UpdateUBO();
 }
 
@@ -88,6 +110,16 @@ void SuperpositionScene::ObjectReverse(float t)
 	models["roomAnimated"].model->lerpAnimation(std::lerp(0.99f, 0.00f, t));
 }
 
+void SuperpositionScene::FadeIn(float t)
+{
+	AMC::fade = std::lerp(1.0f, 0.0f, t);
+}
+
+void SuperpositionScene::FadeOut(float t)
+{
+	AMC::fade = std::lerp(0.0f, 1.0f, t);
+}
+
 void SuperpositionScene::sceneEnd(float t)
 {
 	if (t > 0.99f)
@@ -97,25 +129,40 @@ void SuperpositionScene::sceneEnd(float t)
 void SuperpositionScene::init()
 {
 	// Shader Program Setup
-	OverrideRenderer = true;
+	OverrideRenderer = false;
 	// ModelPlacer
-	mp = new AMC::ModelPlacer(glm::vec3(0.9f, -0.4f, -3.6f), glm::vec3(0.0f, 0.0f, 0.0f), 0.20f);
+	mp = new AMC::ModelPlacer(glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1.0f);
+
+	lightsRender = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\Light\\Light.vert"), RESOURCE_PATH("shaders\\Light\\Light.frag") });
 
 	// Models Setup
+
+	AMC::RenderModel sphere;
+	sphere.model = new AMC::Model(RESOURCE_PATH("models\\Sphere\\Sphere.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	sphere.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(-0.200f, -2.0f, 4.60f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(0.650f));//mp->getModelMatrix();
+	sphere.visible = false;
+	addModel("sphere", sphere);
+
 	AMC::RenderModel apple;
-	apple.model = new AMC::Model(RESOURCE_PATH("models\\Apple\\Apple.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
-	apple.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(-2.400000f, -0.517000f, 1.400000f)) * glm::yawPitchRoll(0.000000f, 0.000000f, -0.890118f) * glm::scale(glm::mat4(1.0f), glm::vec3(0.200000f));//mp->getModelMatrix();//glm::translate(glm::mat4(1.0f), glm::vec3(0.9f, -0.4f, -3.6f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(0.20f));//mp->getModelMatrix();
+	apple.model = new AMC::Model(RESOURCE_PATH("models\\Apple1\\Apple.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	apple.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(-2.4f, -0.424f, 1.70f)) * glm::yawPitchRoll(0.0f, 0.f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));//mp->getModelMatrix();
 	addModel("apple", apple);
 
+	AMC::RenderModel applebook;
+	applebook.model = new AMC::Model(RESOURCE_PATH("models\\Apple\\ZeroGravity.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	applebook.model->lerpAnimation(0.001f);
+	applebook.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(-0.7f, -1.4f, 1.3f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(1.300000f));//mp->getModelMatrix(); //glm::translate(glm::mat4(1.0f), glm::vec3(-2.3f, -0.38f, 1.7f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(0.20f));//
+	addModel("applebook", applebook);
+
 	AMC::RenderModel roomModel;
-	roomModel.model = new AMC::Model(RESOURCE_PATH("models\\\SP1\\SuperPositionStatic.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	roomModel.model = new AMC::Model(RESOURCE_PATH("models\\SuperPosition\\SuperPositioning.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 	roomModel.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, -1.7f, 1.2f));
 	addModel("roomStatic", roomModel);
 
 	AMC::RenderModel roomAnimated;
-	roomAnimated.model = new AMC::Model(RESOURCE_PATH("models\\SP1\\SuperPositionAnimation.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	roomAnimated.model = new AMC::Model(RESOURCE_PATH("models\\SuperPosition\\SuperPositioningAnimation.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
 	roomAnimated.model->lerpAnimation(0.01f);
-	roomAnimated.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, -1.7f, 1.2f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));
+	roomAnimated.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.500000f, -1.710000f, 1.200000f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));//glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, -1.7f, 1.2f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));
 	addModel("roomAnimated", roomAnimated);
 
 	//AMC::RenderModel model2;
@@ -290,7 +337,8 @@ void SuperpositionScene::init()
 	{0.900001f, 0.900001f, -3.800028f},
 	{-1.099971f, 0.800000f, -4.499995f},
 	{-2.299971f, 0.200000f, -2.399997f},
-	{-1.599971f, -0.000000f, -0.499997f}
+	{-1.599971f, -0.000000f, -0.499997f},
+	//{0.300029f, 0.400000f, 0.800003f}
 	};
 	//{
 	//// {-0.500021f, 1.200000f, -0.999996f},
@@ -337,144 +385,208 @@ void SuperpositionScene::init()
 	sceneCam4 = new AMC::SplineCamera(posvec4, frontvec4);
 	sceneCam5 = new AMC::SplineCamera(posvec5, frontvec5);
 	sceneCam6 = new AMC::SplineCamera(posvec6, frontvec6);
-	camAdjuster = new AMC::SplineCameraAdjuster(sceneCam2);
-	finalCam = sceneCam2;
+	camAdjuster = new AMC::SplineCameraAdjuster(sceneCam5);
+	finalCam = sceneCam5;
 
 	// event manager setup
-	float sequence = 0.0f;
 
 	events = new AMC::EventManager();
 	AMC::events_t *endEvent = new AMC::events_t();
-	endEvent->start = 0.0f;
-	endEvent->duration = 325.0f;
+	endEvent->start = 205.0f;
+	endEvent->duration = 1.0f;
 	endEvent->easingFunction = nullptr;
 	endEvent->updateFunction = [this](float t) { this->sceneEnd(t); }; // Bind the member function using a lambda ! did not think this through so here is an ugly hack !!!
 	events->AddEvent("SceneEndEvent", endEvent);
 
+	AMC::events_t* fadeinevent = new AMC::events_t();
+	fadeinevent->start = 0.0f;
+	fadeinevent->duration = 2.0f;
+	fadeinevent->easingFunction = nullptr;
+	fadeinevent->updateFunction = [this](float t) { this->FadeIn(t); };
+	events->AddEvent("fadein", fadeinevent);
+
 	AMC::events_t* camevent1 = new AMC::events_t();
-	camevent1->start = sequence;
+	camevent1->start = 0.0f;
 	camevent1->duration = 15.0f;
 	camevent1->easingFunction = nullptr;
 	camevent1->updateFunction = [this](float t) { this->Cam1(t); };
 	events->AddEvent("Camera1", camevent1);
 
-	sequence = camevent1->start + camevent1->duration;
+	AMC::events_t* fadeoutcam1 = new AMC::events_t();
+	fadeoutcam1->start = 14.0f;
+	fadeoutcam1->duration = 1.0f;
+	fadeoutcam1->easingFunction = nullptr;
+	fadeoutcam1->updateFunction = [this](float t) { this->FadeOut(t); };
+	events->AddEvent("fadeout1", fadeoutcam1);
+
+	AMC::events_t* fadeincam1 = new AMC::events_t();
+	fadeincam1->start = 15.0f;
+	fadeincam1->duration = 2.0f;
+	fadeincam1->easingFunction = nullptr;
+	fadeincam1->updateFunction = [this](float t) { this->FadeIn(t); };
+	events->AddEvent("fadein1", fadeincam1);
 
 	AMC::events_t* camevent2 = new AMC::events_t();
-	camevent2->start = sequence;
+	camevent2->start = 15.0f;
 	camevent2->duration = 18.0f;
 	camevent2->easingFunction = nullptr;
 	camevent2->updateFunction = [this](float t) { this->Cam2(t); };
 	events->AddEvent("Camera2", camevent2);
 
-	sequence = camevent2->start + camevent2->duration;
+	AMC::events_t* fadeoutcam2 = new AMC::events_t();
+	fadeoutcam2->start = 32.0f;
+	fadeoutcam2->duration = 2.0f;
+	fadeoutcam2->easingFunction = nullptr;
+	fadeoutcam2->updateFunction = [this](float t) { this->FadeOut(t); };
+	events->AddEvent("fadeout2", fadeoutcam2);
+
+	AMC::events_t* fadeincam3 = new AMC::events_t();
+	fadeincam3->start = 34.0f;
+	fadeincam3->duration = 1.0f;
+	fadeincam3->easingFunction = nullptr;
+	fadeincam3->updateFunction = [this](float t) { this->FadeIn(t); };
+	events->AddEvent("fadein2", fadeincam3);
 
 	AMC::events_t* camevent3 = new AMC::events_t();
-	camevent3->start = sequence + 1.0f;
-	camevent3->duration = 30.0f;
+	camevent3->start = 34.0f;
+	camevent3->duration = 29.0f;
 	camevent3->easingFunction = nullptr;
 	camevent3->updateFunction = [this](float t) { this->Cam3(t); };
 	events->AddEvent("Camera3", camevent3);
 
-	sequence = camevent3->start + camevent3->duration;
+	AMC::events_t* fadeoutcam3 = new AMC::events_t();
+	fadeoutcam3->start = 62.0f;
+	fadeoutcam3->duration = 2.0f;
+	fadeoutcam3->easingFunction = nullptr;
+	fadeoutcam3->updateFunction = [this](float t) { this->FadeOut(t); };
+	events->AddEvent("fadeout3", fadeoutcam3);
+
+	AMC::events_t* fadeincam4 = new AMC::events_t(); 
+	fadeincam4->start = 64.0f;
+	fadeincam4->duration = 2.0f;
+	fadeincam4->easingFunction = nullptr;
+	fadeincam4->updateFunction = [this](float t) { this->FadeIn(t); };
+	events->AddEvent("fadein3", fadeincam4);
 
 	AMC::events_t* camevent4 = new AMC::events_t();
-	camevent4->start = sequence + 1.0f;
-	camevent4->duration = 35.0f;
+	camevent4->start = 64.0f;
+	camevent4->duration = 36.0f;
 	camevent4->easingFunction = nullptr;
 	camevent4->updateFunction = [this](float t) { this->Cam4(t); };
 	events->AddEvent("Camera4", camevent4);
 
-	sequence = camevent4->start + camevent4->duration;
-
 	AMC::events_t* LightEvent = new AMC::events_t();
-	LightEvent->start = sequence + 1.0f;
-	LightEvent->duration = 19.0f;
+	LightEvent->start = 101.0f;
+	LightEvent->duration = 17.0f;
 	LightEvent->easingFunction = nullptr;
 	LightEvent->updateFunction = [this](float t) { this->LightRed(t); };
 	events->AddEvent("Light1", LightEvent);
 
-	sequence = LightEvent->start + LightEvent->duration;
-
 	AMC::events_t* MachineEvent1 = new AMC::events_t();
-	MachineEvent1->start = sequence;
+	MachineEvent1->start = 118.0f;
 	MachineEvent1->duration = 2.0f;
 	MachineEvent1->easingFunction = nullptr;
 	MachineEvent1->updateFunction = [this](float t) { this->MachineStart(t); };
 	events->AddEvent("Light2", MachineEvent1);
 
-	sequence = MachineEvent1->start + MachineEvent1->duration;
-
 	AMC::events_t* MachineEvent2 = new AMC::events_t();
-	MachineEvent2->start = sequence;
+	MachineEvent2->start = 120.0f;
 	MachineEvent2->duration = 2.0f;
 	MachineEvent2->easingFunction = nullptr;
 	MachineEvent2->updateFunction = [this](float t) { this->MachineStop(t); };
 	events->AddEvent("Light3", MachineEvent2);
 
-	sequence = MachineEvent2->start + MachineEvent2->duration;
-
 	AMC::events_t* appleevent = new AMC::events_t();
-	appleevent->start = sequence + 1.0f;
-	appleevent->duration = 10.0f;
+	appleevent->start = 123.0f;
+	appleevent->duration = 9.0f;
 	appleevent->easingFunction = nullptr;
 	appleevent->updateFunction = [this](float t) { this->Apple(t); };
 	events->AddEvent("appleevent", appleevent); 
 
-	sequence = appleevent->start + appleevent->duration;
+	AMC::events_t* fadeoutcam4 = new AMC::events_t();
+	fadeoutcam4->start = 122.0f;
+	fadeoutcam4->duration = 1.0f;
+	fadeoutcam4->easingFunction = nullptr;
+	fadeoutcam4->updateFunction = [this](float t) { this->FadeOut(t); };
+	events->AddEvent("fadeout4", fadeoutcam4);
+
+	AMC::events_t* fadeincam5 = new AMC::events_t();
+	fadeincam5->start = 123.0f;
+	fadeincam5->duration = 2.0f;
+	fadeincam5->easingFunction = nullptr;
+	fadeincam5->updateFunction = [this](float t) { this->FadeIn(t); };
+	events->AddEvent("fadein4", fadeincam5);
 
 	// Loook at objects before foating
 	AMC::events_t* camevent5 = new AMC::events_t();
-	camevent5->start = sequence;
-	camevent5->duration = 10.0f;
+	camevent5->start = 123.0f;
+	camevent5->duration = 20.0f;
 	camevent5->easingFunction = nullptr;
 	camevent5->updateFunction = [this](float t) { this->Cam5(t); };
 	events->AddEvent("camevent5", camevent5);
 
-	sequence = camevent5->start + camevent5->duration;
-
 	AMC::events_t* objfloat = new AMC::events_t();
-	objfloat->start = sequence;
+	objfloat->start = 143.0f;
 	objfloat->duration = 6.0f;
 	objfloat->easingFunction = nullptr;
 	objfloat->updateFunction = [this](float t) { this->ObjectFloat(t); };
 	events->AddEvent("floatevent", objfloat);
 
-	sequence = objfloat->start + objfloat->duration;
-
 	AMC::events_t* camevent6 = new AMC::events_t();
-	camevent6->start = sequence + 5.0f;
+	camevent6->start = 154.0f;
 	camevent6->duration = 10.0f;
 	camevent6->easingFunction = nullptr;
 	camevent6->updateFunction = [this](float t) { this->Cam6(t); };
 	events->AddEvent("camevent6", camevent6);
 
-	sequence = camevent6->start + camevent6->duration;
-
 	AMC::events_t* objfall = new AMC::events_t();
-	objfall->start = sequence + 2.0f;
+	objfall->start = 164.0f + 2.0f;
 	objfall->duration = 2.0f;
 	objfall->easingFunction = nullptr;
 	objfall->updateFunction = [this](float t) { this->ObjectFall(t); };
 	events->AddEvent("fallevent", objfall);
 
-	sequence = objfall->start + objfall->duration;
-
 	AMC::events_t* objreverse = new AMC::events_t();
-	objreverse->start = sequence + 7.0f;
-	objreverse->duration = 10.0f;
+	objreverse->start = 168.0f + 7.0f;
+	objreverse->duration = 14.0f;
 	objreverse->easingFunction = nullptr;
 	objreverse->updateFunction = [this](float t) { this->ObjectReverse(t); };
 	events->AddEvent("reverseevent", objreverse);
 
-	sequence = objreverse->start + objreverse->duration;
+	AMC::events_t* fadeoutcam6 = new AMC::events_t();
+	fadeoutcam6->start = 188.0;
+	fadeoutcam6->duration = 1.0f;
+	fadeoutcam6->easingFunction = nullptr;
+	fadeoutcam6->updateFunction = [this](float t) { this->FadeOut(t); };
+	events->AddEvent("fadeout5", fadeoutcam6);
+
+	AMC::events_t* fadeincam7 = new AMC::events_t();
+	fadeincam7->start = 189.0f;
+	fadeincam7->duration = 2.0f;
+	fadeincam7->easingFunction = nullptr;
+	fadeincam7->updateFunction = [this](float t) { this->FadeIn(t); };
+	events->AddEvent("fadein5", fadeincam7);
 
 	AMC::events_t* camevent7 = new AMC::events_t();
-	camevent7->start = sequence + 5.0f;
-	camevent7->duration = 16.0f;
+	camevent7->start = 189.0f;
+	camevent7->duration = 17.0f;
 	camevent7->easingFunction = nullptr;
 	camevent7->updateFunction = [this](float t) { this->Cam7(t); };
 	events->AddEvent("camevent7", camevent7);
+
+	AMC::events_t* applebookevent = new AMC::events_t();
+	applebookevent->start = 189.0f + 6.0f;
+	applebookevent->duration = 10.0f;
+	applebookevent->easingFunction = nullptr;
+	applebookevent->updateFunction = [this](float t) { this->AppleBook(t); };
+	events->AddEvent("applebook", applebookevent);
+
+	AMC::events_t* fadeoutevent = new AMC::events_t();
+	fadeoutevent->start = 203;
+	fadeoutevent->duration = 2.0f;
+	fadeoutevent->easingFunction = nullptr;
+	fadeoutevent->updateFunction = [this](float t) { this->FadeOut(t); };
+	events->AddEvent("fadeout", fadeoutevent);
 
 	lightManager = new AMC::LightManager();
 
@@ -492,14 +604,14 @@ void SuperpositionScene::init()
 
 	AMC::Light point1;
 	point1.gpuLight.direction = glm::vec3(-0.50f, 0.7071f, 0.50f); // doesn't matter in case of point lights
-	point1.gpuLight.color = glm::vec3(10, 10.0f, 10.0f);
+	point1.gpuLight.color = glm::vec3(5.0f, 5.0f, 5.0f);
 	point1.gpuLight.intensity = 0.5f;
 	point1.gpuLight.range = 0.15; // range decides the square fall of distance or attenuation of light
 	point1.gpuLight.spotAngle = 1.0f; // for spot lights
 	point1.gpuLight.spotExponent = 0.7071f; // for spot lights
-	point1.gpuLight.position = glm::vec3(4.250f, 1.40f, -0.70f); // for point and spot lights
+	point1.gpuLight.position = glm::vec3(4.25f, 2.3f, -0.50f); // for point and spot lights
 	point1.gpuLight.active = 1;
-	point1.gpuLight.shadows = false;
+	point1.gpuLight.shadows = true;
 	point1.gpuLight.type = AMC::LIGHT_TYPE_POINT;
 
 	AMC::Light point2;
@@ -520,7 +632,7 @@ void SuperpositionScene::init()
 	point3.gpuLight.range = 0.050f;
 	point3.gpuLight.position = glm::vec3(-2.650f, -0.125f, -4.50f);
 	point3.gpuLight.active = 1;
-	point3.gpuLight.shadows = false;
+	point3.gpuLight.shadows = true;
 	point3.gpuLight.type = AMC::LIGHT_TYPE_POINT;
 
 	lightManager->AddLight(point1);
@@ -548,13 +660,17 @@ void SuperpositionScene::renderDebug()
 		camAdjuster->render();
 		break;
 	case AMC::LIGHT:
-		lightManager->drawLights();
+		//lightManager->drawLights();
 		break;
 	case AMC::SPLINE:
 		break;
 	case AMC::NONE:
 		break;
 	}
+
+	lightsRender->use();
+	glUniform1i(lightsRender->getUniformLocation("lightIndex"), 1); //fucckk it
+	models["sphere"].model->draw(lightsRender, 1, false);
 }
 float t = 0.0f;
 void SuperpositionScene::renderUI()
@@ -565,7 +681,7 @@ void SuperpositionScene::renderUI()
 	switch (AMC::DEBUGMODE) {
 	case AMC::MODEL:
 		if (ImGui::SliderFloat("Lerp Animation", &t, 0.0f, 1.0f, "%.2f")) {
-			models["roomAnimated"].model->lerpAnimation(t);
+			models["apple"].model->lerpAnimation(t);
 		}
 		mp->renderUI();
 		break;
@@ -588,7 +704,7 @@ void SuperpositionScene::update()
 	events->update();
 	//models["cube"].model->update((float)AMC::deltaTime);
 	//models["room"].model->update((float)AMC::deltaTime);
-	// models["apple"].matrix = mp->getModelMatrix();
+	//models["apple"].matrix = mp->getModelMatrix();
 	reCalculateSceneAABB(); // cannot find better way to do it for now
 	//modelAnim->update((float)AMC::deltaTime);
 }
@@ -613,6 +729,15 @@ void SuperpositionScene::keyboardfunc(char key, UINT keycode)
 	if (key == 'R' || key == 'r') {
 		events->resetEvents();
 	}
+
+	if (keycode == VK_RIGHT) {
+		*events += 0.1f;
+	}
+
+	if (keycode == VK_LEFT) {
+		*events -= 0.1f;
+	}
+
 }
 
 void SuperpositionScene::updateRenderContext(AMC::RenderContext& context)

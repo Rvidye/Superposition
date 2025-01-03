@@ -32,7 +32,6 @@ void SuperpositionScene::Cam4(float t)
 
 void SuperpositionScene::Cam5(float t)
 {
-	AMC::AtmosphericElevation = std::lerp(-1.57, 1.57, t);
 	sceneCam4->update(t);
 	finalCam = sceneCam4;
 	if (t >= 0.9)
@@ -49,10 +48,10 @@ void SuperpositionScene::Cam6(float t)
 
 void SuperpositionScene::Cam7(float t)
 {
-	AMC::AtmosphericElevation = std::lerp(1.57f, 2.0f, t);
+	//AMC::AtmosphericElevation = std::lerp(1.57f, 2.0f, t);
 	lightManager->GetLight(1)->gpuLight.color = glm::lerp(glm::vec3(300.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), t * 0.05f);
 	lightManager->UpdateUBO();
-	AMC::GlobalGIBoost = std::lerp(AMC::GlobalGIBoost, 0.3f, t * 0.05f);
+	//AMC::GlobalGIBoost = std::lerp(AMC::GlobalGIBoost, 0.3f, t * 0.05f);
 	sceneCam6->update(t);
 	finalCam = sceneCam6;
 }
@@ -60,12 +59,18 @@ void SuperpositionScene::Cam7(float t)
 void SuperpositionScene::Apple(float t)
 {
 	models["apple"].model->lerpAnimation(std::lerp(0.0f, 0.99f, t));
+	AMC::AtmosphericElevation = std::lerp(-1.57, 1.57, t);
 	//finalCam = sceneCam4;
 }
 
 void SuperpositionScene::AppleBook(float t)
 {
 	models["applebook"].model->lerpAnimation(std::lerp(0.0f, 0.99f, t));
+	AMC::AtmosphericElevation = std::lerp(1.57f, -2.0f, t);
+	if (t > 0.5) {
+		lightManager->GetLight(1)->gpuLight.active = false;
+		lightManager->UpdateUBO();
+	}
 }
 
 void SuperpositionScene::LightRed(float t)
@@ -129,7 +134,7 @@ void SuperpositionScene::sceneEnd(float t)
 void SuperpositionScene::init()
 {
 	// Shader Program Setup
-	OverrideRenderer = false;
+	OverrideRenderer = true;
 	// ModelPlacer
 	mp = new AMC::ModelPlacer(glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1.0f);
 
@@ -575,7 +580,7 @@ void SuperpositionScene::init()
 	events->AddEvent("camevent7", camevent7);
 
 	AMC::events_t* applebookevent = new AMC::events_t();
-	applebookevent->start = 189.0f + 6.0f;
+	applebookevent->start = 189.0f + 9.0f;
 	applebookevent->duration = 10.0f;
 	applebookevent->easingFunction = nullptr;
 	applebookevent->updateFunction = [this](float t) { this->AppleBook(t); };
@@ -606,10 +611,10 @@ void SuperpositionScene::init()
 	point1.gpuLight.direction = glm::vec3(-0.50f, 0.7071f, 0.50f); // doesn't matter in case of point lights
 	point1.gpuLight.color = glm::vec3(5.0f, 5.0f, 5.0f);
 	point1.gpuLight.intensity = 0.5f;
-	point1.gpuLight.range = 0.15; // range decides the square fall of distance or attenuation of light
+	point1.gpuLight.range = 1.0; // range decides the square fall of distance or attenuation of light
 	point1.gpuLight.spotAngle = 1.0f; // for spot lights
 	point1.gpuLight.spotExponent = 0.7071f; // for spot lights
-	point1.gpuLight.position = glm::vec3(4.25f, 2.3f, -0.50f); // for point and spot lights
+	point1.gpuLight.position = glm::vec3(4.85f, 2.1f, -0.50f); // for point and spot lights
 	point1.gpuLight.active = 1;
 	point1.gpuLight.shadows = true;
 	point1.gpuLight.type = AMC::LIGHT_TYPE_POINT;
@@ -632,7 +637,7 @@ void SuperpositionScene::init()
 	point3.gpuLight.range = 0.050f;
 	point3.gpuLight.position = glm::vec3(-2.650f, -0.125f, -4.50f);
 	point3.gpuLight.active = 1;
-	point3.gpuLight.shadows = true;
+	point3.gpuLight.shadows = false;
 	point3.gpuLight.type = AMC::LIGHT_TYPE_POINT;
 
 	lightManager->AddLight(point1);
@@ -681,7 +686,7 @@ void SuperpositionScene::renderUI()
 	switch (AMC::DEBUGMODE) {
 	case AMC::MODEL:
 		if (ImGui::SliderFloat("Lerp Animation", &t, 0.0f, 1.0f, "%.2f")) {
-			models["apple"].model->lerpAnimation(t);
+			models["applebook"].model->lerpAnimation(t);
 		}
 		mp->renderUI();
 		break;

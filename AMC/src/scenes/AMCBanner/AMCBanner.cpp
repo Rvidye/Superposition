@@ -31,7 +31,7 @@ void AMCBannerScene::init()
 
 	// event manager setup
 
-	videoPlayer = new AMC::VideoPlayer(RESOURCE_PATH("textures\\DemoIntro.mp4"));
+	videoPlayer = new AMC::VideoPlayer(RESOURCE_PATH("textures\\output_video.mp4"));
 	videoPlayer->play();
 
 	events = new AMC::EventManager();

@@ -261,9 +261,12 @@ namespace AMC {
         for (size_t i = 0; i < shadows.size(); ++i) {
             int lightIndex = shadows[i].gpuShadow.LightIndex;
             if (lightIndex >= 0 && lightIndex < static_cast<int>(lights.size())) {
-                shadows[i].gpuShadow.Position = lights[lightIndex].gpuLight.position;
-                shadows[i].needsUpdate = true;
-                shadows[i].UpdateViewMatrices();
+                const auto& newLightPosition = lights[lightIndex].gpuLight.position;
+                if (shadows[i].gpuShadow.Position != newLightPosition) {
+                    shadows[i].gpuShadow.Position = lights[lightIndex].gpuLight.position;
+                    shadows[i].needsUpdate = true;
+                    shadows[i].UpdateViewMatrices();
+                }
             }
         }
         UpdateShadowUBO();
@@ -283,7 +286,7 @@ namespace AMC {
     {
         for (int shadowIndex = 0; shadowIndex < static_cast<int>(shadows.size()); ++shadowIndex) {
             Shadow& shadow = shadows[shadowIndex];
-            //if (!shadow.needsUpdate) continue;
+            if (!shadow.needsUpdate) continue;
             float depthClear = 1.0f;
             glClearNamedFramebufferfv(shadow.fbo, GL_DEPTH, 0, &depthClear);
             glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbo);
@@ -306,7 +309,7 @@ namespace AMC {
                 obj.model->draw(program, obj.numInstance, false);
             }
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            //shadow.needsUpdate = false;
+            shadow.needsUpdate = false;
         }
     }
 

@@ -242,7 +242,7 @@ namespace AMC {
 		vkCmdBuildAccelerationStructuresKHR(cmdBufferManager.get(), 1, &asBuildGeomInfo, buildRange.data());
 
 		cmdBufferManager.end();
-		cmdBufferManager.submit();
+		VkResult res = cmdBufferManager.submit();
 		vkQueueWaitIdle(ctx->vkQueue());
 		
 		return as;
@@ -344,12 +344,13 @@ namespace AMC {
 				}
 			}
 
-			AMC::Buffer vertexBuffer = memoryManager->createBuffer(vertices.size() * sizeof(Vertex), AMC::MemoryFlags::kVkMemoryBit | AMC::MemoryFlags::kGlMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
+			AMC::Buffer vertexBuffer = memoryManager->createBuffer(vertices.size() * sizeof(Vertex), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
 			vertexBuffer.copyFromCpu(ctx, vertices, 0);
 
 			glCreateVertexArrays(1, &VAO);
-			/*glCreateBuffers(1, &VBO);
-			glNamedBufferData(VBO, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);*/
+			uint32_t VBO;
+			glCreateBuffers(1, &VBO);
+			glNamedBufferData(VBO, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
 
 			GLuint outVBO;
 			if (skin) {
@@ -358,7 +359,7 @@ namespace AMC {
 				m->outVbo = outVBO;
 			}
 
-			glVertexArrayVertexBuffer(VAO, 0, skin ? outVBO : vertexBuffer.gl, 0, sizeof(Vertex));
+			glVertexArrayVertexBuffer(VAO, 0, skin ? outVBO : VBO, 0, sizeof(Vertex));
 			// Positions
 			glEnableVertexArrayAttrib(VAO, 0);
 			glVertexArrayAttribFormat(VAO, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
@@ -401,12 +402,13 @@ namespace AMC {
 				}
 			}
 
-			AMC::Buffer indexBuffer = memoryManager->createBuffer(indices.size() * sizeof(uint32_t), AMC::MemoryFlags::kVkMemoryBit | AMC::MemoryFlags::kGlMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
+			AMC::Buffer indexBuffer = memoryManager->createBuffer(indices.size() * sizeof(uint32_t), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
 			indexBuffer.copyFromCpu(ctx, indices, 0);
 			
-			/*glCreateBuffers(1, &IBO);
+			uint32_t IBO;
+			glCreateBuffers(1, &IBO);
 			glNamedBufferData(IBO, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-			*/glVertexArrayElementBuffer(VAO, indexBuffer.gl);
+			glVertexArrayElementBuffer(VAO, IBO);
 
 			//glVertexArrayVertexBuffers(VAO, 0, bindingIndex, vertexBuffers.data(), offsets.data(), strides.data());
 
@@ -419,8 +421,8 @@ namespace AMC {
 			m->mVertexCount = mesh->mNumVertices;
 			m->mTriangleCount = (UINT)indices.size();
 			m->mMaterial = mIndex;
-			m->ibo = indexBuffer.gl;
-			m->vbo = vertexBuffer.gl;
+			m->ibo = IBO;
+			m->vbo = VBO;
 			m->vao = VAO;
 			m->geomConfig = createGeometryConfig(vertexBuffer, indexBuffer, static_cast<uint32_t>(vertices.size()));
 #if defined(RT_ENABLE)

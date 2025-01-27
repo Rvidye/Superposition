@@ -89,12 +89,12 @@ namespace AMC {
 		cmdBufferManager.begin();
 
 		VkAccelerationStructureBuildRangeInfoKHR buildrangeAS{};
-		buildrangeAS.primitiveCount = static_cast<uint32_t>(instances.size());
+		buildrangeAS.primitiveCount = primCount;
 		std::vector<VkAccelerationStructureBuildRangeInfoKHR*> buildRange{ &buildrangeAS };
 		vkCmdBuildAccelerationStructuresKHR(cmdBufferManager.get(), 1, &asBuildGeomInfo, buildRange.data());
 
 		cmdBufferManager.end();
-		cmdBufferManager.submit();
+		VkResult res = cmdBufferManager.submit();
 		vkQueueWaitIdle(ctx->vkQueue());
 	}
 };

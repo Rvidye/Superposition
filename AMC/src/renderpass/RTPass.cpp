@@ -8,7 +8,7 @@ RTPass::RTPass(const AMC::VkContext* ctx) : vkctx(ctx), vkcmdbuffer(new AMC::VkC
 
 void RTPass::create(AMC::RenderContext& context) {
 	AMC::MemoryManager mm(vkctx);
-	outputImage = mm.createImage({ static_cast<uint32_t>(context.width), static_cast<uint32_t>(context.height), 1 }, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_VIEW_TYPE_2D, 1, AMC::MemoryFlags::kVkMemoryBit, VK_IMAGE_USAGE_STORAGE_BIT);
+	outputImage = mm.createImage({ static_cast<uint32_t>(context.width), static_cast<uint32_t>(context.height), 1 }, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_VIEW_TYPE_2D, 1, AMC::MemoryFlags::kVkMemoryBit | AMC::MemoryFlags::kGlMemoryBit, VK_IMAGE_USAGE_STORAGE_BIT);
 
 	vkdescmanager->addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT);
 	vkdescmanager->addBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT);
@@ -20,7 +20,7 @@ void RTPass::create(AMC::RenderContext& context) {
 
 	VkPushConstantRange pushConstantRange{};
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(glm::mat4);
+	pushConstantRange.size = sizeof(glm::mat4) * 2;
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
 	VkPipelineLayoutCreateInfo pipelineLayoutCI{};
@@ -82,14 +82,16 @@ void RTPass::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	static uint32_t frameIndex = 0;
 	uint32_t cmdIndex = frameIndex % RTPass::kCommandBufferCount;
 
-	glm::mat4 invMat = glm::inverse(AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix());
+	glm::mat4 invVMat = glm::inverse(AMC::currentCamera->getViewMatrix());
+	glm::mat4 invPMat = glm::inverse(AMC::currentCamera->getProjectionMatrix());
 
 	vkcmdbuffer->begin(cmdIndex);
 	VkCommandBuffer cmdBuffer = vkcmdbuffer->get(cmdIndex);
 	vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
 	std::vector<VkDescriptorSet> descSets{ scene->descSet, vkdescmanager->vkDescSet(0) };
 	vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout, 0, static_cast<uint32_t>(descSets.size()), descSets.data(), 0, nullptr);
-	vkCmdPushConstants(cmdBuffer, computePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(glm::mat4), &invMat);
+	vkCmdPushConstants(cmdBuffer, computePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(glm::mat4), &invVMat);
+	vkCmdPushConstants(cmdBuffer, computePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, sizeof(glm::mat4), sizeof(glm::mat4), &invPMat);
 	vkCmdDispatch(cmdBuffer, context.width / 8, context.height / 8, 1);
 
 	vkcmdbuffer->end(cmdIndex);
@@ -104,7 +106,7 @@ const char* RTPass::getName() const {
 }
 
 void RTPass::renderUI() {
-
+	ImGui::Image((void*)(intptr_t)outputImage.gl, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
 }
 
 RTPass::~RTPass() {

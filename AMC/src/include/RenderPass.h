@@ -18,11 +18,13 @@ namespace AMC {
 		bool IsVolumetric = false;
 		bool IsToneMap = true;
 		bool UseMeshShaders = false;
+		bool IsTAA = false;
+		glm::vec2 taaJitter = glm::vec2(0.0f);
 
 		GLsizei width = 2048, height = 2048;
 		GLsizei screenWidth, screenHeight;
 		//GBuffer
-		GLuint textureGBuffer[5]; // albedo, normal, metalroughness, emissive, depth
+		GLuint textureGBuffer[6]; // albedo, normal, metalroughness, emissive, depth
 		GBufferDataUBO gBufferData;
 		GLuint gBufferUBO;
 		SkyBoxUBO SkyBoxData;

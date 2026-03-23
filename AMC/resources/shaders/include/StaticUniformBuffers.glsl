@@ -35,7 +35,13 @@ layout(std140, binding = 6) uniform GBufferDataUBO
     sampler2D MetallicRoughness;
     sampler2D Emissive;
     sampler2D Depth;
+    sampler2D Velocity;
 } gBufferDataUBO;
+
+layout(std140, binding = 7) uniform TAADataBlock
+{
+    TAAData taaDataUBO;
+};
 
 // SSBO's
 

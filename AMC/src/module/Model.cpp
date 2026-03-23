@@ -1094,24 +1094,23 @@ namespace AMC {
 		std::cout << "Generated " << allMeshlets.size() << " meshlets for model (" << meshes.size() << " meshes)" << std::endl;
 	}
 
-	void Model::drawNodes(const NodeData& node, const glm::mat4& parentTransform, ShaderProgram* program, UINT iNumInstance, bool iUseMaterial) {
+	void Model::drawNodes(const NodeData& node, const glm::mat4& parentTransform, const glm::mat4& prevParentTransform, ShaderProgram* program, UINT iNumInstance, bool iUseMaterial) {
 
 		glm::mat4 globalTransform = parentTransform * node.globalTransform;
-		//TODO:  set Node matrix here
+		glm::mat4 prevGlobalTransform = prevParentTransform * node.prevGlobalTransform;
 		glUniformMatrix4fv(program->getUniformLocation("nodeMat"), 1, GL_FALSE, glm::value_ptr(globalTransform));
+		glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(prevGlobalTransform));
 		for (UINT meshIndex : node.meshIndices) {
 			Mesh* mesh = meshes[meshIndex];
 			if (iUseMaterial) {
 				glUniform1i(program->getUniformLocation("materialIndex"), mesh->mMaterial);
-				//materials[mesh->mMaterial]->Apply(program);
 			}
 			glBindVertexArray(mesh->vao);
 			glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, mesh->mTriangleCount, GL_UNSIGNED_INT, 0, iNumInstance, 0, 0);
 		}
 
-		// Recursively draw all child nodes
 		for (const NodeData& childNode : node.children) {
-			drawNodes(childNode, globalTransform, program, iNumInstance, iUseMaterial);
+			drawNodes(childNode, globalTransform, prevGlobalTransform, program, iNumInstance, iUseMaterial);
 		}
 	}
 
@@ -1135,13 +1134,15 @@ namespace AMC {
 				break;
 			}
 		}
-		drawNodes(rootNode, identity, program, iNumInstance, iUseMaterial);
+		drawNodes(rootNode, identity, identity, program, iNumInstance, iUseMaterial);
 	}
 
-	void Model::drawNodesMeshShader(const NodeData& node, const glm::mat4& parentTransform, ShaderProgram* program) {
+	void Model::drawNodesMeshShader(const NodeData& node, const glm::mat4& parentTransform, const glm::mat4& prevParentTransform, ShaderProgram* program) {
 
 		glm::mat4 globalTransform = parentTransform * node.globalTransform;
+		glm::mat4 prevGlobalTransform = prevParentTransform * node.prevGlobalTransform;
 		glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(globalTransform));
+		glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(prevGlobalTransform));
 
 		for (UINT meshIndex : node.meshIndices) {
 			Mesh* mesh = meshes[meshIndex];
@@ -1157,7 +1158,7 @@ namespace AMC {
 		}
 
 		for (const NodeData& childNode : node.children) {
-			drawNodesMeshShader(childNode, globalTransform, program);
+			drawNodesMeshShader(childNode, globalTransform, prevGlobalTransform, program);
 		}
 	}
 
@@ -1171,7 +1172,7 @@ namespace AMC {
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 14, meshletLocalSSBO);
 
 		glm::mat4 identity = glm::mat4(1.0f);
-		drawNodesMeshShader(rootNode, identity, program);
+		drawNodesMeshShader(rootNode, identity, identity, program);
 	}
 
 
@@ -1193,7 +1194,17 @@ namespace AMC {
 		}
 	}
 
+
+	static void SavePrevNodeTransforms(NodeData& node) {
+		node.prevGlobalTransform = node.globalTransform;
+		for (auto& child : node.children) {
+			SavePrevNodeTransforms(child);
+		}
+	}
+
 	void Model::update(float dt){
+
+		SavePrevNodeTransforms(rootNode);
 
 		if (!haveAnimation)
 			 return;

@@ -13,6 +13,7 @@ layout (location = 0)out vec4 OutAlbedoAlpha;
 layout (location = 1)out vec2 OutNormal;
 layout (location = 2)out vec2 OutMetallicRoughness;
 layout (location = 3)out vec3 OutEmissive;
+layout (location = 4)out vec2 OutVelocity;
 
 layout(location = 3)uniform int materialIndex;
 
@@ -21,9 +22,11 @@ in InOutData
     vec2 TexCoord;
     vec3 Normal;
     vec3 Tangent;
+    vec4 ClipPos;
+    vec4 PrevClipPos;
 } inData;
 
-void main(void) 
+void main(void)
 {
     GpuMaterial material = materialSSBO.Materials[materialIndex];
     Surface surface = GetSurface(material, inData.TexCoord);
@@ -42,4 +45,8 @@ void main(void)
     OutNormal = EncodeUnitVec(surface.Normal);
     OutMetallicRoughness = vec2(surface.Metallic, surface.Roughness);
     OutEmissive = surface.Emissive;
+    // Velocity: (currentNDC - prevNDC) * 0.5
+    vec2 currentNDC = inData.ClipPos.xy / inData.ClipPos.w;
+    vec2 prevNDC = inData.PrevClipPos.xy / inData.PrevClipPos.w;
+    OutVelocity = (currentNDC - prevNDC) * 0.5;
 }

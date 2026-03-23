@@ -4,158 +4,175 @@
 void GBufferPass::create(AMC::RenderContext& context)
 {
 	m_ProgramGBuffer = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\gbuffer\\gbuffer.vert"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.frag") });
-    m_ProgramGBufferMeshShader = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\gbuffer\\gbuffer.task"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.mesh"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.frag") });
+	m_ProgramGBufferMeshShader = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\gbuffer\\gbuffer.task"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.mesh"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.frag") });
 
 	glCreateFramebuffers(1, &gbuffer);
 
-    glCreateTextures(GL_TEXTURE_2D, 1, &m_textureAlbedoAlpha);
-    glTextureParameteri(m_textureAlbedoAlpha, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTextureParameteri(m_textureAlbedoAlpha, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTextureParameteri(m_textureAlbedoAlpha, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteri(m_textureAlbedoAlpha, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTextureStorage2D(m_textureAlbedoAlpha, 1, GL_RGBA8, context.width, context.height);
-    glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT0, m_textureAlbedoAlpha, 0);
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_textureAlbedoAlpha);
+	glTextureParameteri(m_textureAlbedoAlpha, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(m_textureAlbedoAlpha, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(m_textureAlbedoAlpha, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(m_textureAlbedoAlpha, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureStorage2D(m_textureAlbedoAlpha, 1, GL_RGBA8, context.width, context.height);
+	glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT0, m_textureAlbedoAlpha, 0);
 
-    glCreateTextures(GL_TEXTURE_2D, 1, &m_textureNormal);
-    glTextureParameteri(m_textureNormal, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTextureParameteri(m_textureNormal, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTextureParameteri(m_textureNormal, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteri(m_textureNormal, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTextureStorage2D(m_textureNormal, 1, GL_RG8, context.width, context.height);
-    glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT1, m_textureNormal, 0);
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_textureNormal);
+	glTextureParameteri(m_textureNormal, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(m_textureNormal, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(m_textureNormal, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(m_textureNormal, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureStorage2D(m_textureNormal, 1, GL_RG8, context.width, context.height);
+	glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT1, m_textureNormal, 0);
 
-    glCreateTextures(GL_TEXTURE_2D, 1, &m_textureMetallicRoughness);
-    glTextureParameteri(m_textureMetallicRoughness, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTextureParameteri(m_textureMetallicRoughness, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTextureParameteri(m_textureMetallicRoughness, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteri(m_textureMetallicRoughness, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTextureStorage2D(m_textureMetallicRoughness, 1, GL_RG8, context.width, context.height);
-    glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT2, m_textureMetallicRoughness, 0);
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_textureMetallicRoughness);
+	glTextureParameteri(m_textureMetallicRoughness, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(m_textureMetallicRoughness, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(m_textureMetallicRoughness, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(m_textureMetallicRoughness, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureStorage2D(m_textureMetallicRoughness, 1, GL_RG8, context.width, context.height);
+	glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT2, m_textureMetallicRoughness, 0);
 
-    glCreateTextures(GL_TEXTURE_2D, 1, &m_textureEmissive);
-    glTextureParameteri(m_textureEmissive, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTextureParameteri(m_textureEmissive, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTextureParameteri(m_textureEmissive, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteri(m_textureEmissive, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTextureStorage2D(m_textureEmissive, 1, GL_R11F_G11F_B10F, context.width, context.height);
-    glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT3, m_textureEmissive, 0);
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_textureEmissive);
+	glTextureParameteri(m_textureEmissive, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(m_textureEmissive, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(m_textureEmissive, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(m_textureEmissive, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureStorage2D(m_textureEmissive, 1, GL_R11F_G11F_B10F, context.width, context.height);
+	glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT3, m_textureEmissive, 0);
 
-    glCreateTextures(GL_TEXTURE_2D, 1, &m_textureDepth);
-    glTextureParameteri(m_textureDepth, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-    glTextureParameteri(m_textureDepth, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTextureParameteri(m_textureDepth, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteri(m_textureDepth, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    GLsizei level = AMC::GetMaxMipmapLevel(context.width, context.height, 1);
-    glTextureStorage2D(m_textureDepth, level, GL_DEPTH_COMPONENT32F, context.width, context.height);
-    glNamedFramebufferTexture(gbuffer, GL_DEPTH_ATTACHMENT, m_textureDepth, 0);
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_textureVelocity);
+	glTextureParameteri(m_textureVelocity, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(m_textureVelocity, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(m_textureVelocity, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(m_textureVelocity, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureStorage2D(m_textureVelocity, 1, GL_RG16F, context.width, context.height);
+	glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT4, m_textureVelocity, 0);
 
-    GLenum drawBuffers[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-    glNamedFramebufferDrawBuffers(gbuffer, 4, drawBuffers);
-    GLenum status = glCheckNamedFramebufferStatus(gbuffer, GL_FRAMEBUFFER);
-    if (status != GL_FRAMEBUFFER_COMPLETE) {
-        LOG_ERROR(L"GBuffer framebuffer is not complete! %d", status);
-    }
+	glCreateTextures(GL_TEXTURE_2D, 1, &m_textureDepth);
+	glTextureParameteri(m_textureDepth, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	glTextureParameteri(m_textureDepth, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTextureParameteri(m_textureDepth, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(m_textureDepth, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	GLsizei level = AMC::GetMaxMipmapLevel(context.width, context.height, 1);
+	glTextureStorage2D(m_textureDepth, level, GL_DEPTH_COMPONENT32F, context.width, context.height);
+	glNamedFramebufferTexture(gbuffer, GL_DEPTH_ATTACHMENT, m_textureDepth, 0);
 
-    //save textures to context
-    context.textureGBuffer[0] = m_textureAlbedoAlpha;
-    context.textureGBuffer[1] = m_textureNormal;
-    context.textureGBuffer[2] = m_textureMetallicRoughness;
-    context.textureGBuffer[3] = m_textureEmissive;
-    context.textureGBuffer[4] = m_textureDepth;
+	GLenum drawBuffers[5] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
+	glNamedFramebufferDrawBuffers(gbuffer, 5, drawBuffers);
+	GLenum status = glCheckNamedFramebufferStatus(gbuffer, GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE) {
+		LOG_ERROR(L"GBuffer framebuffer is not complete! %d", status);
+	}
 
-    context.gBufferData.AlbedoAlphaTexture = glGetTextureHandleARB(m_textureAlbedoAlpha);
-    context.gBufferData.NormalTexture = glGetTextureHandleARB(m_textureNormal);
-    context.gBufferData.MetallicRoughnessTexture = glGetTextureHandleARB(m_textureMetallicRoughness);
-    context.gBufferData.EmissiveTexture = glGetTextureHandleARB(m_textureEmissive);
-    context.gBufferData.DepthTexture = glGetTextureHandleARB(m_textureDepth);
+	//save textures to context
+	context.textureGBuffer[0] = m_textureAlbedoAlpha;
+	context.textureGBuffer[1] = m_textureNormal;
+	context.textureGBuffer[2] = m_textureMetallicRoughness;
+	context.textureGBuffer[3] = m_textureEmissive;
+	context.textureGBuffer[4] = m_textureDepth;
+	context.textureGBuffer[5] = m_textureVelocity;
 
-    glMakeTextureHandleResidentARB(context.gBufferData.AlbedoAlphaTexture);
-    glMakeTextureHandleResidentARB(context.gBufferData.NormalTexture);
-    glMakeTextureHandleResidentARB(context.gBufferData.MetallicRoughnessTexture);
-    glMakeTextureHandleResidentARB(context.gBufferData.EmissiveTexture);
-    glMakeTextureHandleResidentARB(context.gBufferData.DepthTexture);
+	context.gBufferData.AlbedoAlphaTexture = glGetTextureHandleARB(m_textureAlbedoAlpha);
+	context.gBufferData.NormalTexture = glGetTextureHandleARB(m_textureNormal);
+	context.gBufferData.MetallicRoughnessTexture = glGetTextureHandleARB(m_textureMetallicRoughness);
+	context.gBufferData.EmissiveTexture = glGetTextureHandleARB(m_textureEmissive);
+	context.gBufferData.DepthTexture = glGetTextureHandleARB(m_textureDepth);
+	context.gBufferData.VelocityTexture = glGetTextureHandleARB(m_textureVelocity);
 
-    glCreateBuffers(1, &context.gBufferUBO);
-    glNamedBufferData(context.gBufferUBO, sizeof(GBufferDataUBO), &context.gBufferData, GL_STATIC_DRAW);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 6, context.gBufferUBO);
+	glMakeTextureHandleResidentARB(context.gBufferData.AlbedoAlphaTexture);
+	glMakeTextureHandleResidentARB(context.gBufferData.NormalTexture);
+	glMakeTextureHandleResidentARB(context.gBufferData.MetallicRoughnessTexture);
+	glMakeTextureHandleResidentARB(context.gBufferData.EmissiveTexture);
+	glMakeTextureHandleResidentARB(context.gBufferData.DepthTexture);
+	glMakeTextureHandleResidentARB(context.gBufferData.VelocityTexture);
+
+	glCreateBuffers(1, &context.gBufferUBO);
+	glNamedBufferData(context.gBufferUBO, sizeof(GBufferDataUBO), &context.gBufferData, GL_STATIC_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 6, context.gBufferUBO);
 }
 
 void GBufferPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 {
-    if (!context.IsGbuffer) {
-        return;
-    }
+	if (!context.IsGbuffer) {
+		return;
+	}
 
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    glCullFace(GL_BACK);
-    glm::vec4 clear_color = glm::vec4(0.0);
-    float depth = 1.0f;
-    glViewport(0, 0, context.width, context.height);
-    glClearNamedFramebufferfv(gbuffer, GL_COLOR, 0, glm::value_ptr(clear_color));
-    glClearNamedFramebufferfv(gbuffer, GL_COLOR, 1, glm::value_ptr(clear_color));
-    glClearNamedFramebufferfv(gbuffer, GL_COLOR, 2, glm::value_ptr(clear_color));
-    glClearNamedFramebufferfv(gbuffer, GL_COLOR, 3, glm::value_ptr(clear_color));
-    glClearNamedFramebufferfv(gbuffer, GL_DEPTH, 0, &depth);
-    glBindFramebuffer(GL_FRAMEBUFFER, gbuffer);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glCullFace(GL_BACK);
+	glm::vec4 clear_color = glm::vec4(0.0);
+	float depth = 1.0f;
+	glViewport(0, 0, context.width, context.height);
+	glClearNamedFramebufferfv(gbuffer, GL_COLOR, 0, glm::value_ptr(clear_color));
+	glClearNamedFramebufferfv(gbuffer, GL_COLOR, 1, glm::value_ptr(clear_color));
+	glClearNamedFramebufferfv(gbuffer, GL_COLOR, 2, glm::value_ptr(clear_color));
+	glClearNamedFramebufferfv(gbuffer, GL_COLOR, 3, glm::value_ptr(clear_color));
+	glClearNamedFramebufferfv(gbuffer, GL_COLOR, 4, glm::value_ptr(clear_color));
+	glClearNamedFramebufferfv(gbuffer, GL_DEPTH, 0, &depth);
+	glBindFramebuffer(GL_FRAMEBUFFER, gbuffer);
 
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_BLEND);
-    glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    glCullFace(GL_BACK);
-    glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glCullFace(GL_BACK);
-    glDepthFunc(GL_LESS);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
+	glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glCullFace(GL_BACK);
+	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glCullFace(GL_BACK);
+	glDepthFunc(GL_LESS);
 
-    m_ProgramGBuffer->use();
-    for (const auto& [name, obj] : scene->models) {
-        if (!obj.visible)
-            continue;
+	m_ProgramGBuffer->use();
+	for (auto& [name, obj] : scene->models) {
+		if (!obj.visible)
+			continue;
 
-        bool useMeshPath = context.UseMeshShaders
-            && obj.model->hasMeshletData
-            && !(obj.model->haveAnimation && obj.model->animType == AMC::SKELETALANIM);
+		bool useMeshPath = context.UseMeshShaders
+			&& obj.model->hasMeshletData
+			&& !(obj.model->haveAnimation && obj.model->animType == AMC::SKELETALANIM);
 
-        if (useMeshPath) {
-            m_ProgramGBufferMeshShader->use();
-            glBindVertexArray(context.emptyVAO);
-            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(obj.matrix));
-            obj.model->drawMeshShader(m_ProgramGBufferMeshShader);
-        }
-        else {
-            m_ProgramGBuffer->use();
-            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(obj.matrix));
-            obj.model->draw(m_ProgramGBuffer);
-        }
-    }
-    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		if (useMeshPath) {
+			m_ProgramGBufferMeshShader->use();
+			glBindVertexArray(context.emptyVAO);
+			glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(obj.matrix));
+			glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(obj.prevMatrix));
+			obj.model->drawMeshShader(m_ProgramGBufferMeshShader);
+		}
+		else {
+			m_ProgramGBuffer->use();	
+			glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(obj.matrix));
+			glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(obj.prevMatrix));
+			obj.model->draw(m_ProgramGBuffer);
+		}
+		obj.prevMatrix = obj.matrix;
+	}
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 const char* GBufferPass::getName() const
 {
-    return "G-Buffer Pass";
+	return "G-Buffer Pass";
 }
 
 void GBufferPass::renderUI()
 {
 #ifdef _MYDEBUG
-    ImGui::Begin("GBuffer Debug");
-    ImGui::Text("Albedo");
-    ImGui::Image((void*)(intptr_t)m_textureAlbedoAlpha, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
-    ImGui::Text("Normal");
-    ImGui::Image((void*)(intptr_t)m_textureNormal, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
-    ImGui::Text("MetallicRough");
-    ImGui::Image((void*)(intptr_t)m_textureMetallicRoughness, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
-    ImGui::Text("Emissive");
-    ImGui::Image((void*)(intptr_t)m_textureEmissive, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
-    ImGui::Text("Depth");
-    ImGui::Image((void*)(intptr_t)m_textureDepth, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
-    ImGui::End();
+	ImGui::Begin("GBuffer Debug");
+	ImGui::Text("Albedo");
+	ImGui::Image((void*)(intptr_t)m_textureAlbedoAlpha, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::Text("Normal");
+	ImGui::Image((void*)(intptr_t)m_textureNormal, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::Text("MetallicRough");
+	ImGui::Image((void*)(intptr_t)m_textureMetallicRoughness, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::Text("Emissive");
+	ImGui::Image((void*)(intptr_t)m_textureEmissive, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::Text("Velocity");
+	ImGui::Image((void*)(intptr_t)m_textureVelocity, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::Text("Depth");
+	ImGui::Image((void*)(intptr_t)m_textureDepth, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::End();
 #endif
 }

@@ -2,6 +2,12 @@
 
 #include<GL/glew.h>
 
+struct TAADataUBO {
+	glm::vec2 Jitter;
+	int SampleCount;
+	float MipmapBias;
+};
+
 struct GBufferDataUBO{
 
 	GLuint64 AlbedoAlphaTexture;
@@ -9,6 +15,7 @@ struct GBufferDataUBO{
 	GLuint64 MetallicRoughnessTexture;
 	GLuint64 EmissiveTexture;
 	GLuint64 DepthTexture;
+	GLuint64 VelocityTexture;
 };
 
 struct SkyBoxUBO {

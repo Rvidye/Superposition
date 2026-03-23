@@ -93,6 +93,7 @@ namespace AMC {
 		glm::mat4 Projection;
 		glm::mat4 InvProjection;
 		glm::mat4 InvProjView;
+		glm::mat4 PrevProjView;
 		glm::vec3 ViewPos;
 		float NearPlane;        
 		float FarPlane;         

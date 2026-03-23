@@ -29,6 +29,7 @@
 #include "renderpass/VXGI/Voxelizer.h"
 #include "renderpass/VXGI/ConeTracer.h"
 #include "renderpass/VolumetricLighting/VolumetricLighting.h"
+#include "renderpass/TAA/TAAPass.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -380,15 +381,35 @@ void RenderFrame(void)
 			AMC::currentCamera = gpDebugCamera; // just  in case someone fucks up and getCamera returns null we'll fallback to debugcam
 		}
 		//AMC::currentCamera->setNearFarPlane();
+		static glm::mat4 prevUnjitteredProjView = glm::mat4(0.0f);
+
 		data.View = AMC::currentCamera->getViewMatrix();
 		data.InvView = glm::inverse(data.View);
 		data.Projection = AMC::currentCamera->getProjectionMatrix();
 		data.InvProjection = glm::inverse(data.Projection);
 		data.ProjView = data.Projection * data.View;
+
+		glm::mat4 unjitteredProjView = data.Projection * data.View;
+
+		// Apply TAA jitter to projection matrix
+		if (gpRenderer->context.IsTAA) {
+			glm::mat4 jitteredProjection = data.Projection;
+			jitteredProjection[2][0] += gpRenderer->context.taaJitter.x;
+			jitteredProjection[2][1] += gpRenderer->context.taaJitter.y;
+			data.ProjView = jitteredProjection * data.View;
+		}
+		else {
+			data.ProjView = unjitteredProjView;
+		}
+
 		data.InvProjView = glm::inverse(data.ProjView);
 		data.NearPlane = AMC::currentCamera->getNearPlane();
 		data.FarPlane = AMC::currentCamera->getFarPlane();
 		data.ViewPos = AMC::currentCamera->getViewPosition();
+
+		// Use unjittered PrevProjView for velocity (first frame: use current for zero velocity)
+		data.PrevProjView = (prevUnjitteredProjView[3][3] == 0.0f) ? unjitteredProjView : prevUnjitteredProjView;
+		prevUnjitteredProjView = unjitteredProjView;
 
 		glNamedBufferSubData(perframeUBO, 0, sizeof(AMC::PerFrameData), &data);
 
@@ -451,6 +472,7 @@ void RenderFrame(void)
 	ImGui::Checkbox("IsVolumetric", &gpRenderer->context.IsVolumetric);
 	ImGui::Checkbox("IsToneMap", &gpRenderer->context.IsToneMap);
 	ImGui::Checkbox("UseMeshShaders", &gpRenderer->context.UseMeshShaders);
+	ImGui::Checkbox("IsTAA", &gpRenderer->context.IsTAA);
 	ImGui::Separator();
 
 	ImGui::Text("Select Debug Mode:");
@@ -560,6 +582,7 @@ void InitRenderPasses()
 	gpRenderer->addPass(new SSR());
 	gpRenderer->addPass(new Bloom());
 	gpRenderer->addPass(new Volumetric());
+	gpRenderer->addPass(new TAAPass());
 	gpRenderer->addPass(new Tonemap());
 	gpRenderer->addPass(new BlitPass());
 

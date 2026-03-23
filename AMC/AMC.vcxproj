@@ -251,6 +251,7 @@ copy /Y "$(ProjectDir)lib\release\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$
     <ClCompile Include="src\renderpass\Skybox\SkyBoxPass.cpp" />
     <ClCompile Include="src\renderpass\SSAO\SSAOPass.cpp" />
     <ClCompile Include="src\renderpass\SSR\SSR.cpp" />
+    <ClCompile Include="src\renderpass\TAA\TAAPass.cpp" />
     <ClCompile Include="src\renderpass\TestPass\TestPass.cpp" />
     <ClCompile Include="src\renderpass\Tonemap\Tonemap.cpp" />
     <ClCompile Include="src\renderpass\VolumetricLighting\VolumetricLighting.cpp" />
@@ -1073,6 +1074,7 @@ copy /Y "$(ProjectDir)lib\release\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$
     <ClInclude Include="src\renderpass\Skybox\SkyBoxPass.h" />
     <ClInclude Include="src\renderpass\SSAO\SSAOPass.h" />
     <ClInclude Include="src\renderpass\SSR\SSR.h" />
+    <ClInclude Include="src\renderpass\TAA\TAAPass.h" />
     <ClInclude Include="src\renderpass\TestPass\TestPass.h" />
     <ClInclude Include="src\renderpass\Tonemap\Tonemap.h" />
     <ClInclude Include="src\renderpass\VolumetricLighting\VolumetricLighting.h" />

@@ -19,4 +19,5 @@ public:
 	GLuint m_textureMetallicRoughness;
 	GLuint m_textureEmissive;
 	GLuint m_textureDepth;
+	GLuint m_textureVelocity;
 };

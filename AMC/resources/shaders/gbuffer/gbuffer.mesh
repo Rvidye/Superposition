@@ -13,6 +13,8 @@ layout(triangles, max_vertices = MESHLET_MAX_VERTEX_COUNT, max_primitives = MESH
 
 layout(location = 0) uniform mat4 modelMat;
 layout(location = 1) uniform mat4 nodeMat;
+layout(location = 2) uniform mat4 prevModelMat;
+layout(location = 4) uniform mat4 prevNodeMat;
 
 taskNV in Task {
     uint MeshletIndices[32];
@@ -23,6 +25,8 @@ out InOutData
     vec2 TexCoord;
     vec3 Normal;
     vec3 Tangent;
+    vec4 ClipPos;
+    vec4 PrevClipPos;
 } outData[];
 
 void main()
@@ -37,6 +41,7 @@ void main()
 
     mat4 worldMat = modelMat * nodeMat;
     mat4 mvp = perFrameDataUBO.ProjView * worldMat;
+    mat4 prevMvp = perFrameDataUBO.PrevProjView * prevModelMat * prevNodeMat;
     mat3 unitVecToWorld = mat3(transpose(inverse(worldMat)));
 
     // Process vertices - each thread handles multiple vertices
@@ -45,10 +50,13 @@ void main()
         uint vertexIndex = meshletVertexIndicesSSBO.VertexIndices[meshlet.VertexOffset + i];
         Vertex v = vertexDataSSBO.vertices[vertexIndex];
 
-        gl_MeshVerticesNV[i].gl_Position = mvp * v.position;
+        vec4 clipPos = mvp * v.position;
+        gl_MeshVerticesNV[i].gl_Position = clipPos;
         outData[i].TexCoord = v.texCoords;
         outData[i].Normal = normalize(unitVecToWorld * DecompressSR11G11B10(v.normal));
         outData[i].Tangent = normalize(unitVecToWorld * DecompressSR11G11B10(v.tangent));
+        outData[i].ClipPos = clipPos;
+        outData[i].PrevClipPos = prevMvp * v.position;
     }
 
     // Process triangles - packed as 3 uint8s per triangle into uint32s

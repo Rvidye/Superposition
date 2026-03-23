@@ -157,6 +157,7 @@ namespace AMC {
 		std::string name;
 		glm::mat4 transformation;
 		glm::mat4 globalTransform;
+		glm::mat4 prevGlobalTransform = glm::mat4(1.0f);
 		std::vector<UINT> meshIndices;
 		std::vector<NodeData> children;
 	};
@@ -232,8 +233,8 @@ namespace AMC {
 
 		private:
 
-			void drawNodes(const NodeData& node, const glm::mat4& parentTransform, ShaderProgram* program, UINT iNumInstance = 1, bool iUseMaterial = true);
-			void drawNodesMeshShader(const NodeData& node, const glm::mat4& parentTransform, ShaderProgram* program);
+			void drawNodes(const NodeData& node, const glm::mat4& parentTransform, const glm::mat4& prevParentTransform, ShaderProgram* program, UINT iNumInstance = 1, bool iUseMaterial = true);
+			void drawNodesMeshShader(const NodeData& node, const glm::mat4& parentTransform, const glm::mat4& prevParentTransform, ShaderProgram* program);
 			void ComputeSkin();
 	};
 };

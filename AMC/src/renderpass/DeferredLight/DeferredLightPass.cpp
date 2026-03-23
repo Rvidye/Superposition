@@ -12,7 +12,7 @@ void DeferredPass::create(AMC::RenderContext& context)
 	glTextureParameteri(m_TextureResult, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTextureParameteri(m_TextureResult, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(m_TextureResult, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureStorage2D(m_TextureResult, 1, GL_RGBA16F, context.width, context.width);
+	glTextureStorage2D(m_TextureResult, 1, GL_RGBA16F, context.width, context.height);
 	glNamedFramebufferTexture(m_FBO, GL_COLOR_ATTACHMENT0, m_TextureResult, 0);
 
 	GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };

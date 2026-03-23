@@ -17,6 +17,7 @@ namespace AMC {
 		bool IsBloom = false;
 		bool IsVolumetric = false;
 		bool IsToneMap = true;
+		bool UseMeshShaders = false;
 
 		GLsizei width = 2048, height = 2048;
 		GLsizei screenWidth, screenHeight;

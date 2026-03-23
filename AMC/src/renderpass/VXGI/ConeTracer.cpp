@@ -9,7 +9,7 @@ void ConeTracer::create(AMC::RenderContext& context) {
 	glTextureParameteri(textureResultConeTrace, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTextureParameteri(textureResultConeTrace, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(textureResultConeTrace, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureStorage2D(textureResultConeTrace, 1, GL_RGBA16F, context.width, context.width);
+	glTextureStorage2D(textureResultConeTrace, 1, GL_RGBA16F, context.width, context.height);
 	context.textureVXGIResult = textureResultConeTrace;
 }
 

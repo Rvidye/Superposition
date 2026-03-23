@@ -36,7 +36,7 @@ void SuperpositionScene::Cam5(float t)
 	finalCam = sceneCam4;
 	if (t >= 0.9)
 	{
-		models["apple"].visible = false;
+		//models["apple"].visible = false;
 	}
 }
 
@@ -58,14 +58,14 @@ void SuperpositionScene::Cam7(float t)
 
 void SuperpositionScene::Apple(float t)
 {
-	models["apple"].model->lerpAnimation(std::lerp(0.0f, 0.99f, t));
+	//models["apple"].model->lerpAnimation(std::lerp(0.0f, 0.99f, t));
 	AMC::AtmosphericElevation = std::lerp(-1.57, 1.57, t);
 	//finalCam = sceneCam4;
 }
 
 void SuperpositionScene::AppleBook(float t)
 {
-	models["applebook"].model->lerpAnimation(std::lerp(0.0f, 0.99f, t));
+	//models["applebook"].model->lerpAnimation(std::lerp(0.0f, 0.99f, t));
 	AMC::AtmosphericElevation = std::lerp(1.57f, -2.0f, t);
 	if (t > 0.5) {
 		lightManager->GetLight(1)->gpuLight.active = false;
@@ -117,12 +117,12 @@ void SuperpositionScene::ObjectReverse(float t)
 
 void SuperpositionScene::FadeIn(float t)
 {
-	AMC::fade = std::lerp(1.0f, 0.0f, t);
+	AMC::fade = std::lerp(0.0f, 0.0f, t);
 }
 
 void SuperpositionScene::FadeOut(float t)
 {
-	AMC::fade = std::lerp(0.0f, 1.0f, t);
+	AMC::fade = std::lerp(0.0f, 0.0f, t);
 }
 
 void SuperpositionScene::sceneEnd(float t)
@@ -142,22 +142,22 @@ void SuperpositionScene::init()
 
 	// Models Setup
 
-	AMC::RenderModel sphere;
-	sphere.model = new AMC::Model(RESOURCE_PATH("models\\Sphere\\Sphere.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
-	sphere.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(-0.200f, -2.0f, 4.60f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(0.650f));//mp->getModelMatrix();
-	sphere.visible = false;
-	addModel("sphere", sphere);
+	//AMC::RenderModel sphere;
+	//sphere.model = new AMC::Model(RESOURCE_PATH("models\\Sphere\\Sphere.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	//sphere.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(-0.200f, -2.0f, 4.60f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(0.650f));//mp->getModelMatrix();
+	//sphere.visible = false;
+	//addModel("sphere", sphere);
 
-	AMC::RenderModel apple;
-	apple.model = new AMC::Model(RESOURCE_PATH("models\\Apple1\\Apple.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
-	apple.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(-2.4f, -0.424f, 1.70f)) * glm::yawPitchRoll(0.0f, 0.f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));//mp->getModelMatrix();
-	addModel("apple", apple);
+	//AMC::RenderModel apple;
+	//apple.model = new AMC::Model(RESOURCE_PATH("models\\Apple1\\Apple.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	//apple.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(-2.4f, -0.424f, 1.70f)) * glm::yawPitchRoll(0.0f, 0.f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));//mp->getModelMatrix();
+	//addModel("apple", apple);
 
-	AMC::RenderModel applebook;
-	applebook.model = new AMC::Model(RESOURCE_PATH("models\\Apple\\ZeroGravity.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
-	applebook.model->lerpAnimation(0.001f);
-	applebook.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(-0.7f, -1.4f, 1.3f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(1.300000f));//mp->getModelMatrix(); //glm::translate(glm::mat4(1.0f), glm::vec3(-2.3f, -0.38f, 1.7f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(0.20f));//
-	addModel("applebook", applebook);
+	//AMC::RenderModel applebook;
+	//applebook.model = new AMC::Model(RESOURCE_PATH("models\\Apple\\ZeroGravity.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	//applebook.model->lerpAnimation(0.001f);
+	//applebook.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(-0.7f, -1.4f, 1.3f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(1.300000f));//mp->getModelMatrix(); //glm::translate(glm::mat4(1.0f), glm::vec3(-2.3f, -0.38f, 1.7f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(0.20f));//
+	//addModel("applebook", applebook);
 
 	AMC::RenderModel roomModel;
 	roomModel.model = new AMC::Model(RESOURCE_PATH("models\\SuperPosition\\SuperPositioning.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
@@ -675,7 +675,7 @@ void SuperpositionScene::renderDebug()
 
 	lightsRender->use();
 	glUniform1i(lightsRender->getUniformLocation("lightIndex"), 1); //fucckk it
-	models["sphere"].model->draw(lightsRender, 1, false);
+	//models["sphere"].model->draw(lightsRender, 1, false);
 }
 float t = 0.0f;
 void SuperpositionScene::renderUI()
@@ -686,7 +686,7 @@ void SuperpositionScene::renderUI()
 	switch (AMC::DEBUGMODE) {
 	case AMC::MODEL:
 		if (ImGui::SliderFloat("Lerp Animation", &t, 0.0f, 1.0f, "%.2f")) {
-			models["applebook"].model->lerpAnimation(t);
+			models["roomAnimated"].model->lerpAnimation(t);
 		}
 		mp->renderUI();
 		break;

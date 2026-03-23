@@ -5,6 +5,7 @@
 #include<assimp/postprocess.h>
 #include<UBO.h>
 #include<Compression.h>
+#include<meshoptimizer/meshoptimizer.h>
 
 namespace AMC {
 
@@ -351,6 +352,18 @@ namespace AMC {
 			m->ibo = IBO;
 			m->vbo = VBO;
 			m->vao = VAO;
+			
+			// Retain CPU-side data for meshlet generation
+			m->baseVertex = (uint32_t)model->cpuVertices.size();
+			model->cpuMeshVertexOffsets.push_back((uint32_t)model->cpuVertices.size());
+			model->cpuMeshIndexOffsets.push_back((uint32_t)model->cpuIndices.size());
+			for (const auto& v : vertices) {
+				model->cpuVertices.push_back(v);
+			}
+			for (const auto& idx : indices) {
+				model->cpuIndices.push_back(idx);
+			}
+
 			model->meshes.push_back(m);
 
 			// AABB
@@ -916,6 +929,11 @@ namespace AMC {
 			programGPUSkin = new ShaderProgram({ RESOURCE_PATH("shaders\\model\\SkinCompute.comp") });
 		}
 
+		// Generate meshlets for non-skinned models
+		if (!(haveAnimation && animType == SKELETALANIM)) {
+			generateMeshlets();
+		}
+
 		//Print Info
 #ifdef _MYDEBUG
 		LOG_INFO(L" Model Details %s", CString(path.c_str()));
@@ -964,6 +982,118 @@ namespace AMC {
 		//materials.clear();
 	}
 
+	void Model::generateMeshlets() {
+
+		if (cpuVertices.empty() || cpuIndices.empty()) return;
+
+		std::vector<GpuMeshlet> allMeshlets;
+		std::vector<GpuMeshletInfo> allMeshletInfos;
+		std::vector<uint32_t> allMeshletVertexIndices;
+		std::vector<uint32_t> allMeshletLocalIndices;
+
+		for (UINT mi = 0; mi < meshes.size(); mi++) {
+			Mesh* mesh = meshes[mi];
+
+			uint32_t vertexOffset = cpuMeshVertexOffsets[mi];
+			uint32_t indexOffset = cpuMeshIndexOffsets[mi];
+			uint32_t indexCount = mesh->mTriangleCount; // mTriangleCount is actually index count
+			uint32_t vertexCount = mesh->mVertexCount;
+
+			// Extract positions for this mesh (meshopt needs float* positions with stride)
+			std::vector<float> positions(vertexCount * 3);
+			for (uint32_t v = 0; v < vertexCount; v++) {
+				const Vertex& vert = cpuVertices[vertexOffset + v];
+				positions[v * 3 + 0] = vert.position.x;
+				positions[v * 3 + 1] = vert.position.y;
+				positions[v * 3 + 2] = vert.position.z;
+			}
+
+			// Get indices for this mesh (local to this mesh, 0-based)
+			const uint32_t* meshIndices = &cpuIndices[indexOffset];
+
+			size_t maxMeshlets = meshopt_buildMeshletsBound(indexCount, MESHLET_MAX_VERTEX_COUNT, MESHLET_MAX_TRIANGLE_COUNT);
+			std::vector<meshopt_Meshlet> meshlets(maxMeshlets);
+			std::vector<unsigned int> meshletVertices(maxMeshlets * MESHLET_MAX_VERTEX_COUNT);
+			std::vector<unsigned char> meshletTriangles(maxMeshlets * MESHLET_MAX_TRIANGLE_COUNT * 3);
+
+			size_t meshletCount = meshopt_buildMeshlets(
+				meshlets.data(), meshletVertices.data(), meshletTriangles.data(),
+				meshIndices, indexCount,
+				positions.data(), vertexCount, sizeof(float) * 3,
+				MESHLET_MAX_VERTEX_COUNT, MESHLET_MAX_TRIANGLE_COUNT, 0.0f
+			);
+
+			mesh->meshletOffset = (uint32_t)allMeshlets.size();
+			mesh->meshletCount = (uint32_t)meshletCount;
+
+			for (size_t i = 0; i < meshletCount; i++) {
+				const meshopt_Meshlet& m = meshlets[i];
+
+				GpuMeshlet gpuMeshlet;
+				gpuMeshlet.VertexOffset = (uint32_t)allMeshletVertexIndices.size();
+				gpuMeshlet.IndicesOffset = (uint32_t)allMeshletLocalIndices.size();
+				gpuMeshlet.VertexCount = m.vertex_count;
+				gpuMeshlet.TriangleCount = m.triangle_count;
+
+				// Compute AABB for this meshlet
+				GpuMeshletInfo info = {};
+				info.Min = glm::vec3(FLT_MAX);
+				info.Max = glm::vec3(-FLT_MAX);
+				for (uint32_t v = 0; v < m.vertex_count; v++) {
+					uint32_t vi = meshletVertices[m.vertex_offset + v];
+					glm::vec3 pos(positions[vi * 3], positions[vi * 3 + 1], positions[vi * 3 + 2]);
+					info.Min = glm::min(info.Min, pos);
+					info.Max = glm::max(info.Max, pos);
+				}
+
+				allMeshlets.push_back(gpuMeshlet);
+				allMeshletInfos.push_back(info);
+
+				// Copy vertex indices — remap to global (model-wide) vertex indices
+				for (uint32_t v = 0; v < m.vertex_count; v++) {
+					allMeshletVertexIndices.push_back(vertexOffset + meshletVertices[m.vertex_offset + v]);
+				}
+
+				// Pack local triangle indices into uint32s (4 bytes per uint)
+				uint32_t triangleByteCount = m.triangle_count * 3;
+				uint32_t packedCount = (triangleByteCount + 3) / 4;
+				for (uint32_t p = 0; p < packedCount; p++) {
+					uint32_t packed = 0;
+					for (int b = 0; b < 4; b++) {
+						uint32_t byteIdx = p * 4 + b;
+						if (byteIdx < triangleByteCount) {
+							packed |= (uint32_t)meshletTriangles[m.triangle_offset + byteIdx] << (b * 8);
+						}
+					}
+					allMeshletLocalIndices.push_back(packed);
+				}
+			}
+		}
+
+		if (allMeshlets.empty()) return;
+
+		// Upload meshlet data to SSBOs
+		glCreateBuffers(1, &meshletSSBO);
+		glNamedBufferData(meshletSSBO, allMeshlets.size() * sizeof(GpuMeshlet), allMeshlets.data(), GL_STATIC_DRAW);
+
+		glCreateBuffers(1, &meshletInfoSSBO);
+		glNamedBufferData(meshletInfoSSBO, allMeshletInfos.size() * sizeof(GpuMeshletInfo), allMeshletInfos.data(), GL_STATIC_DRAW);
+
+		glCreateBuffers(1, &meshletVertexSSBO);
+		glNamedBufferData(meshletVertexSSBO, allMeshletVertexIndices.size() * sizeof(uint32_t), allMeshletVertexIndices.data(), GL_STATIC_DRAW);
+
+		glCreateBuffers(1, &meshletLocalSSBO);
+		glNamedBufferData(meshletLocalSSBO, allMeshletLocalIndices.size() * sizeof(uint32_t), allMeshletLocalIndices.data(), GL_STATIC_DRAW);
+
+		// Upload all vertices to a flat SSBO for mesh shader access
+		glCreateBuffers(1, &vertexDataSSBO);
+		glNamedBufferData(vertexDataSSBO, cpuVertices.size() * sizeof(Vertex), cpuVertices.data(), GL_STATIC_DRAW);
+
+		hasMeshletData = true;
+
+		std::cout << "Generated " << allMeshlets.size() << " meshlets for model (" << meshes.size() << " meshes)" << std::endl;
+	}
+
 	void Model::drawNodes(const NodeData& node, const glm::mat4& parentTransform, ShaderProgram* program, UINT iNumInstance, bool iUseMaterial) {
 
 		glm::mat4 globalTransform = parentTransform * node.globalTransform;
@@ -1007,6 +1137,43 @@ namespace AMC {
 		}
 		drawNodes(rootNode, identity, program, iNumInstance, iUseMaterial);
 	}
+
+	void Model::drawNodesMeshShader(const NodeData& node, const glm::mat4& parentTransform, ShaderProgram* program) {
+
+		glm::mat4 globalTransform = parentTransform * node.globalTransform;
+		glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(globalTransform));
+
+		for (UINT meshIndex : node.meshIndices) {
+			Mesh* mesh = meshes[meshIndex];
+			if (mesh->meshletCount == 0)
+				continue;
+
+			glUniform1i(3, mesh->mMaterial);
+			glUniform1ui(6, mesh->meshletOffset);
+			glUniform1ui(7, mesh->meshletCount);
+
+			GLuint numWorkGroups = (mesh->meshletCount + 31) / 32;
+			glDrawMeshTasksNV(0, numWorkGroups);
+		}
+
+		for (const NodeData& childNode : node.children) {
+			drawNodesMeshShader(childNode, globalTransform, program);
+		}
+	}
+
+	void Model::drawMeshShader(ShaderProgram* program) {
+
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, materialSSBO);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, vertexDataSSBO);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, meshletSSBO);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, meshletInfoSSBO);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 13, meshletVertexSSBO);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 14, meshletLocalSSBO);
+
+		glm::mat4 identity = glm::mat4(1.0f);
+		drawNodesMeshShader(rootNode, identity, program);
+	}
+
 
 	void Model::ComputeSkin(){
 
@@ -1067,25 +1234,17 @@ namespace AMC {
 		switch (animType) {
 			case SKELETALANIM:
 				if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->skeletonAnimator.size()) {
-					this->skeletonAnimator[this->CurrentAnimation].currentTime = this->skeletonAnimator[this->CurrentAnimation].duration * t;
+					this->skeletonAnimator[this->CurrentAnimation].currentTime += this->skeletonAnimator[this->CurrentAnimation].ticksPerSecond * t;
 					this->skeletonAnimator[this->CurrentAnimation].currentTime = fmod(this->skeletonAnimator[this->CurrentAnimation].currentTime, this->skeletonAnimator[this->CurrentAnimation].duration);
-					CalculateBoneTransform(this, &this->skeletonAnimator[this->CurrentAnimation], &this->skeletonAnimator[this->CurrentAnimation].rootNode, glm::mat4(1.0f));
-					glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->skeletonAnimator[this->CurrentAnimation].boneSSBO);
-					glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, MAX_BONE_COUNT * sizeof(glm::mat4), this->skeletonAnimator[this->CurrentAnimation].finalBoneMatrices.data());
-					ComputeSkin();
+					//calculateBoneTransform(this, &this->skeletonAnimator[this->CurrentAnimation], &this->skeletonAnimator[this->CurrentAnimation].rootNode, DirectX::XMMatrixIdentity());
 				}
 			break;
 			case KEYFRAMEANIM:
 				if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->nodeAnimator.size()) {
-					this->nodeAnimator[this->CurrentAnimation].currentTime = this->nodeAnimator[this->CurrentAnimation].duration * t;
+					this->nodeAnimator[this->CurrentAnimation].currentTime += this->nodeAnimator[this->CurrentAnimation].ticksPerSecond * t;
 					this->nodeAnimator[this->CurrentAnimation].currentTime = fmod(this->nodeAnimator[this->CurrentAnimation].currentTime, this->nodeAnimator[this->CurrentAnimation].duration);
-					CalculateNodeTransform(&this->rootNode, glm::mat4(1.0f), this->nodeAnimator[this->CurrentAnimation]);
+					//calculateNodeTransform();
 				}
-				//for (int i = 0; i < this->nodeAnimator.size(); i++) {
-				//	this->nodeAnimator[i].currentTime = this->nodeAnimator[i].duration * t;
-				//	this->nodeAnimator[i].currentTime = fmod(this->nodeAnimator[i].currentTime, this->nodeAnimator[i].duration);
-				//	CalculateNodeTransform(&this->rootNode, glm::mat4(1.0f), this->nodeAnimator[i]);
-				//}
 			break;
 			case MORPHANIM:
 				if (this->CurrentAnimation >= 0 && this->CurrentAnimation < this->nodeAnimator.size()) {

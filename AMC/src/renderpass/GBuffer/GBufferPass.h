@@ -11,6 +11,7 @@ public:
 	const char* getName() const override;
 	void renderUI() override;
 	AMC::ShaderProgram* m_ProgramGBuffer;
+	AMC::ShaderProgram* m_ProgramGBufferMeshShader;
 
 	GLuint gbuffer;
 	GLuint m_textureAlbedoAlpha;

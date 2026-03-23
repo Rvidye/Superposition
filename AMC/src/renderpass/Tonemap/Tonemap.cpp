@@ -10,7 +10,7 @@ void Tonemap::create(AMC::RenderContext& context) {
 	glTextureParameteri(textureTonemapResult, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTextureParameteri(textureTonemapResult, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(textureTonemapResult, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureStorage2D(textureTonemapResult, 1, GL_RGBA8, context.width, context.width);
+	glTextureStorage2D(textureTonemapResult, 1, GL_RGBA8, context.width, context.height);
 	context.textureTonemapResult = textureTonemapResult;
 }
 

@@ -95,7 +95,7 @@ namespace AMC {
 			bool completed = false;
 			std::unordered_map<std::string, RenderModel> models;
 			LightManager *lightManager  = nullptr;
-			AABB sceneAABB = {glm::vec3(FLT_MAX),glm::vec3(FLT_MAX)};
+			AABB sceneAABB = {glm::vec3(FLT_MAX),glm::vec3(-FLT_MAX)};
 	};
 };
 

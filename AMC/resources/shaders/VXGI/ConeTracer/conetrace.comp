@@ -75,8 +75,6 @@ vec3 IndirectLight(Surface surface, vec3 position, vec3 incomming)
         
         Ray coneRay;
         coneRay.Origin = position;
-        coneRay.Direction;
-
         vec3 diffuseDir = CosineSampleHemisphere(surface.Normal, rnd0, rnd1);
         
         const float maxConeAngle = 0.32;  // 18 degree

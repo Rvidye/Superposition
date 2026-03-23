@@ -25,8 +25,8 @@ void testScene::fadeIn(float t)
 void testScene::init()
 {
 	// Shader Program Setup
-	programModel = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\spv\\model.vert.spv"),RESOURCE_PATH("shaders\\model\\spv\\model.frag.spv") });
-	programModelAnim = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\spv\\modelAnim.vert.spv"),RESOURCE_PATH("shaders\\model\\spv\\model.frag.spv") });
+	programModel = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\model.vert"),RESOURCE_PATH("shaders\\model\\model.frag") });
+	programModelAnim = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\modelAnim.vert"),RESOURCE_PATH("shaders\\model\\model.frag") });
 
 	// ModelPlacer
 	mp = new AMC::ModelPlacer(glm::vec3(0.0, 0.0, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1.0f);

@@ -1,0 +1,60 @@
+#version 460 core
+
+#extension GL_NV_mesh_shader : require
+#extension GL_ARB_bindless_texture : require
+
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+#include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
+#include<..\..\..\resources\shaders\include\Compression.glsl>
+#include<..\..\..\resources\shaders\include\Meshlet.glsl>
+
+layout(local_size_x = 32) in;
+layout(triangles, max_vertices = MESHLET_MAX_VERTEX_COUNT, max_primitives = MESHLET_MAX_TRIANGLE_COUNT) out;
+
+layout(location = 0) uniform mat4 modelMat;
+layout(location = 1) uniform mat4 nodeMat;
+
+taskNV in Task {
+    uint MeshletIndices[32];
+} IN;
+
+out InOutData
+{
+    vec2 TexCoord;
+    vec3 Normal;
+    vec3 Tangent;
+} outData[];
+
+void main()
+{
+    uint tid = gl_LocalInvocationID.x;
+    uint meshletIndex = IN.MeshletIndices[gl_WorkGroupID.x];
+
+    GpuMeshlet meshlet = meshletSSBO.Meshlets[meshletIndex];
+
+    // Set output counts
+    gl_PrimitiveCountNV = meshlet.TriangleCount;
+
+    mat4 worldMat = modelMat * nodeMat;
+    mat4 mvp = perFrameDataUBO.ProjView * worldMat;
+    mat3 unitVecToWorld = mat3(transpose(inverse(worldMat)));
+
+    // Process vertices - each thread handles multiple vertices
+    for (uint i = tid; i < meshlet.VertexCount; i += 32)
+    {
+        uint vertexIndex = meshletVertexIndicesSSBO.VertexIndices[meshlet.VertexOffset + i];
+        Vertex v = vertexDataSSBO.vertices[vertexIndex];
+
+        gl_MeshVerticesNV[i].gl_Position = mvp * v.position;
+        outData[i].TexCoord = v.texCoords;
+        outData[i].Normal = normalize(unitVecToWorld * DecompressSR11G11B10(v.normal));
+        outData[i].Tangent = normalize(unitVecToWorld * DecompressSR11G11B10(v.tangent));
+    }
+
+    // Process triangles - packed as 3 uint8s per triangle into uint32s
+    uint packedCount = (meshlet.TriangleCount * 3 + 3) / 4;
+    for (uint i = tid; i < packedCount; i += 32)
+    {
+        writePackedPrimitiveIndices4x8NV(i * 4, meshletLocalIndicesSSBO.PackedIndices[meshlet.IndicesOffset + i]);
+    }
+}

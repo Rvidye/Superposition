@@ -8,6 +8,9 @@
 #define MAX_BONE_COUNT 125
 #define MAX_BONE_INFLUENCE 4
 
+#define MESHLET_MAX_VERTEX_COUNT 128
+#define MESHLET_MAX_TRIANGLE_COUNT 252
+
 namespace AMC {
 
 	enum TextureType
@@ -35,6 +38,18 @@ namespace AMC {
 	struct AABB {
 		glm::vec3 mMin;
 		glm::vec3 mMax;
+	};
+
+	struct GpuMeshlet {
+		uint32_t VertexOffset;
+		uint32_t IndicesOffset;
+		uint32_t VertexCount;
+		uint32_t TriangleCount;
+	};
+
+	struct GpuMeshletInfo {
+		glm::vec3 Min; float _pad0;
+		glm::vec3 Max; float _pad1;
 	};
 
 	class Material {
@@ -79,6 +94,9 @@ namespace AMC {
 		UINT mTriangleCount;
 		UINT mVertexCount;
 		UINT mMaterial;
+		uint32_t meshletCount = 0;
+		uint32_t meshletOffset = 0;
+		uint32_t baseVertex = 0;
 	};
 
 	struct BoneInfo {
@@ -194,9 +212,28 @@ namespace AMC {
 			std::vector<MorphTargetAnimator> morphAnimator;
 			std::unordered_map<std::string, std::vector<float>> currentMorphWeights;
 			std::unordered_map<std::string, BoneInfo> BoneInfoMap;
+
+			// Meshlet data for mesh shader pipeline
+			GLuint meshletSSBO = 0;
+			GLuint meshletInfoSSBO = 0;
+			GLuint meshletVertexSSBO = 0;
+			GLuint meshletLocalSSBO = 0;
+			GLuint vertexDataSSBO = 0;
+			bool hasMeshletData = false;
+
+			// CPU-side data retained from loading for meshlet generation
+			std::vector<Vertex> cpuVertices;
+			std::vector<uint32_t> cpuIndices;
+			std::vector<uint32_t> cpuMeshVertexOffsets;
+			std::vector<uint32_t> cpuMeshIndexOffsets;
+
+			void generateMeshlets();
+			void drawMeshShader(ShaderProgram* program);
+
 		private:
 
 			void drawNodes(const NodeData& node, const glm::mat4& parentTransform, ShaderProgram* program, UINT iNumInstance = 1, bool iUseMaterial = true);
+			void drawNodesMeshShader(const NodeData& node, const glm::mat4& parentTransform, ShaderProgram* program);
 			void ComputeSkin();
 	};
 };

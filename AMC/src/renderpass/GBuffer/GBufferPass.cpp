@@ -4,6 +4,7 @@
 void GBufferPass::create(AMC::RenderContext& context)
 {
 	m_ProgramGBuffer = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\gbuffer\\gbuffer.vert"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.frag") });
+    m_ProgramGBufferMeshShader = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\gbuffer\\gbuffer.task"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.mesh"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.frag") });
 
 	glCreateFramebuffers(1, &gbuffer);
 
@@ -117,8 +118,21 @@ void GBufferPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
         if (!obj.visible)
             continue;
 
-        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(obj.matrix));
-        obj.model->draw(m_ProgramGBuffer);
+        bool useMeshPath = context.UseMeshShaders
+            && obj.model->hasMeshletData
+            && !(obj.model->haveAnimation && obj.model->animType == AMC::SKELETALANIM);
+
+        if (useMeshPath) {
+            m_ProgramGBufferMeshShader->use();
+            glBindVertexArray(context.emptyVAO);
+            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(obj.matrix));
+            obj.model->drawMeshShader(m_ProgramGBufferMeshShader);
+        }
+        else {
+            m_ProgramGBuffer->use();
+            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(obj.matrix));
+            obj.model->draw(m_ProgramGBuffer);
+        }
     }
     //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

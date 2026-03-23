@@ -79,6 +79,6 @@ vec3 ReconstructPackedNormal(vec2 v)
 {
     vec3 result;
     result.xy = v * 2.0 - 1.0;
-    result.z = sqrt(max(1.0 - dot(v.rg, v.rg), 0.0));
+    result.z = sqrt(max(1.0 - dot(result.xy, result.xy), 0.0));
     return result;
 }

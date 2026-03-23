@@ -156,7 +156,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProjectDir)lib\debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>assimp-vc143-mtd.lib;meshoptimizer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>
@@ -193,7 +193,7 @@ copy /Y "$(ProjectDir)lib\debug\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$(C
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProjectDir)lib\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>assimp-vc143-mt.lib;meshoptimizer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>
@@ -1050,6 +1050,7 @@ copy /Y "$(ProjectDir)lib\release\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$
     <ClInclude Include="src\include\LightManager.h" />
     <ClInclude Include="src\include\Log.h" />
     <ClInclude Include="src\include\MemoryManager.h" />
+    <ClInclude Include="src\include\meshoptimizer\meshoptimizer.h" />
     <ClInclude Include="src\include\Model.h" />
     <ClInclude Include="src\include\ModelPlacer.h" />
     <ClInclude Include="src\include\RenderPass.h" />

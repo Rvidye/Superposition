@@ -60,7 +60,7 @@ UINT AMC::DEBUGMODE = AMC::DEBUGMODES::NONE;
 std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Spline", "PostProcess"};
 AMC::Camera* AMC::currentCamera;
 
-float AMC::fade = 1.0f;
+float AMC::fade = 0.0f;
 float AMC::bloom_threshold = 1.0f; // threshold for bloom better if untouched
 float AMC::bloom_maxcolor = 2.8f; // intensity of bloom
 float AMC::VolumeScattering = 0.758f; // ideal value is between 0.5 ~ 0.9
@@ -147,6 +147,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 		LOG_ERROR(L"GL_NV_geometry_shader_passthrough Not Supported");
 	if (!glewIsSupported("GL_NV_viewport_swizzle"))
 		LOG_ERROR(L"GL_NV_viewport_swizzle Not Supported");
+	if (!glewIsSupported("GL_EXT_shader_image_load_formatted"))
+		LOG_ERROR(L"GL_EXT_shader_image_load_formatted Not Supported");
+	if (!glewIsSupported("GL_NV_mesh_shader"))
+		LOG_ERROR(L"GL_NV_mesh_shader Not Supported");
 
 	const GLubyte* renderer = glGetString(GL_RENDERER);
 	const GLubyte* vendor = glGetString(GL_VENDOR);
@@ -446,6 +450,7 @@ void RenderFrame(void)
 	ImGui::Checkbox("IsBloom", &gpRenderer->context.IsBloom);
 	ImGui::Checkbox("IsVolumetric", &gpRenderer->context.IsVolumetric);
 	ImGui::Checkbox("IsToneMap", &gpRenderer->context.IsToneMap);
+	ImGui::Checkbox("UseMeshShaders", &gpRenderer->context.UseMeshShaders);
 	ImGui::Separator();
 
 	ImGui::Text("Select Debug Mode:");
@@ -567,9 +572,9 @@ void InitRenderPasses()
 
 void InitScenes(void)
 {
-	//sceneQueue.push_back(new testScene());
+	sceneQueue.push_back(new testScene());
 	//sceneQueue.push_back(new AMCBannerScene());
-	sceneQueue.push_back(new SuperpositionScene());
+	//sceneQueue.push_back(new SuperpositionScene());
 
 	for (auto* scene : sceneQueue) {
 		scene->init();

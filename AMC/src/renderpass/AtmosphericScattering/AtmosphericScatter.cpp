@@ -27,8 +27,7 @@ void AtmosphericScatterer::create(AMC::RenderContext& context) {
 void AtmosphericScatterer::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 
 	// Compute Atmospheric Scattering
-	//if (!modified)
-	//	return;
+	if (!modified) return;
 	glBindImageTexture(0, textureAtmosphericResult, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 	m_ProgramAtmosphericScatter->use();
 	glUniform1i(m_ProgramAtmosphericScatter->getUniformLocation("ISteps"), ISteps);

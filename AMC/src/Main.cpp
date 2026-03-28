@@ -14,7 +14,7 @@
 #include<MemoryManager.h>
 
 // Render Passes
-#include "renderpass/RTPass.h"
+#include "renderpass/RTPass/RTPass.h"
 #include "renderpass/TestPass/TestPass.h"
 #include "renderpass/Shadows/ShadowMapPass.h"
 #include "renderpass/GBuffer/GBufferPass.h"
@@ -147,12 +147,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 		LOG_ERROR(L"GL_NV_geometry_shader_passthrough Not Supported");
 	if (!glewIsSupported("GL_NV_viewport_swizzle"))
 		LOG_ERROR(L"GL_NV_viewport_swizzle Not Supported");
+	if (!glewIsSupported("GL_EXT_semaphore") || !glewIsSupported("GL_EXT_semaphore_win32")) {
+		LOG_ERROR(L"RTPass: GL_EXT_semaphore or GL_EXT_semaphore_win32 not supported");
+	}
+	if (!glewIsSupported("GL_EXT_memory_object") || !glewIsSupported("GL_EXT_memory_object_win32")) {
+		LOG_ERROR(L"RTPass: GL_EXT_memory_object / GL_EXT_memory_object_win32 not supported, RT disabled");
+	}
 
 	const GLubyte* renderer = glGetString(GL_RENDERER);
 	const GLubyte* vendor = glGetString(GL_VENDOR);
 	const GLubyte* version = glGetString(GL_VERSION);
 	const GLubyte* glslVer = glGetString(GL_SHADING_LANGUAGE_VERSION);
 	GLint major = 0, minor = 0;
+
 	glGetIntegerv(GL_MAJOR_VERSION, &major);
 	glGetIntegerv(GL_MINOR_VERSION, &minor);
 	LOG(AMC::LogLevel::LOG_WARNING);
@@ -179,10 +186,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	vulkan12Features.bufferDeviceAddress = VK_TRUE;
 	AMC::VkContext::Builder builder;
 	vkcontext = builder
-		.setAPIVersion(VK_API_VERSION_1_3)
+		.setAPIVersion(VK_API_VERSION_1_4)
 		.setRequiredQueueFlags(VK_QUEUE_COMPUTE_BIT)
 		.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME)
 		.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
+		.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME)
 #if defined(RT_ENABLE)
 		.addDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
 		.addDeviceExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
@@ -569,7 +577,9 @@ void InitRenderPasses()
 #endif
 	gpRenderer->addPass(new SSAO());
 	gpRenderer->addPass(new ConeTracer());
+#if defined(RT_ENABLE)
 	gpRenderer->addPass(new RTPass(vkcontext));
+#endif
 	gpRenderer->addPass(new DeferredPass());
 	gpRenderer->addPass(new SkyBoxPass());
 	gpRenderer->addPass(new SSR());

@@ -1,45 +1,77 @@
 #version 460 core
 #extension GL_EXT_ray_query : enable
 
-#include<..\..\..\resources\shaders\include\Transformations.glsl>
-
 layout(local_size_x = 8, local_size_y = 8) in;
 
 layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;
-layout(set = 1, binding = 0) uniform sampler2D ipImage;
-layout(set = 1, binding = 1) uniform writeonly image2D opImage;
+layout(set = 1, binding = 0) uniform sampler2D ipImage; // GBuffer depth
+layout(set = 1, binding = 1, r32f) uniform writeonly image2DArray opImage; // Output: per-light visibility layers
 
-layout(push_constant) uniform invVPMat {
-	mat4 invVMat;
-	mat4 invPMat;
+layout(push_constant) uniform PushConstants {
+	mat4 invViewMat;
+	mat4 invProjMat;
+	vec4 lightPosRange; // xyz = light world position, w = light range (0 = infinite)
+	int layerIndex;     // which layer in image2DArray to write
 };
 
 void main(void) {
-	float depth = texelFetch(ipImage, ivec2(gl_GlobalInvocationID.xy), 0).r;
-	vec2 uv = ivec2(gl_GlobalInvocationID.xy) / vec2(imageSize(opImage));
-    vec3 ndc = vec3(uv * 2.0 - 1.0, depth);
-    //vec3 fragPos = PerspectiveTransform(ndc, invMat);
+	ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 imageSize = imageSize(opImage).xy;
 
-	const vec2 pixelCenter = vec2(gl_GlobalInvocationID.xy) + vec2(0.5);
-    const vec2 inUV = pixelCenter/vec2(imageSize(opImage));
-    vec2 d = inUV * 2.0 - 1.0;
-	
-	vec3 lightPos = vec3(-4.0f, 3.90f, 0.0f);
+	// Bounds guard for non-multiple-of-8 frame sizes
+	if (pixelCoord.x >= imageSize.x || pixelCoord.y >= imageSize.y)
+		return;
 
-	vec4 origin    = invVMat * vec4(0, 0, 0, 1);
-	vec4 target    = invPMat * vec4(d.x, d.y, 1, 1);
-	vec4 direction = invVMat * vec4(normalize(target.xyz), 0);
-	//float m = length(dir);
-	//dir = normalize(dir);
+	float depth = texelFetch(ipImage, pixelCoord, 0).r;
 
-	rayQueryEXT query;
-	rayQueryInitializeEXT(query, tlas, gl_RayFlagsNoneEXT, 0xff, origin.xyz, 0.01, direction.xyz, 1e6);
-	rayQueryProceedEXT(query);
-	float dist = 1.0;
-	if (rayQueryGetIntersectionTypeEXT(query, true) == gl_RayQueryCommittedIntersectionTriangleEXT)
-	{
-		dist = 0.0;
+	// Sky pixels: fully lit (no geometry to shadow)
+	if (depth >= 1.0) {
+		imageStore(opImage, ivec3(pixelCoord, layerIndex), vec4(1.0));
+		return;
 	}
 
-	imageStore(opImage, ivec2(gl_GlobalInvocationID.xy), vec4(dist, 1.0, 0.0, 1.0));
+	// Reconstruct world-space position from depth
+	vec2 uv = (vec2(pixelCoord) + vec2(0.5)) / vec2(imageSize);
+	vec2 ndc = uv * 2.0 - 1.0;
+
+	// Clip space -> view space -> world space
+	vec4 clipPos = vec4(ndc, depth, 1.0);
+	vec4 viewPos = invProjMat * clipPos;
+	viewPos /= viewPos.w;
+	vec3 worldPos = (invViewMat * viewPos).xyz;
+
+	// Shadow ray from surface toward the light
+	vec3 lightPos = lightPosRange.xyz;
+	vec3 toLight = lightPos - worldPos;
+	float distToLight = length(toLight);
+	vec3 rayDir = toLight / distToLight;
+
+	// Small origin bias to avoid self-intersection
+	const float bias = 0.01;
+	float tMin = bias;
+	float tMax = distToLight - bias;
+
+	// If surface is beyond or at the light, it's lit
+	if (tMax <= tMin) {
+		imageStore(opImage, ivec3(pixelCoord, layerIndex), vec4(1.0));
+		return;
+	}
+
+	// Trace shadow ray
+	rayQueryEXT query;
+	rayQueryInitializeEXT(query, tlas,
+		gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT,
+		0xff, worldPos, tMin, rayDir, tMax);
+
+	// Loop until traversal completes
+	while (rayQueryProceedEXT(query)) {
+		// Nothing to do - opaque geometry commits automatically
+	}
+
+	float visibility = 1.0; // lit by default
+	if (rayQueryGetIntersectionTypeEXT(query, true) != gl_RayQueryCommittedIntersectionNoneEXT) {
+		visibility = 0.0; // occluded = shadowed
+	}
+
+	imageStore(opImage, ivec3(pixelCoord, layerIndex), vec4(visibility));
 }

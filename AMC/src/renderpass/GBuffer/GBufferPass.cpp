@@ -40,10 +40,6 @@ void GBufferPass::create(AMC::RenderContext& context)
     glTextureStorage2D(m_textureEmissive, 1, GL_R11F_G11F_B10F, context.width, context.height);
     glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT3, m_textureEmissive, 0);
 
-    //TODO: Fix
-    glCreateTextures(GL_TEXTURE_2D, 1, &m_textureDepth.gl);
-    //GLsizei level = AMC::GetMaxMipmapLevel(context.width, context.height, 1);
-    //Level use if reqiured.
     m_textureDepth = mm.createImage({ static_cast<uint32_t>(context.width), static_cast<uint32_t>(context.height), 1 }, VK_FORMAT_D32_SFLOAT, VK_IMAGE_VIEW_TYPE_2D, 1, AMC::MemoryFlags::kGlMemoryBit | AMC::MemoryFlags::kVkMemoryBit, VK_IMAGE_USAGE_SAMPLED_BIT);
     glTextureParameteri(m_textureDepth.gl, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTextureParameteri(m_textureDepth.gl, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

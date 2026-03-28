@@ -18,6 +18,7 @@ namespace AMC {
 		bool IsBloom = false;
 		bool IsVolumetric = false;
 		bool IsToneMap = true;
+		bool IsRTShadows = false; // true when RT shadows are available and enabled
 
 		GLsizei width = 2048, height = 2048;
 		GLsizei screenWidth, screenHeight;
@@ -39,6 +40,9 @@ namespace AMC {
 		GLuint textureAtmosphere = 0;
 		GLuint textureVolxelResult = 0;
 		GLuint textureVXGIResult = 0;
+		GLuint textureRTShadow = 0; // RT shadow visibility array (shared VK->GL image2DArray)
+		int rtLightLayers[32];      // per-light index: light i → RT array layer, -1 = no RT shadow
+		int rtShadowLightCount = 0; // number of active RT shadow layers this frame
 		GLuint fboPostDeferred = 0; // seems like a hack but fuck it
 		GLuint emptyVAO = 0;
 	};

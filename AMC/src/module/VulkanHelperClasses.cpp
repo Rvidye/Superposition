@@ -334,6 +334,16 @@ if (index >= commandBufferList.size()) {\
 		return vkQueueSubmit(vkctx->vkQueue(), 1, &submitInfo, VK_NULL_HANDLE);
 	}
 
+	VkResult VkCommandBufferManager::submitWithFence(VkFence fence, uint32_t index) {
+		CHECK_OUT_OF_INDEX(VK_ERROR_UNKNOWN);
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBufferList.at(index);
+		return vkQueueSubmit(vkctx->vkQueue(), 1, &submitInfo, fence);
+	}
+
 	VkResult VkCommandBufferManager::begin(uint32_t index) {
 		CHECK_OUT_OF_INDEX(VK_ERROR_UNKNOWN);
 		VkCommandBufferBeginInfo commandBufferBI{};

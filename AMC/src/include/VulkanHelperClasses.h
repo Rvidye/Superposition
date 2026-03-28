@@ -88,6 +88,7 @@ namespace AMC {
 		void allocate(uint32_t count = 1);
 		VkCommandBuffer get(uint32_t index = 0) const;
 		VkResult submit(uint32_t index = 0);
+		VkResult submitWithFence(VkFence fence, uint32_t index = 0);
 		VkResult begin(uint32_t index = 0);
 		VkResult end(uint32_t index = 0);
 		void free(uint32_t count = kFreeAll);

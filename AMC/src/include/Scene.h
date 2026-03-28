@@ -5,6 +5,7 @@
 #include<Camera.h>
 #include<LightManager.h>
 #include<VulkanHelperClasses.h>
+#include<MemoryManager.h>
 
 namespace AMC {
 	struct RenderContext; // forward declare
@@ -28,6 +29,8 @@ namespace AMC {
 			virtual AMC::Camera* getCamera() = 0;
 
 			void BuildTLAS();
+			void RebuildTLAS(); // Rebuild TLAS with current transforms (call each frame)
+			void destroyTLASResources(); // Release persistent TLAS buffers/AS before rebuild
 
 
 			void addModel(const std::string& name, const RenderModel& obj) {
@@ -109,6 +112,16 @@ namespace AMC {
 
 			bool OverrideRenderer = false;
 			VkAccelerationStructureKHR tlas;
+			bool tlasBuilt = false;
+			// Persistent TLAS buffers (reused across rebuilds)
+			Buffer tlasInstanceBuffer{};
+			Buffer tlasScratchBuffer{};
+			Buffer tlasStorageBuffer{};
+			VkDeviceSize tlasMaxInstances = 0;
+			VkDeviceSize tlasScratchSize = 0;
+			VkDeviceSize tlasUpdateScratchSize = 0;
+			VkDeviceSize tlasStorageSize = 0;
+			VkFence tlasFence = VK_NULL_HANDLE;
 			bool completed = false;
 			std::unordered_map<std::string, RenderModel> models;
 			LightManager *lightManager  = nullptr;

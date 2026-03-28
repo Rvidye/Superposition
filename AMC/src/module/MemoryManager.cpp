@@ -16,8 +16,23 @@ namespace AMC {
 			void* mem;
 			//Prefer this over GL version
 			if (vkmem != VK_NULL_HANDLE) {
-				vkMapMemory(ctx->vkDevice(), vkmem, offset, size, 0, &mem);
-				memcpy(mem, data, size);
+				// Align map offset down to nonCoherentAtomSize (typically 64 bytes)
+				VkPhysicalDeviceProperties props;
+				vkGetPhysicalDeviceProperties(ctx->vkPhysicalDevice(), &props);
+				VkDeviceSize atomSize = props.limits.nonCoherentAtomSize;
+				VkDeviceSize alignedOffset = (offset / atomSize) * atomSize;
+
+				vkMapMemory(ctx->vkDevice(), vkmem, alignedOffset, VK_WHOLE_SIZE, 0, &mem);
+				// Write at the correct position within the mapped range
+				memcpy(static_cast<char*>(mem) + (offset - alignedOffset), data, size);
+				// Flush with aligned offset
+				VkMappedMemoryRange flushRange{};
+				flushRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+				flushRange.memory = vkmem;
+				flushRange.offset = alignedOffset;
+				flushRange.size = VK_WHOLE_SIZE;
+				vkFlushMappedMemoryRanges(ctx->vkDevice(), 1, &flushRange);
+				vkUnmapMemory(ctx->vkDevice(), vkmem);
 			}
 			else if (glIsBuffer(gl)) {
 				glNamedBufferSubData(gl, offset, size, data);
@@ -54,7 +69,7 @@ namespace AMC {
 		return 0xffff;
 	}
 
-	Buffer MemoryManager::createBuffer(uint64_t size, MemoryFlagBits memoryFlags, VkBufferUsageFlags bufferUsage, bool getAddress) {
+	Buffer MemoryManager::createBuffer(uint64_t size, MemoryFlagBits memoryFlags, VkBufferUsageFlags bufferUsage, bool getAddress, VkMemoryPropertyFlags memProps) {
 		Buffer buffer{};
 		
 		const bool isGl = memoryFlags & kGlMemoryBit;
@@ -110,7 +125,7 @@ namespace AMC {
 				pNext = &memoryAIFlags.pNext;
 			}
 			memoryAI.allocationSize = memReq.size;
-			memoryAI.memoryTypeIndex = getMemoryType(ctx->vkPhysicalDevice(), memReq.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+			memoryAI.memoryTypeIndex = getMemoryType(ctx->vkPhysicalDevice(), memReq.memoryTypeBits, memProps);
 			CHECK_VULKAN_ERROR(vkAllocateMemory(ctx->vkDevice(), &memoryAI, nullptr, &buffer.vkmem));
 
 			CHECK_VULKAN_ERROR(vkBindBufferMemory(ctx->vkDevice(), buffer.vk, buffer.vkmem, 0));
@@ -147,14 +162,16 @@ namespace AMC {
 		return buffer;
 	}
 
-	Image MemoryManager::createImage(VkExtent3D extent, VkFormat format, VkImageViewType type, uint32_t mipLevels, MemoryFlagBits memoryFlags, VkImageUsageFlags imageUsage) {
+	Image MemoryManager::createImage(VkExtent3D extent, VkFormat format, VkImageViewType type, uint32_t mipLevels, MemoryFlagBits memoryFlags, VkImageUsageFlags imageUsage, uint32_t arrayLayers) {
 		Image image{};
-		
+
 		//Add as and when required
 		const auto formatMap = [](const VkFormat format) -> const GLenum {
 			switch (format) {
 			case VK_FORMAT_R32G32B32A32_SFLOAT:
 				return GL_RGBA32F;
+			case VK_FORMAT_R32_SFLOAT:
+				return GL_R32F;
 			case VK_FORMAT_D32_SFLOAT:
 				return GL_DEPTH_COMPONENT32F;
 			default:
@@ -167,9 +184,9 @@ namespace AMC {
 			switch(viewType) {
 			case VK_IMAGE_VIEW_TYPE_1D:
 				return VK_IMAGE_TYPE_1D;
-			case VK_IMAGE_VIEW_TYPE_1D_ARRAY: case VK_IMAGE_VIEW_TYPE_2D:
+			case VK_IMAGE_VIEW_TYPE_1D_ARRAY: case VK_IMAGE_VIEW_TYPE_2D: case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
 				return VK_IMAGE_TYPE_2D;
-			case VK_IMAGE_VIEW_TYPE_2D_ARRAY: case VK_IMAGE_VIEW_TYPE_3D: case VK_IMAGE_VIEW_TYPE_CUBE: case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:
+			case VK_IMAGE_VIEW_TYPE_3D: case VK_IMAGE_VIEW_TYPE_CUBE: case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:
 				return VK_IMAGE_TYPE_3D;
 			default:
 				LOG_ERROR(L"Shouldn't have reached here.");
@@ -207,7 +224,7 @@ namespace AMC {
 			imageCI.pQueueFamilyIndices = &ctx->vkQueueFamilyIndex();
 			imageCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			imageCI.usage = imageUsage;
-			imageCI.arrayLayers = 1;
+			imageCI.arrayLayers = arrayLayers;
 			imageCI.extent = extent;
 			imageCI.format = format;
 			imageCI.imageType = vktypeMap(type);
@@ -249,7 +266,7 @@ namespace AMC {
 			imageViewCI.format = format;
 			imageViewCI.image = image.vk;
 			imageViewCI.subresourceRange.aspectMask = aspectMap(format);
-			imageViewCI.subresourceRange.layerCount = 1;
+			imageViewCI.subresourceRange.layerCount = arrayLayers;
 			imageViewCI.subresourceRange.levelCount = mipLevels;
 			vkCreateImageView(ctx->vkDevice(), &imageViewCI, nullptr, &image.view);
 
@@ -263,13 +280,17 @@ namespace AMC {
 				glCreateMemoryObjectsEXT(1, &image.glmem);
 				glImportMemoryWin32HandleEXT(image.glmem, memReq.size, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT, image.memhandle);
 
-				glCreateTextures(GL_TEXTURE_2D, 1, &image.gl);
+				GLenum glTarget = (type == VK_IMAGE_VIEW_TYPE_2D_ARRAY) ? GL_TEXTURE_2D_ARRAY : GL_TEXTURE_2D;
+				glCreateTextures(glTarget, 1, &image.gl);
 				switch(type) {
 				case VK_IMAGE_VIEW_TYPE_1D:
 					glTextureStorageMem1DEXT(image.gl, mipLevels, formatMap(format), extent.width, image.glmem, 0);
 					break;
 				case VK_IMAGE_VIEW_TYPE_2D:
 					glTextureStorageMem2DEXT(image.gl, mipLevels, formatMap(format), extent.width, extent.height, image.glmem, 0);
+					break;
+				case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
+					glTextureStorageMem3DEXT(image.gl, mipLevels, formatMap(format), extent.width, extent.height, arrayLayers, image.glmem, 0);
 					break;
 				case VK_IMAGE_VIEW_TYPE_3D:
 					glTextureStorageMem3DEXT(image.gl, mipLevels, formatMap(format), extent.width, extent.height, extent.depth, image.glmem, 0);

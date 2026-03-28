@@ -43,8 +43,8 @@ namespace AMC {
 	public:
 		MemoryManager(const VkContext* ctx) : ctx(ctx) {}
 		//TODO: Make MemoryFlags a Template argument to improve perf, Low Priority
-		Buffer createBuffer(uint64_t size, MemoryFlagBits memoryFlags, VkBufferUsageFlags bufferUsage = 0, bool getAddress = false);
-		Image createImage(VkExtent3D extent, VkFormat format, VkImageViewType type, uint32_t mipLevels, MemoryFlagBits memoryFlags, VkImageUsageFlags imageUsage = 0);
+		Buffer createBuffer(uint64_t size, MemoryFlagBits memoryFlags, VkBufferUsageFlags bufferUsage = 0, bool getAddress = false, VkMemoryPropertyFlags memProps = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		Image createImage(VkExtent3D extent, VkFormat format, VkImageViewType type, uint32_t mipLevels, MemoryFlagBits memoryFlags, VkImageUsageFlags imageUsage = 0, uint32_t arrayLayers = 1);
 	private:
 		const VkContext* ctx;
 	};

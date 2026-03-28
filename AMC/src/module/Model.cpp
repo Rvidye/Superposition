@@ -216,10 +216,10 @@ namespace AMC {
 		sizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 		vkGetAccelerationStructureBuildSizesKHR(ctx->vkDevice(), VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &asBuildGeomInfo, &primCount, &sizeInfo);
 	
-		AMC::Buffer scratch = mem->createBuffer(sizeInfo.buildScratchSize, AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true);
+		AMC::Buffer scratch = mem->createBuffer(sizeInfo.buildScratchSize, AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		asBuildGeomInfo.scratchData.deviceAddress = scratch.deviceAddress;
-	
-		AMC::Buffer asBuff = mem->createBuffer(sizeInfo.accelerationStructureSize, AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR, true);
+
+		AMC::Buffer asBuff = mem->createBuffer(sizeInfo.accelerationStructureSize, AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR, true, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 		VkAccelerationStructureKHR as;
 
@@ -344,8 +344,11 @@ namespace AMC {
 				}
 			}
 
-			AMC::Buffer vertexBuffer = memoryManager->createBuffer(vertices.size() * sizeof(Vertex), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
-			vertexBuffer.copyFromCpu(ctx, vertices, 0);
+			AMC::Buffer vertexBuffer{};
+			if (ctx) {
+				vertexBuffer = memoryManager->createBuffer(vertices.size() * sizeof(Vertex), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
+				vertexBuffer.copyFromCpu(ctx, vertices, 0);
+			}
 
 			glCreateVertexArrays(1, &VAO);
 			uint32_t VBO;
@@ -402,8 +405,11 @@ namespace AMC {
 				}
 			}
 
-			AMC::Buffer indexBuffer = memoryManager->createBuffer(indices.size() * sizeof(uint32_t), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
-			indexBuffer.copyFromCpu(ctx, indices, 0);
+			AMC::Buffer indexBuffer{};
+			if (ctx) {
+				indexBuffer = memoryManager->createBuffer(indices.size() * sizeof(uint32_t), AMC::MemoryFlags::kVkMemoryBit, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, true);
+				indexBuffer.copyFromCpu(ctx, indices, 0);
+			}
 			
 			uint32_t IBO;
 			glCreateBuffers(1, &IBO);
@@ -469,6 +475,21 @@ namespace AMC {
 			NodeData childNode;
 			readNodeHierarchy(childNode, src->mChildren[i]);
 			dest.children.push_back(childNode);
+		}
+	}
+
+	// Compute accumulated node transforms and store on each Mesh.
+	// Must mirror drawNodes() which uses node.globalTransform (not node.transformation)
+	// so that RT TLAS instance transforms match rasterization exactly.
+	void computeMeshNodeTransforms(const NodeData& node, const glm::mat4& parentTransform, std::vector<Mesh*>& meshes) {
+		glm::mat4 globalTransform = parentTransform * node.globalTransform;
+		for (UINT meshIndex : node.meshIndices) {
+			if (meshIndex < meshes.size()) {
+				meshes[meshIndex]->nodeTransform = globalTransform;
+			}
+		}
+		for (const NodeData& child : node.children) {
+			computeMeshNodeTransforms(child, globalTransform, meshes);
 		}
 	}
 
@@ -985,6 +1006,9 @@ namespace AMC {
 
 		// store node heirarchy because we'll render in that order
 		readNodeHierarchy(this->rootNode, scene->mRootNode);
+
+		// Compute per-mesh accumulated node transforms for TLAS parity
+		computeMeshNodeTransforms(this->rootNode, glm::mat4(1.0f), this->meshes);
 
 		// Load Animation Data
 		if (scene->HasAnimations()) {

@@ -80,6 +80,7 @@ namespace AMC {
 		UINT mTriangleCount;
 		UINT mVertexCount;
 		UINT mMaterial;
+		glm::mat4 nodeTransform = glm::mat4(1.0f); // accumulated node-hierarchy transform for this mesh
 		VkAccelerationStructureGeometryKHR geomConfig;
 		VkAccelerationStructureKHR blas;
 	};

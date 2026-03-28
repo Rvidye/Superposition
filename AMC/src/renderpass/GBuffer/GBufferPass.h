@@ -6,16 +6,19 @@
 class GBufferPass : public AMC::RenderPass {
 
 public:
+	GBufferPass(AMC::VkContext* vkctx) : ctx(vkctx), m_ProgramGBuffer(nullptr), m_textureDepth({}) {}
 	void create(AMC::RenderContext& context) override;
 	void execute(AMC::Scene* scene, AMC::RenderContext& context) override;
 	const char* getName() const override;
 	void renderUI() override;
 	AMC::ShaderProgram* m_ProgramGBuffer;
 
-	GLuint gbuffer;
-	GLuint m_textureAlbedoAlpha;
-	GLuint m_textureNormal;
-	GLuint m_textureMetallicRoughness;
-	GLuint m_textureEmissive;
-	GLuint m_textureDepth;
+	AMC::VkContext* ctx;
+
+	GLuint gbuffer = 0;
+	GLuint m_textureAlbedoAlpha = 0;
+	GLuint m_textureNormal = 0;
+	GLuint m_textureMetallicRoughness = 0;
+	GLuint m_textureEmissive = 0;
+	AMC::Image m_textureDepth;
 };

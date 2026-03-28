@@ -14,6 +14,7 @@
 #include<MemoryManager.h>
 
 // Render Passes
+#include "renderpass/RTPass/RTPass.h"
 #include "renderpass/TestPass/TestPass.h"
 #include "renderpass/Shadows/ShadowMapPass.h"
 #include "renderpass/GBuffer/GBufferPass.h"
@@ -34,6 +35,7 @@
 #include "scenes/testscene/testScene.h"
 #include "scenes/AMCBanner/AMCBanner.h"
 #include "scenes/Superposition/SuperPosition.h"
+#include "scenes/rtdemo/rtscene.h"
 
 // Libraries
 #pragma comment(lib,"glew32.lib")
@@ -73,8 +75,9 @@ void resize(AMC::RenderWindow*, UINT width, UINT height);
 void RenderFrame(void);
 void Update(void);
 
-void InitRenderPasses(void);
-void InitScenes(void);
+void InitScenes();
+void InitRenderPasses();
+void WriteDescSets();
 void playNextScene(void);
 
 //MSAA
@@ -144,12 +147,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 		LOG_ERROR(L"GL_NV_geometry_shader_passthrough Not Supported");
 	if (!glewIsSupported("GL_NV_viewport_swizzle"))
 		LOG_ERROR(L"GL_NV_viewport_swizzle Not Supported");
+	if (!glewIsSupported("GL_EXT_semaphore") || !glewIsSupported("GL_EXT_semaphore_win32")) {
+		LOG_ERROR(L"RTPass: GL_EXT_semaphore or GL_EXT_semaphore_win32 not supported");
+	}
+	if (!glewIsSupported("GL_EXT_memory_object") || !glewIsSupported("GL_EXT_memory_object_win32")) {
+		LOG_ERROR(L"RTPass: GL_EXT_memory_object / GL_EXT_memory_object_win32 not supported, RT disabled");
+	}
 
 	const GLubyte* renderer = glGetString(GL_RENDERER);
 	const GLubyte* vendor = glGetString(GL_VENDOR);
 	const GLubyte* version = glGetString(GL_VERSION);
 	const GLubyte* glslVer = glGetString(GL_SHADING_LANGUAGE_VERSION);
 	GLint major = 0, minor = 0;
+
 	glGetIntegerv(GL_MAJOR_VERSION, &major);
 	glGetIntegerv(GL_MINOR_VERSION, &minor);
 	LOG(AMC::LogLevel::LOG_WARNING);
@@ -165,16 +175,38 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	window->SetMouseFunc(mouse);
 	window->SetResizeFunc(resize);
 	resize(window,720, 480);
+	VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeature{};
+	rayQueryFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+	rayQueryFeature.rayQuery = VK_TRUE;
+	VkPhysicalDeviceAccelerationStructureFeaturesKHR asFeature{};
+	asFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+	asFeature.accelerationStructure = VK_TRUE;
+	VkPhysicalDeviceVulkan12Features vulkan12Features{};
+	vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+	vulkan12Features.bufferDeviceAddress = VK_TRUE;
 	AMC::VkContext::Builder builder;
 	vkcontext = builder
-		.setAPIVersion(VK_API_VERSION_1_3)
+		.setAPIVersion(VK_API_VERSION_1_4)
 		.setRequiredQueueFlags(VK_QUEUE_COMPUTE_BIT)
 		.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME)
 		.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
+		.addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME)
+#if defined(RT_ENABLE)
+		.addDeviceExtension(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
+		.addDeviceExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME)
+		.addDeviceExtension(VK_KHR_RAY_QUERY_EXTENSION_NAME)
+		.addToDeviceFeatureChain(&asFeature)
+		.addToDeviceFeatureChain(&rayQueryFeature)
+#endif
+		.addToDeviceFeatureChain(&vulkan12Features)
 		.build();
 
-	InitRenderPasses();
 	InitScenes();
+	InitRenderPasses();
+	
+	AMC::VkDescSetLayoutManager::generateDescSetPool(vkcontext);
+	
+	WriteDescSets();
 
 	while (!window->IsClosed()) 
 	{
@@ -539,12 +571,15 @@ void InitRenderPasses()
 	gpRenderer->addPass(new AtmosphericScatterer());
 	gpRenderer->addPass(new ShadowMapPass());
 	gpRenderer->addPass(new Voxelizer());
-	gpRenderer->addPass(new GBufferPass());
+	gpRenderer->addPass(new GBufferPass(vkcontext));
 #ifdef _MYDEBUG
 	gpRenderer->addPass(new DebugDrawPass());
 #endif
 	gpRenderer->addPass(new SSAO());
 	gpRenderer->addPass(new ConeTracer());
+#if defined(RT_ENABLE)
+	gpRenderer->addPass(new RTPass(vkcontext));
+#endif
 	gpRenderer->addPass(new DeferredPass());
 	gpRenderer->addPass(new SkyBoxPass());
 	gpRenderer->addPass(new SSR());
@@ -560,17 +595,29 @@ void InitRenderPasses()
 	//finalpass->create(gpRenderer->context);
 }
 
-void InitScenes(void)
+void InitScenes()
 {
 	//sceneQueue.push_back(new testScene());
-	sceneQueue.push_back(new AMCBannerScene());
-	//sceneQueue.push_back(new SuperpositionScene());
+	//sceneQueue.push_back(new AMCBannerScene(vkcontext));
+	sceneQueue.push_back(new SuperpositionScene(vkcontext));
+	//sceneQueue.push_back(new testScene(vkcontext));
+	//sceneQueue.push_back(new rtscene(vkcontext));
 
 	for (auto* scene : sceneQueue) {
 		scene->init();
+		scene->BuildTLAS();
 	}
 	playNextScene();
 
+	AMC::Scene::createDescSetLayout(vkcontext, sceneQueue.size());
+}
+
+void WriteDescSets() {
+	AMC::Scene::createDescSets();
+	for (int i = 0; auto * scene : sceneQueue) {
+		scene->writeDescSet(i++);
+	}
+	gpRenderer->writeDescSets();
 }
 
 void playNextScene(void) {

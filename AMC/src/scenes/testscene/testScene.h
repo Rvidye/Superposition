@@ -29,7 +29,7 @@ class testScene : public AMC::Scene {
 		void fadeOut(float);
 
 	public:
-
+		testScene(const AMC::VkContext* ctx) : AMC::Scene(ctx) {}
 		void init() override;
 		//void render() override;
 		void renderDebug() override;

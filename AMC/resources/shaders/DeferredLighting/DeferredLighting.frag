@@ -14,6 +14,7 @@ layout(location = 0) out vec4 OutFragColor;
 
 layout(binding = 5) uniform sampler2D SamplerAO;
 layout(binding = 6) uniform sampler2D SamplerIndirectLighting;
+layout(binding = 7) uniform sampler2DArray SamplerRTShadow;
 
 vec3 EvaluateLighting(Light light, Surface surface, vec3 fragPos, vec3 viewPos, float ambientOcclusion);
 float Visibility(Shadows light, vec3 normal, vec3 lightToSample);
@@ -21,6 +22,8 @@ float GetLightSpaceDepth(Shadows light, vec3 lightSpaceSamplePos);
 
 layout(location = 0) uniform bool IsShadows;
 layout(location = 1) uniform bool IsVXGI;
+layout(location = 2) uniform bool IsRTShadows;
+uniform int rtLightLayers[MAX_LIGHTS]; // per-light RT shadow layer index (-1 = none)
 
 in InOutData
 {
@@ -70,11 +73,13 @@ void main()
         if (contribution != vec3(0.0) && IsShadows)
         {
             float shadow = 0.0;
-            if (light.shadowMapIndex == -1)
+            if (IsRTShadows && rtLightLayers[i] >= 0)
             {
-                shadow = 0.0;
+                // RT shadow: per-light layer, red channel is visibility (1 = lit, 0 = shadowed)
+                float rtVis = texelFetch(SamplerRTShadow, ivec3(imgCoord, rtLightLayers[i]), 0).r;
+                shadow = 1.0 - rtVis;
             }
-            else
+            else if (light.shadowMapIndex != -1)
             {
                 Shadows lightShadow = shadows[light.shadowMapIndex];
                 vec3 lightToSample = unjitteredFragPos - light.position;

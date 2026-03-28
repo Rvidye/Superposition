@@ -38,7 +38,7 @@ Surface GetDefaultSurface()
 Surface GetSurface(GpuMaterial gpuMaterial, vec2 uv, float baseColorLodBias)
 {
     Surface surface;
-    vec4 baseColorAndAlpha = texture(gpuMaterial.BaseColor, uv, baseColorLodBias) * DecompressUR8G8B8A8(gpuMaterial.BaseColorFactor);
+    vec4 baseColorAndAlpha = textureLod(gpuMaterial.BaseColor, uv, baseColorLodBias) * DecompressUR8G8B8A8(gpuMaterial.BaseColorFactor);
     surface.Albedo = baseColorAndAlpha.rgb;
     surface.Alpha = baseColorAndAlpha.a;
 

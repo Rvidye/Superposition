@@ -2,6 +2,7 @@
 
 #include <Scene.h>
 #include <UBO.h>
+#include <MemoryManager.h>
 
 namespace AMC {
 	// Store Extra Data that can be accesses by all render passes
@@ -17,11 +18,15 @@ namespace AMC {
 		bool IsBloom = false;
 		bool IsVolumetric = false;
 		bool IsToneMap = true;
+		bool IsRTShadows = false; // true when RT shadows are available and enabled
 
 		GLsizei width = 2048, height = 2048;
 		GLsizei screenWidth, screenHeight;
 		//GBuffer
-		GLuint textureGBuffer[5]; // albedo, normal, metalroughness, emissive, depth
+		GLuint textureGBuffer[4]; // albedo, normal, metalroughness, emissive
+		//Need Depth to be seperate texture instead of part of array so Vulkan can use it
+		Image textureGBufferDepth;
+
 		GBufferDataUBO gBufferData;
 		GLuint gBufferUBO;
 		SkyBoxUBO SkyBoxData;
@@ -35,6 +40,9 @@ namespace AMC {
 		GLuint textureAtmosphere = 0;
 		GLuint textureVolxelResult = 0;
 		GLuint textureVXGIResult = 0;
+		GLuint textureRTShadow = 0; // RT shadow visibility array (shared VK->GL image2DArray)
+		int rtLightLayers[32];      // per-light index: light i → RT array layer, -1 = no RT shadow
+		int rtShadowLightCount = 0; // number of active RT shadow layers this frame
 		GLuint fboPostDeferred = 0; // seems like a hack but fuck it
 		GLuint emptyVAO = 0;
 	};
@@ -44,6 +52,7 @@ namespace AMC {
 			virtual ~RenderPass() = default;
 			virtual void create(RenderContext& context) = 0;
 			virtual void execute(Scene* scene, RenderContext &context) = 0;
+			virtual void writeDescSet(RenderContext& context) {}
 			virtual const char* getName() const = 0;
 			virtual void renderUI() = 0;
 	};
@@ -69,6 +78,12 @@ namespace AMC {
 				scene->updateRenderContext(context);
 				for (auto pass : passes) {
 					pass->execute(scene, context);
+				}
+			}
+
+			void writeDescSets() {
+				for (auto pass : passes) {
+					pass->writeDescSet(context);
 				}
 			}
 

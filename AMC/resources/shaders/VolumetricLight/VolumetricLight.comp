@@ -105,7 +105,7 @@ vec3 UniformScatter(Light light, Shadows pointShadow, vec3 origin, vec3 viewDir,
 bool Shadow(Shadows pointShadow, vec3 lightToSample)
 {
     float depth = GetLightSpaceDepth(pointShadow, lightToSample);
-    float closestDepth = texture(pointShadow.ShadowMapTexture, lightToSample).r;
+    float closestDepth = textureLod(pointShadow.ShadowMapTexture, lightToSample, 0.0).r;
 
     return depth > closestDepth;
 }

@@ -4,9 +4,12 @@ import subprocess
 def compile_spv(file, include_path):
     os.makedirs("spv", exist_ok=True)
     output_file = os.path.join("spv", f"{file}.spv")
-    print(f"Running: glslc {file} -o {output_file} --target-env=opengl -I {include_path}")
+    if not file.startswith("vk_"):
+        return
+    target_env = "vulkan1.4"
+    print(f"Running: glslc {file} -o {output_file} -I {include_path} --target-env={target_env}")
     result = subprocess.run(
-        f"glslc {file} -o {output_file} --target-env=opengl -I {include_path}",
+        f"glslc {file} -o {output_file} -I {include_path} --target-env={target_env}",
         shell=True,
         capture_output=True,
         text=True

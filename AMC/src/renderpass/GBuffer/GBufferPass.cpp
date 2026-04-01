@@ -1,10 +1,14 @@
 #include<common.h>
+#include<ModelAssetManager.h>
+#include<SceneInstanceManager.h>
+#include<RenderExtractor.h>
 #include "GBufferPass.h"
 
 void GBufferPass::create(AMC::RenderContext& context)
 {
 	m_ProgramGBuffer = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\gbuffer\\gbuffer.vert"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.frag") });
 	m_ProgramGBufferMeshShader = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\gbuffer\\gbuffer.task"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.mesh"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.frag") });
+	m_ProgramGBufferIndirect = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\gbuffer\\gbuffer_indirect.task"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer_indirect.mesh"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer_indirect.frag") });
 
 	glCreateFramebuffers(1, &gbuffer);
 
@@ -125,7 +129,43 @@ void GBufferPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 	glCullFace(GL_BACK);
 	glDepthFunc(GL_LESS);
 
-	m_ProgramGBuffer->use();
+	// Bind global pooled buffers once for all mesh-shader models
+	AMC::ModelAssetManager::Get().BindGlobalBuffers();
+
+	// Bind transform palette and instance SSBOs
+	AMC::SceneInstanceManager::Get().BindBuffers();
+
+	// ================================================================
+	// Path 1: Indirect multi-draw dispatch for all mesh-shader models
+	//
+	// A single glMultiDrawMeshTasksIndirectCountNV call replaces the
+	// per-model loop for non-skeletal mesh-shader-eligible models.
+	// The RenderExtractor has already built the command buffer.
+	// ================================================================
+	auto& extractor = AMC::RenderExtractor::Get();
+	if (context.UseMeshShaders && extractor.HasItems()) {
+		m_ProgramGBufferIndirect->use();
+		glBindVertexArray(context.emptyVAO);
+		extractor.BindBuffers();
+
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, extractor.GetIndirectBuffer());
+		glBindBuffer(GL_PARAMETER_BUFFER_ARB, extractor.GetCountBuffer());
+
+		glMultiDrawMeshTasksIndirectCountNV(
+			0,                                       // indirect buffer offset
+			0,                                       // drawcount buffer offset
+			extractor.GetCommandCount(),             // max draw count
+			sizeof(AMC::GpuMeshTaskCommand)          // stride (16 bytes)
+		);
+
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
+		glBindBuffer(GL_PARAMETER_BUFFER_ARB, 0);
+	}
+
+	// ================================================================
+	// Path 2: Traditional VAO path for skeletal models and models
+	// not eligible for mesh shader dispatch
+	// ================================================================
 	for (auto& [name, obj] : scene->models) {
 		if (!obj.visible)
 			continue;
@@ -134,7 +174,14 @@ void GBufferPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 			&& obj.model->hasMeshletData
 			&& !(obj.model->haveAnimation && obj.model->animType == AMC::SKELETALANIM);
 
+		// Skip mesh-shader models handled by indirect dispatch above
+		if (useMeshPath && obj.model->useGlobalPools) {
+			obj.prevMatrix = obj.matrix;
+			continue;
+		}
+
 		if (useMeshPath) {
+			// Fallback: per-model mesh shader for models not in global pools
 			m_ProgramGBufferMeshShader->use();
 			glBindVertexArray(context.emptyVAO);
 			glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(obj.matrix));
@@ -142,7 +189,7 @@ void GBufferPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 			obj.model->drawMeshShader(m_ProgramGBufferMeshShader);
 		}
 		else {
-			m_ProgramGBuffer->use();	
+			m_ProgramGBuffer->use();
 			glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(obj.matrix));
 			glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(obj.prevMatrix));
 			obj.model->draw(m_ProgramGBuffer);

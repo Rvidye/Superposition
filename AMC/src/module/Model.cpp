@@ -1,4 +1,6 @@
 #include<Model.h>
+#include<ModelAssetManager.h>
+#include<SceneInstanceManager.h>
 #include<TextureManager.h>
 #include<assimp/Importer.hpp>
 #include<assimp/scene.h>
@@ -199,6 +201,13 @@ namespace AMC {
 			glCreateBuffers(1, &model->materialSSBO);
 			glNamedBufferData(model->materialSSBO, sizeof(GPUMaterial) * gpumaterials.size(), gpumaterials.data(), GL_STATIC_DRAW);
 		}
+
+		// Push materials to global pool for the new architecture.
+		// Record the base offset before appending so RegisterModel can use it.
+		auto& assetMgr = ModelAssetManager::Get();
+		model->globalMaterialBase = assetMgr.GetMaterialPoolSize();
+		model->globalMaterialCount = (uint32_t)gpumaterials.size();
+		assetMgr.AppendMaterials(gpumaterials.data(), (uint32_t)gpumaterials.size());
 	}
 
 	void LoadMeshes(const aiScene* scene, Model* model, std::string directory) {
@@ -929,10 +938,18 @@ namespace AMC {
 			programGPUSkin = new ShaderProgram({ RESOURCE_PATH("shaders\\model\\SkinCompute.comp") });
 		}
 
-		// Generate meshlets for non-skinned models
-		if (!(haveAnimation && animType == SKELETALANIM)) {
-			generateMeshlets();
+		// Register with ModelAssetManager for global pooled buffers.
+		// This flattens the node hierarchy and generates meshlets into global pools.
+		// Skeletal models are also registered; they just won't use the mesh shader
+		// path until the skinning system is ready (Milestone 3).
+		if (!cpuVertices.empty() && !cpuIndices.empty()) {
+			assetId = (int32_t)ModelAssetManager::Get().RegisterModel(this);
+			hasMeshletData = (assetId >= 0);
 		}
+
+		// Legacy per-model meshlet generation is no longer needed since
+		// RegisterModel handles it. Keep generateMeshlets() available as
+		// fallback but don't call it by default.
 
 		//Print Info
 #ifdef _MYDEBUG
@@ -1049,7 +1066,7 @@ namespace AMC {
 				allMeshlets.push_back(gpuMeshlet);
 				allMeshletInfos.push_back(info);
 
-				// Copy vertex indices — remap to global (model-wide) vertex indices
+				// Copy vertex indices ï¿½ remap to global (model-wide) vertex indices
 				for (uint32_t v = 0; v < m.vertex_count; v++) {
 					allMeshletVertexIndices.push_back(vertexOffset + meshletVertices[m.vertex_offset + v]);
 				}
@@ -1162,17 +1179,76 @@ namespace AMC {
 		}
 	}
 
+	// DEPRECATED: This function is only used as a fallback for models not
+	// in the indirect dispatch path. All mesh-shader models now go through
+	// glMultiDrawMeshTasksIndirectCountNV in GBufferPass. This path will
+	// be removed once the indirect pipeline is fully validated.
 	void Model::drawMeshShader(ShaderProgram* program) {
 
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, materialSSBO);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, vertexDataSSBO);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, meshletSSBO);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, meshletInfoSSBO);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 13, meshletVertexSSBO);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 14, meshletLocalSSBO);
+		if (useGlobalPools) {
+			// Models in global pools are drawn via indirect dispatch in GBufferPass.
+			// This fallback should only be reached for models not yet in global pools.
+			if (instanceId >= 0) {
+				drawMeshShaderFlat(program);
+				return;
+			}
+		}
+		else {
+			// Legacy per-model SSBO binding path
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, materialSSBO);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, vertexDataSSBO);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, meshletSSBO);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, meshletInfoSSBO);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 13, meshletVertexSSBO);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 14, meshletLocalSSBO);
+		}
 
+		// Legacy recursive path
 		glm::mat4 identity = glm::mat4(1.0f);
 		drawNodesMeshShader(rootNode, identity, identity, program);
+	}
+
+	void Model::drawMeshShaderFlat(ShaderProgram* program) {
+		// Walk flat node array linearly. For each node that has meshes,
+		// read the world transform from the palette and dispatch.
+		// This replaces the recursive drawNodesMeshShader walk.
+
+		auto& instMgr = SceneInstanceManager::Get();
+		uint32_t instId = (uint32_t)instanceId;
+
+		// The palette already contains full world transforms
+		// (instanceWorldMatrix * nodeHierarchy), so set modelMat to identity.
+		// The shader computes worldMat = modelMat * nodeMat, and we put
+		// the full world transform in nodeMat.
+		glm::mat4 identity = glm::mat4(1.0f);
+		glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(identity)); // modelMat = I
+		glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(identity)); // prevModelMat = I
+
+		for (uint32_t ni = 0; ni < flatNodes.size(); ni++) {
+			const FlatNode& fn = flatNodes[ni];
+			if (fn.meshIndices.empty()) continue;
+
+			// Read transforms from palette
+			const glm::mat4& worldTransform = instMgr.GetCurrentTransform(instId, ni);
+			const glm::mat4& prevWorldTransform = instMgr.GetPrevTransform(instId, ni);
+
+			// Set nodeMat to full world transform (modelMat is identity)
+			glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(worldTransform));
+			glUniformMatrix4fv(4, 1, GL_FALSE, glm::value_ptr(prevWorldTransform));
+
+			for (uint32_t meshIdx : fn.meshIndices) {
+				Mesh* mesh = meshes[meshIdx];
+				if (mesh->meshletCount == 0) continue;
+
+				// Material index: use global material offset
+				glUniform1i(3, globalMaterialBase + mesh->mMaterial);
+				glUniform1ui(6, mesh->meshletOffset);
+				glUniform1ui(7, mesh->meshletCount);
+
+				GLuint numWorkGroups = (mesh->meshletCount + 31) / 32;
+				glDrawMeshTasksNV(0, numWorkGroups);
+			}
+		}
 	}
 
 

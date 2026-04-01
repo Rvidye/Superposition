@@ -162,6 +162,17 @@ namespace AMC {
 		std::vector<NodeData> children;
 	};
 
+	// Flattened node representation for the new pooled-buffer architecture.
+	// Produced at load time from the recursive NodeData tree.
+	// Stored in pre-order (parent index < child index) so that transform
+	// propagation can be done in a single forward pass.
+	struct FlatNode {
+		int32_t     parentIndex;       // -1 for root, local to this asset
+		glm::mat4   localTransform;    // rest-pose local transform
+		std::string name;              // for animation channel lookup
+		std::vector<uint32_t> meshIndices; // indices into Model::meshes[]
+	};
+
 	struct NodeAnimator {
 		FLOAT duration;
 		INT ticksPerSecond;
@@ -214,7 +225,8 @@ namespace AMC {
 			std::unordered_map<std::string, std::vector<float>> currentMorphWeights;
 			std::unordered_map<std::string, BoneInfo> BoneInfoMap;
 
-			// Meshlet data for mesh shader pipeline
+			// DEPRECATED: Per-model meshlet SSBOs replaced by global pools in ModelAssetManager.
+			// Kept for backward compatibility with legacy drawMeshShader path.
 			GLuint meshletSSBO = 0;
 			GLuint meshletInfoSSBO = 0;
 			GLuint meshletVertexSSBO = 0;
@@ -230,6 +242,31 @@ namespace AMC {
 
 			void generateMeshlets();
 			void drawMeshShader(ShaderProgram* program);
+			void drawMeshShaderFlat(ShaderProgram* program);
+
+			// === New pooled-buffer architecture fields (Milestone 1) ===
+
+			// Flattened node hierarchy (set by ModelAssetManager::RegisterModel)
+			std::vector<FlatNode> flatNodes;
+
+			// Asset ID assigned by ModelAssetManager (-1 = not registered)
+			int32_t assetId = -1;
+
+			// Instance ID assigned by SceneInstanceManager (-1 = not instanced)
+			int32_t instanceId = -1;
+
+			// Global pool offsets (set by ModelAssetManager::RegisterModel)
+			uint32_t globalVertexBase = 0;
+			uint32_t globalMeshletBase = 0;
+			uint32_t globalNodeBase = 0;
+			uint32_t globalMeshBase = 0;
+			uint32_t globalMaterialBase = 0;
+
+			// Number of materials pushed to the global pool
+			uint32_t globalMaterialCount = 0;
+
+			// Whether this model uses global pools (set after UploadToGPU)
+			bool useGlobalPools = false;
 
 		private:
 

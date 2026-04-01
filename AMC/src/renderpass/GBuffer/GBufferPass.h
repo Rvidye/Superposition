@@ -12,6 +12,7 @@ public:
 	void renderUI() override;
 	AMC::ShaderProgram* m_ProgramGBuffer;
 	AMC::ShaderProgram* m_ProgramGBufferMeshShader;
+	AMC::ShaderProgram* m_ProgramGBufferIndirect;   // Indirect dispatch path (M5)
 
 	GLuint gbuffer;
 	GLuint m_textureAlbedoAlpha;

@@ -12,6 +12,10 @@
 #include<RenderPass.h>
 #include<VulkanHelperClasses.h>
 #include<MemoryManager.h>
+#include<ModelAssetManager.h>
+#include<SceneInstanceManager.h>
+#include<RenderExtractor.h>
+#include<SkinningSystem.h>
 
 // Render Passes
 #include "renderpass/TestPass/TestPass.h"
@@ -413,6 +417,34 @@ void RenderFrame(void)
 
 		glNamedBufferSubData(perframeUBO, 0, sizeof(AMC::PerFrameData), &data);
 
+		// ============================================================
+		// Per-frame pipeline: instances ? skinning ? extraction ? render
+		// ============================================================
+		{
+			auto& instMgr = AMC::SceneInstanceManager::Get();
+
+			// 1. Sync world matrices from scene models ? instances
+			for (auto& [name, rm] : currentScene->models) {
+				if (rm.model && rm.model->instanceId >= 0) {
+					instMgr.SetWorldMatrix((uint32_t)rm.model->instanceId, rm.matrix);
+					instMgr.SetVisible((uint32_t)rm.model->instanceId, rm.visible);
+				}
+			}
+
+			// 2. Evaluate node animation + propagate transforms
+			instMgr.BeginFrame((float)AMC::deltaTime);
+			instMgr.UploadToGPU();
+
+			// 3. Evaluate skeletal bone transforms + upload bone palettes
+			AMC::SkinningSystem::Get().Update((float)AMC::deltaTime);
+			AMC::SkinningSystem::Get().BindBuffers();
+
+			// 4. Extract render items + build indirect draw commands
+			auto& extractor = AMC::RenderExtractor::Get();
+			extractor.Extract();
+			extractor.UploadToGPU();
+		}
+
 		gpRenderer->render(currentScene);
 		//currentScene->render();
 	}
@@ -602,6 +634,30 @@ void InitScenes(void)
 	for (auto* scene : sceneQueue) {
 		scene->init();
 	}
+
+	// Upload all registered model data to global GPU pools.
+	// This must happen after all scenes have loaded their models.
+	AMC::ModelAssetManager::Get().UploadToGPU();
+
+	// Mark all registered models as using global pools and create instances
+	auto& instMgr = AMC::SceneInstanceManager::Get();
+	auto& skinSys = AMC::SkinningSystem::Get();
+	for (auto* scene : sceneQueue) {
+		for (auto& [name, rm] : scene->models) {
+			if (rm.model && rm.model->assetId >= 0) {
+				rm.model->useGlobalPools = true;
+				// Create an instance in the scene instance manager
+				uint32_t instId = instMgr.CreateInstance(rm.model, rm.matrix, name);
+				rm.model->instanceId = (int32_t)instId;
+
+				// Register skeletal instances with the skinning system
+				if (rm.model->haveAnimation && rm.model->animType == AMC::SKELETALANIM) {
+					skinSys.RegisterSkeletalInstance(instId, rm.model);
+				}
+			}
+		}
+	}
+
 	playNextScene();
 
 }

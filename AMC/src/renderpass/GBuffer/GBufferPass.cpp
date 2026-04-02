@@ -6,6 +6,7 @@
 
 void GBufferPass::create(AMC::RenderContext& context)
 {
+    AMC::MemoryManager mm(ctx);
 	m_ProgramGBuffer = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\gbuffer\\gbuffer.vert"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.frag") });
 	m_ProgramGBufferMeshShader = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\gbuffer\\gbuffer.task"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.mesh"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer.frag") });
 	m_ProgramGBufferIndirect = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\gbuffer\\gbuffer_indirect.task"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer_indirect.mesh"), RESOURCE_PATH("shaders\\gbuffer\\gbuffer_indirect.frag") });
@@ -52,15 +53,13 @@ void GBufferPass::create(AMC::RenderContext& context)
 	glTextureStorage2D(m_textureVelocity, 1, GL_RG16F, context.width, context.height);
 	glNamedFramebufferTexture(gbuffer, GL_COLOR_ATTACHMENT4, m_textureVelocity, 0);
 
-	glCreateTextures(GL_TEXTURE_2D, 1, &m_textureDepth);
-	glTextureParameteri(m_textureDepth, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-	glTextureParameteri(m_textureDepth, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTextureParameteri(m_textureDepth, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(m_textureDepth, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	GLsizei level = AMC::GetMaxMipmapLevel(context.width, context.height, 1);
-	glTextureStorage2D(m_textureDepth, level, GL_DEPTH_COMPONENT32F, context.width, context.height);
-	glNamedFramebufferTexture(gbuffer, GL_DEPTH_ATTACHMENT, m_textureDepth, 0);
-
+    m_textureDepth = mm.createImage({ static_cast<uint32_t>(context.width), static_cast<uint32_t>(context.height), 1 }, VK_FORMAT_D32_SFLOAT, VK_IMAGE_VIEW_TYPE_2D, 1, AMC::MemoryFlags::kGlMemoryBit | AMC::MemoryFlags::kVkMemoryBit, VK_IMAGE_USAGE_SAMPLED_BIT);
+    glTextureParameteri(m_textureDepth.gl, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTextureParameteri(m_textureDepth.gl, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTextureParameteri(m_textureDepth.gl, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(m_textureDepth.gl, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glNamedFramebufferTexture(gbuffer, GL_DEPTH_ATTACHMENT, m_textureDepth.gl, 0);
+//
 	GLenum drawBuffers[5] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
 	glNamedFramebufferDrawBuffers(gbuffer, 5, drawBuffers);
 	GLenum status = glCheckNamedFramebufferStatus(gbuffer, GL_FRAMEBUFFER);
@@ -73,14 +72,14 @@ void GBufferPass::create(AMC::RenderContext& context)
 	context.textureGBuffer[1] = m_textureNormal;
 	context.textureGBuffer[2] = m_textureMetallicRoughness;
 	context.textureGBuffer[3] = m_textureEmissive;
-	context.textureGBuffer[4] = m_textureDepth;
+	context.textureGBufferDepth = m_textureDepth;
 	context.textureGBuffer[5] = m_textureVelocity;
 
 	context.gBufferData.AlbedoAlphaTexture = glGetTextureHandleARB(m_textureAlbedoAlpha);
 	context.gBufferData.NormalTexture = glGetTextureHandleARB(m_textureNormal);
 	context.gBufferData.MetallicRoughnessTexture = glGetTextureHandleARB(m_textureMetallicRoughness);
 	context.gBufferData.EmissiveTexture = glGetTextureHandleARB(m_textureEmissive);
-	context.gBufferData.DepthTexture = glGetTextureHandleARB(m_textureDepth);
+	context.gBufferData.DepthTexture = glGetTextureHandleARB(m_textureDepth.gl);
 	context.gBufferData.VelocityTexture = glGetTextureHandleARB(m_textureVelocity);
 
 	glMakeTextureHandleResidentARB(context.gBufferData.AlbedoAlphaTexture);
@@ -219,7 +218,7 @@ void GBufferPass::renderUI()
 	ImGui::Text("Velocity");
 	ImGui::Image((void*)(intptr_t)m_textureVelocity, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
 	ImGui::Text("Depth");
-	ImGui::Image((void*)(intptr_t)m_textureDepth, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::Image((void*)(intptr_t)m_textureDepth.gl, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
 	ImGui::End();
 #endif
 }

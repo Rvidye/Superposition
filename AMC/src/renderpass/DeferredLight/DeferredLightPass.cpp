@@ -48,6 +48,9 @@ void DeferredPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 	m_ProgramDeferredLighting->use();
 	glUniform1i(m_ProgramDeferredLighting->getUniformLocation("IsShadows"), shadow);
 	glUniform1i(m_ProgramDeferredLighting->getUniformLocation("IsVXGI"), context.IsVGXI);
+	bool useRT = rtShadows && context.IsRTShadows && context.textureRTShadow != 0;
+	glUniform1i(m_ProgramDeferredLighting->getUniformLocation("IsRTShadows"), useRT);
+	glUniform1iv(m_ProgramDeferredLighting->getUniformLocation("rtLightLayers[0]"), 32, context.rtLightLayers);
 	if(context.IsSSAO)
 		glBindTextureUnit(5, context.textureSSAOResult);
 	else
@@ -55,7 +58,11 @@ void DeferredPass::execute(AMC::Scene* scene, AMC::RenderContext& context)
 	if (context.IsVGXI)
 		glBindTextureUnit(6, context.textureVXGIResult);
 	else
-		glBindTextureUnit(6, 0);	
+		glBindTextureUnit(6, 0);
+	if (useRT)
+		glBindTextureUnit(7, context.textureRTShadow);
+	else
+		glBindTextureUnit(7, 0);
 	scene->lightManager->BindUBO();
 	scene->lightManager->GetShadowManager()->BindUBO();
 	glBindVertexArray(context.emptyVAO);
@@ -73,6 +80,7 @@ void DeferredPass::renderUI()
 {
 #ifdef _MYDEBUG
 	ImGui::Checkbox("Shadows", &shadow);
+	ImGui::Checkbox("RT Shadows", &rtShadows);
 	ImGui::Begin("Deferred Pass Debug");
 	ImGui::Text("Albedo");
 	ImGui::Image((void*)(intptr_t)m_TextureResult, ImVec2(512, 512), ImVec2(0, 1), ImVec2(1, 0));

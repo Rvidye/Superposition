@@ -4,6 +4,7 @@
 #include<ShaderProgram.h>
 #include<assimp/scene.h>
 #include<assimp/postprocess.h>
+#include<VulkanHelperClasses.h>
 
 #define MAX_BONE_COUNT 125
 #define MAX_BONE_INFLUENCE 4
@@ -94,6 +95,9 @@ namespace AMC {
 		UINT mTriangleCount;
 		UINT mVertexCount;
 		UINT mMaterial;
+		glm::mat4 nodeTransform = glm::mat4(1.0f); // accumulated node-hierarchy transform for this mesh
+		VkAccelerationStructureGeometryKHR geomConfig;
+		VkAccelerationStructureKHR blas;
 		uint32_t meshletCount = 0;
 		uint32_t meshletOffset = 0;
 		uint32_t baseVertex = 0;
@@ -197,7 +201,7 @@ namespace AMC {
 
 		public:
 			
-			Model(std::string path, int iAssimpFlags);
+			Model(std::string path, int iAssimpFlags, const AMC::VkContext* ctx = nullptr);
 			~Model();
 
 			void draw(ShaderProgram* program,UINT iNumInstance = 1, bool iUseMaterial = true);

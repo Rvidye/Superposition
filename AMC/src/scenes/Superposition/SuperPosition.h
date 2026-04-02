@@ -38,7 +38,7 @@ private:
 	void sceneEnd(float);
 
 public:
-
+	SuperpositionScene(AMC::VkContext* ctx) : Scene(ctx) {}
 	void init() override;
 	//void render() override;
 	void renderDebug() override;

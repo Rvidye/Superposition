@@ -13,4 +13,5 @@ public:
 	GLuint m_FBO;
 	GLuint m_TextureResult;
 	bool shadow = true;
+	bool rtShadows = true; // user toggle for RT shadows
 };

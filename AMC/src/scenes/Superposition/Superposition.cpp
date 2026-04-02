@@ -160,12 +160,12 @@ void SuperpositionScene::init()
 	//addModel("applebook", applebook);
 
 	AMC::RenderModel roomModel;
-	roomModel.model = new AMC::Model(RESOURCE_PATH("models\\SuperPosition\\SuperPositioning.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	roomModel.model = new AMC::Model(RESOURCE_PATH("models\\SuperPosition\\SuperPositioning.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes, ctx);
 	roomModel.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, -1.7f, 1.2f));
 	addModel("roomStatic", roomModel);
 
 	AMC::RenderModel roomAnimated;
-	roomAnimated.model = new AMC::Model(RESOURCE_PATH("models\\SuperPosition\\SuperPositioningAnimation.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes);
+	roomAnimated.model = new AMC::Model(RESOURCE_PATH("models\\SuperPosition\\SuperPositioningAnimation.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes, ctx);
 	roomAnimated.model->lerpAnimation(0.01f);
 	roomAnimated.matrix = glm::translate(glm::mat4(1.0f), glm::vec3(0.500000f, -1.710000f, 1.200000f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));//glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, -1.7f, 1.2f)) * glm::yawPitchRoll(0.0f, 0.0f, 0.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));
 	addModel("roomAnimated", roomAnimated);

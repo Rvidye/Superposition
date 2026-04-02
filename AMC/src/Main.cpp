@@ -640,6 +640,7 @@ void InitRenderPasses()
 	gpRenderer->addPass(new GBufferPass(vkcontext));
 #ifdef _MYDEBUG
 	gpRenderer->addPass(new DebugDrawPass());
+#endif
 	gpRenderer->addPass(new SSAO());
 	gpRenderer->addPass(new ConeTracer());
 #if defined(RT_ENABLE)

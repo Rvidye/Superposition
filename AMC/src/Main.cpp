@@ -450,12 +450,13 @@ void RenderFrame(void)
 		glNamedBufferSubData(perframeUBO, 0, sizeof(AMC::PerFrameData), &data);
 
 		// ============================================================
-		// Per-frame pipeline: instances ? skinning ? extraction ? render
+		// Per-frame pipeline: instances -> skinning -> extraction -> render
 		// ============================================================
 		{
 			auto& instMgr = AMC::SceneInstanceManager::Get();
+			auto& ctx = gpRenderer->context;
 
-			// 1. Sync world matrices from scene models ? instances
+			// 1. Sync world matrices from scene models -> instances
 			for (auto& [name, rm] : currentScene->models) {
 				if (rm.model && rm.model->instanceId >= 0) {
 					instMgr.SetWorldMatrix((uint32_t)rm.model->instanceId, rm.matrix);
@@ -465,16 +466,98 @@ void RenderFrame(void)
 
 			// 2. Evaluate node animation + propagate transforms
 			instMgr.BeginFrame((float)AMC::deltaTime);
-			instMgr.UploadToGPU();
 
-			// 3. Evaluate skeletal bone transforms + upload bone palettes
+			// 3. Read version counters and compute dirty flags
+			uint64_t curGeomVer = instMgr.GetGeometryVersion();
+			uint64_t curLightVer = currentScene->lightManager
+				? currentScene->lightManager->GetLightVersion() : 0;
+
+			ctx.dirtyFlags.geometryDirty =
+				(curGeomVer != ctx.versionCache.lastGeometryVersion);
+			ctx.dirtyFlags.lightDirty =
+				(curLightVer != ctx.versionCache.lastLightVersion);
+			ctx.dirtyFlags.extractorDirty = ctx.dirtyFlags.geometryDirty;
+			ctx.dirtyFlags.tlasDirty = ctx.dirtyFlags.geometryDirty;
+
+			// Raster shadows are dirty when geometry OR lights changed
+			ctx.dirtyFlags.rasterShadowDirty =
+				ctx.dirtyFlags.geometryDirty || ctx.dirtyFlags.lightDirty;
+			// Voxels are dirty when geometry OR lights changed
+			ctx.dirtyFlags.voxelDirty =
+				ctx.dirtyFlags.geometryDirty || ctx.dirtyFlags.lightDirty;
+
+			// Update version cache
+			ctx.versions.geometryVersion = curGeomVer;
+			ctx.versions.lightVersion = curLightVer;
+			ctx.versionCache.lastGeometryVersion = curGeomVer;
+			ctx.versionCache.lastLightVersion = curLightVer;
+
+			// 3b. Config-driven invalidation (Fix C):
+			// If runtime toggles changed, force-dirty affected caches.
+			{
+				AMC::RenderConfigSnapshot curCfg;
+				curCfg.isVXGI = ctx.IsVGXI;
+				curCfg.isVolumetric = ctx.IsVolumetric;
+				curCfg.isGenerateShadowMaps = ctx.IsGenerateShadowMaps;
+				curCfg.deferredWantsRTShadows = ctx.deferredWantsRTShadows;
+				curCfg.isRTShadows = ctx.IsRTShadows;
+
+				if (curCfg != ctx.versionCache.lastConfig) {
+					ctx.dirtyFlags.rasterShadowDirty = true;
+					ctx.dirtyFlags.voxelDirty = true;
+					if (currentScene->lightManager)
+						currentScene->lightManager->GetShadowManager()->InvalidateAllShadows();
+					ctx.versionCache.lastConfig = curCfg;
+				}
+			}
+
+			// 4. Resolve shadow backends (consumer-aware, Fix B)
+			if (currentScene->lightManager) {
+				currentScene->lightManager->ResolveShadowBackends(
+					ctx.IsRTShadows, ctx.IsVGXI, ctx.IsVolumetric,
+					ctx.deferredWantsRTShadows);
+				ctx.needsRasterShadows = currentScene->lightManager->NeedsRasterShadowMaps(
+					ctx.IsVGXI, ctx.IsVolumetric, ctx.IsRTShadows);
+			}
+
+			// 5. When geometry is dirty, invalidate all shadow maps so they re-render
+			if (ctx.dirtyFlags.geometryDirty && currentScene->lightManager) {
+				currentScene->lightManager->GetShadowManager()->InvalidateAllShadows();
+			}
+
+			// 6. Upload transforms only when data changed (Fix A).
+			// Upload for 2 frames: dirty frame + one more for correct prev-transform velocity.
+			{
+				static bool wasDirtyLastFrame = true;
+				bool needsUpload = ctx.dirtyFlags.geometryDirty || wasDirtyLastFrame;
+				wasDirtyLastFrame = ctx.dirtyFlags.geometryDirty;
+				if (needsUpload) {
+					instMgr.UploadToGPU();
+				}
+				instMgr.BindBuffers();
+			}
+
+			// 7. Evaluate skeletal bone transforms + upload bone palettes
 			AMC::SkinningSystem::Get().Update((float)AMC::deltaTime);
 			AMC::SkinningSystem::Get().BindBuffers();
 
-			// 4. Extract render items + build indirect draw commands
+			// 7b. Skeletal animation invalidation (Fix D):
+			// Skinned meshes change shape every frame, so raster shadows
+			// and voxelization must refresh. TLAS is NOT dirtied because
+			// TLAS currently excludes animated meshes.
+			if (AMC::SkinningSystem::Get().IsSkeletalDirtyThisFrame()) {
+				ctx.dirtyFlags.rasterShadowDirty = true;
+				ctx.dirtyFlags.voxelDirty = true;
+				if (currentScene->lightManager)
+					currentScene->lightManager->GetShadowManager()->InvalidateAllShadows();
+			}
+
+			// 8. Extract render items - skip if geometry didn't change
 			auto& extractor = AMC::RenderExtractor::Get();
-			extractor.Extract();
-			extractor.UploadToGPU();
+			if (ctx.dirtyFlags.extractorDirty) {
+				extractor.Extract();
+				extractor.UploadToGPU();
+			}
 		}
 
 		gpRenderer->render(currentScene);
@@ -537,6 +620,29 @@ void RenderFrame(void)
 	ImGui::Checkbox("IsToneMap", &gpRenderer->context.IsToneMap);
 	ImGui::Checkbox("UseMeshShaders", &gpRenderer->context.UseMeshShaders);
 	ImGui::Checkbox("IsTAA", &gpRenderer->context.IsTAA);
+
+	// === Dirty/Version System Debug ===
+	if (ImGui::CollapsingHeader("Dirty System")) {
+		auto& df = gpRenderer->context.dirtyFlags;
+		auto& vs = gpRenderer->context.versions;
+		ImGui::Text("Geometry Version: %llu", vs.geometryVersion);
+		ImGui::Text("Light Version:    %llu", vs.lightVersion);
+		ImGui::TextColored(df.geometryDirty ? ImVec4(1,0.3f,0.3f,1) : ImVec4(0.3f,1,0.3f,1),
+			"Geometry:  %s", df.geometryDirty ? "DIRTY" : "clean");
+		ImGui::TextColored(df.lightDirty ? ImVec4(1,0.3f,0.3f,1) : ImVec4(0.3f,1,0.3f,1),
+			"Light:     %s", df.lightDirty ? "DIRTY" : "clean");
+		ImGui::TextColored(df.extractorDirty ? ImVec4(1,0.3f,0.3f,1) : ImVec4(0.3f,1,0.3f,1),
+			"Extractor: %s", df.extractorDirty ? "DIRTY" : "clean");
+		ImGui::TextColored(df.rasterShadowDirty ? ImVec4(1,0.3f,0.3f,1) : ImVec4(0.3f,1,0.3f,1),
+			"Raster Shadow: %s", df.rasterShadowDirty ? "DIRTY" : "clean");
+		ImGui::TextColored(df.voxelDirty ? ImVec4(1,0.3f,0.3f,1) : ImVec4(0.3f,1,0.3f,1),
+			"Voxel:     %s", df.voxelDirty ? "DIRTY" : "clean");
+		ImGui::TextColored(df.tlasDirty ? ImVec4(1,0.3f,0.3f,1) : ImVec4(0.3f,1,0.3f,1),
+			"TLAS:      %s", df.tlasDirty ? "DIRTY" : "clean");
+		ImGui::Text("Needs Raster Shadows: %s",
+			gpRenderer->context.needsRasterShadows ? "YES" : "NO");
+	}
+
 	ImGui::Separator();
 
 	ImGui::Text("Select Debug Mode:");

@@ -165,9 +165,10 @@ namespace AMC {
 	// ================================================================
 
 	void SkinningSystem::Update(float deltaTime) {
+		m_skeletalDirtyThisFrame = false;
 		if (m_records.empty()) return;
 
-		// Swap current → previous bones
+		// Swap current -> previous bones
 		m_prevBones = m_currentBones;
 
 		// Evaluate bones for each skeletal instance
@@ -177,6 +178,7 @@ namespace AMC {
 			if (!(inst.flags & InstanceFlags::Visible)) continue;
 
 			EvaluateBones(rec, deltaTime);
+			m_skeletalDirtyThisFrame = true;
 		}
 
 		// Create GPU buffers

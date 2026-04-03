@@ -3,6 +3,9 @@
 #include<ShadowManager.h>
 #include<ShaderProgram.h>
 #include<Scene.h>
+#include<RenderExtractor.h>
+#include<ModelAssetManager.h>
+#include<SceneInstanceManager.h>
 
 static const int SHADOWMAP_SIZE = 512;
 
@@ -434,6 +437,114 @@ namespace AMC {
     //    }
     //    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     //}
+
+    void ShadowManager::InvalidateAllShadows()
+    {
+        for (auto& shadow : shadows) {
+            shadow.needsUpdate = true;
+        }
+    }
+
+    void ShadowManager::RenderShadowMapsMesh(
+        ShaderProgram* meshProgram,
+        ShaderProgram* legacyProgram,
+        const Scene* scene,
+        const RenderExtractor& extractor,
+        bool useMeshShaders)
+    {
+        // Create per-face FBO on first use
+        if (!m_meshFBOCreated) {
+            glCreateFramebuffers(1, &m_meshShadowFBO);
+            glNamedFramebufferDrawBuffer(m_meshShadowFBO, GL_NONE);
+            glNamedFramebufferReadBuffer(m_meshShadowFBO, GL_NONE);
+            m_meshFBOCreated = true;
+        }
+
+        for (int shadowIndex = 0; shadowIndex < static_cast<int>(shadows.size()); ++shadowIndex) {
+            Shadow& shadow = shadows[shadowIndex];
+            if (!shadow.needsUpdate) continue;
+
+            // Clear the whole cubemap
+            float depthClear = 1.0f;
+            glClearNamedFramebufferfv(shadow.fbo, GL_DEPTH, 0, &depthClear);
+
+            // Common state setup
+            glDisable(GL_CULL_FACE);
+            glDisable(GL_BLEND);
+            glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+            glEnable(GL_DEPTH_TEST);
+            glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            glDepthFunc(GL_LESS);
+            glViewport(0, 0, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
+
+            // === Mesh pipeline path: render 6 faces separately with meshlet culling ===
+            if (useMeshShaders && extractor.HasItems()) {
+                meshProgram->use();
+
+                // Set light position and far plane for fragment shader
+                glUniform3fv(4, 1, glm::value_ptr(shadow.gpuShadow.Position));
+                glUniform1f(5, shadow.gpuShadow.FarPlane);
+
+                // Bind global model pools and instance data
+                AMC::ModelAssetManager::Get().BindGlobalBuffers();
+                AMC::SceneInstanceManager::Get().BindBuffers();
+                extractor.BindBuffers();
+
+                glBindBuffer(GL_DRAW_INDIRECT_BUFFER, extractor.GetIndirectBuffer());
+                glBindBuffer(GL_PARAMETER_BUFFER_ARB, extractor.GetCountBuffer());
+
+                for (int face = 0; face < 6; ++face) {
+                    // Attach single cubemap face to FBO
+                    glNamedFramebufferTextureLayer(m_meshShadowFBO, GL_DEPTH_ATTACHMENT,
+                        shadow.texture, 0, face);
+                    glBindFramebuffer(GL_FRAMEBUFFER, m_meshShadowFBO);
+
+                    // Clear this face
+                    glClear(GL_DEPTH_BUFFER_BIT);
+
+                    // Set the face's ProjView matrix
+                    glUniformMatrix4fv(0, 1, GL_FALSE,
+                        glm::value_ptr(shadow.gpuShadow.ProjViewMatrices[face]));
+
+                    glBindVertexArray(0); // no VAO for mesh shaders
+
+                    glMultiDrawMeshTasksIndirectCountNV(
+                        0,                                    // indirect offset
+                        0,                                    // count buffer offset
+                        extractor.GetCommandCount(),          // max draw count
+                        sizeof(AMC::GpuMeshTaskCommand)       // stride
+                    );
+                }
+            }
+
+            // === Legacy fallback: skeletal and non-meshlet assets ===
+            // Use the layered cubemap FBO (same as original path)
+            glBindFramebuffer(GL_FRAMEBUFFER, shadow.fbo);
+            glViewport(0, 0, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
+            legacyProgram->use();
+            glUniform1i(legacyProgram->getUniformLocation("shadowIndex"), shadowIndex);
+
+            for (const auto& [name, obj] : scene->models) {
+                if (!obj.visible) continue;
+
+                // Skip meshlet-capable assets that were already rendered by mesh path
+                if (useMeshShaders && obj.model && obj.model->hasMeshletData
+                    && obj.model->useGlobalPools
+                    && !(obj.model->haveAnimation && obj.model->animType == AMC::SKELETALANIM))
+                {
+                    continue;
+                }
+
+                glUniformMatrix4fv(legacyProgram->getUniformLocation("model"),
+                    1, GL_FALSE, glm::value_ptr(obj.matrix));
+                obj.model->draw(legacyProgram, obj.numInstance, false);
+            }
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            shadow.needsUpdate = false;
+        }
+    }
 
     void ShadowManager::renderUI()
     {

@@ -11,9 +11,9 @@ public:
 	void execute(AMC::Scene* scene, AMC::RenderContext& context) override;
 	const char* getName() const override;
 	void renderUI() override;
-	AMC::ShaderProgram* m_programShadowMap;
-	AMC::ShaderProgram* m_programPointShadowMap;
+	AMC::ShaderProgram* m_programPointShadowMap = nullptr;
+	AMC::ShaderProgram* m_programShadowMesh = nullptr;  // mesh task/frag for shadows
 #ifdef _MYDEBUG
-	AMC::ShadowManager* sm;
+	AMC::ShadowManager* sm = nullptr;
 #endif
 };

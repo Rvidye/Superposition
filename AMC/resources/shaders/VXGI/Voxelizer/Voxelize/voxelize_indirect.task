@@ -1,0 +1,100 @@
+#version 460 core
+
+#extension GL_NV_mesh_shader : require
+#extension GL_KHR_shader_subgroup_ballot : require
+#extension GL_ARB_bindless_texture : require
+
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+#include<..\..\..\resources\shaders\include\GpuTypes.glsl>
+#include<..\..\..\resources\shaders\include\Box.glsl>
+
+layout(local_size_x = 32) in;
+
+// Voxel grid bounds for AABB culling
+layout(std140, binding = 5) uniform VoxelizerDataUBO
+{
+    vec3 GridMin;
+    float _pad0;
+    vec3 GridMax;
+    float _pad1;
+} voxelizerDataUBO;
+
+// === SSBOs ===
+struct GpuMeshletInfo {
+    vec3 Min; float _pad0;
+    vec3 Max; float _pad1;
+};
+
+layout(std430, binding = 12) restrict readonly buffer MeshletInfoSSBO {
+    GpuMeshletInfo MeshletsInfo[];
+} meshletInfoSSBO;
+
+layout(std430, binding = 15) restrict readonly buffer MeshRecordPoolSSBO {
+    GpuMeshRecord MeshRecords[];
+} meshRecordPoolSSBO;
+
+layout(std430, binding = 19) restrict readonly buffer TransformPaletteSSBO {
+    mat4 Transforms[];
+} transformPaletteSSBO;
+
+layout(std430, binding = 22) restrict readonly buffer RenderItemPoolSSBO {
+    GpuRenderItem RenderItems[];
+} renderItemPoolSSBO;
+
+layout(std430, binding = 23) restrict readonly buffer MeshTaskCmdPoolSSBO {
+    GpuMeshTaskCommand MeshTaskCommands[];
+} meshTaskCmdPoolSSBO;
+
+taskNV out Task {
+    uint MeshletIndices[32];
+    uint RenderItemId;
+} OUT;
+
+void main()
+{
+    uint tid = gl_LocalInvocationID.x;
+    uint drawId = gl_DrawID;
+
+    GpuMeshTaskCommand cmd = meshTaskCmdPoolSSBO.MeshTaskCommands[drawId];
+    GpuRenderItem item = renderItemPoolSSBO.RenderItems[cmd.renderItemId];
+    GpuMeshRecord meshRec = meshRecordPoolSSBO.MeshRecords[item.meshId];
+
+    uint meshletIndex = gl_WorkGroupID.x * 32 + tid;
+    bool isVisible = false;
+
+    if (meshletIndex < meshRec.meshletCount)
+    {
+        uint globalIndex = meshRec.meshletOffset + meshletIndex;
+        GpuMeshletInfo info = meshletInfoSSBO.MeshletsInfo[globalIndex];
+
+        Box meshletBox;
+        meshletBox.Min = info.Min;
+        meshletBox.Max = info.Max;
+
+        mat4 worldMat = transformPaletteSSBO.Transforms[item.transformIndex];
+        Box worldBox = BoxTransform(meshletBox, worldMat);
+
+        // Cull against voxel grid AABB (skip meshlets entirely outside the grid)
+        isVisible = !(worldBox.Max.x < voxelizerDataUBO.GridMin.x ||
+                      worldBox.Min.x > voxelizerDataUBO.GridMax.x ||
+                      worldBox.Max.y < voxelizerDataUBO.GridMin.y ||
+                      worldBox.Min.y > voxelizerDataUBO.GridMax.y ||
+                      worldBox.Max.z < voxelizerDataUBO.GridMin.z ||
+                      worldBox.Min.z > voxelizerDataUBO.GridMax.z);
+    }
+
+    uvec4 vote = subgroupBallot(isVisible);
+    uint survivorCount = subgroupBallotBitCount(vote);
+    uint survivorOffset = subgroupBallotExclusiveBitCount(vote);
+
+    if (isVisible)
+    {
+        OUT.MeshletIndices[survivorOffset] = meshRec.meshletOffset + meshletIndex;
+    }
+
+    if (tid == 0)
+    {
+        OUT.RenderItemId = cmd.renderItemId;
+        gl_TaskCountNV = survivorCount;
+    }
+}

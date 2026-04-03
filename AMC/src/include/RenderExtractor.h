@@ -63,6 +63,10 @@ namespace AMC {
 
 		bool HasItems() const { return !m_renderItems.empty(); }
 
+		// Version-aware extract: returns true if extraction was performed
+		bool ExtractIfDirty(uint64_t geometryVersion);
+		uint64_t GetLastExtractedVersion() const { return m_lastGeometryVersion; }
+
 	private:
 		RenderExtractor() = default;
 
@@ -73,6 +77,7 @@ namespace AMC {
 		GLuint m_commandSSBO = 0;
 		GLuint m_countBuffer = 0;
 		bool m_gpuCreated = false;
+		uint64_t m_lastGeometryVersion = 0;
 	};
 
 } // namespace AMC

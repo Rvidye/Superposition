@@ -15,18 +15,19 @@ class Voxelizer : public AMC::RenderPass {
 		void SetGridSize(glm::vec3 min, glm::vec3 max);
 		void ClearTextures();
 		void Voxelize(const AMC::Scene* scene);
+		void VoxelizeMesh(const AMC::Scene* scene, bool useMeshShaders);
 		void MipMap();
 		void DubugVoxels(AMC::RenderContext& context);
 
-		AMC::ShaderProgram* m_ProgramClearTexture;
-		AMC::ShaderProgram* m_ProgramVoxelize;
-		AMC::ShaderProgram* m_ProgramMipMap;
-		AMC::ShaderProgram* m_ProgramVisualizeDebug;
+		AMC::ShaderProgram* m_ProgramClearTexture = nullptr;
+		AMC::ShaderProgram* m_ProgramVoxelize = nullptr;
+		AMC::ShaderProgram* m_ProgramVoxelizeMesh = nullptr; // mesh pipeline path
+		AMC::ShaderProgram* m_ProgramMipMap = nullptr;
+		AMC::ShaderProgram* m_ProgramVisualizeDebug = nullptr;
 
-		GLuint resultVoxels, debugResult, voxelUBO, tmpFBO;
-		int width, height, depth, levels;
+		GLuint resultVoxels = 0, debugResult = 0, voxelUBO = 0, tmpFBO = 0;
+		int width = 0, height = 0, depth = 0, levels = 0;
 		VoxelizerDataUBO GridData;
-		//glm::vec3 GridMin, GridMax;
 		float debugConeAngle = 0.0f;
 		float debugStepMultiplier = 0.4f;
 		bool debugVoxels = false;

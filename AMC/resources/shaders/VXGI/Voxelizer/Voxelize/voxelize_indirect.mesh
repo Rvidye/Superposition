@@ -1,0 +1,153 @@
+#version 460 core
+
+#extension GL_NV_mesh_shader : require
+#extension GL_ARB_bindless_texture : require
+
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+#include<..\..\..\resources\shaders\include\GpuTypes.glsl>
+#include<..\..\..\resources\shaders\include\Compression.glsl>
+
+#define MESHLET_MAX_VERTEX_COUNT 128
+#define MESHLET_MAX_TRIANGLE_COUNT 252
+
+layout(local_size_x = 32) in;
+layout(triangles, max_vertices = MESHLET_MAX_VERTEX_COUNT, max_primitives = MESHLET_MAX_TRIANGLE_COUNT) out;
+
+// Voxel grid bounds
+layout(std140, binding = 5) uniform VoxelizerDataUBO
+{
+    vec3 GridMin;
+    float _pad0;
+    vec3 GridMax;
+    float _pad1;
+} voxelizerDataUBO;
+
+// === Inline struct ===
+struct GpuMeshlet {
+    uint VertexOffset;
+    uint IndicesOffset;
+    uint VertexCount;
+    uint TriangleCount;
+};
+
+// === SSBOs ===
+layout(std430, binding = 8) restrict readonly buffer VertexDataSSBO {
+    Vertex vertices[];
+} vertexDataSSBO;
+
+layout(std430, binding = 11) restrict readonly buffer MeshletSSBO {
+    GpuMeshlet Meshlets[];
+} meshletSSBO;
+
+layout(std430, binding = 13) restrict readonly buffer MeshletVertexIndicesSSBO {
+    uint VertexIndices[];
+} meshletVertexIndicesSSBO;
+
+layout(std430, binding = 14) restrict readonly buffer MeshletLocalIndicesSSBO {
+    uint PackedIndices[];
+} meshletLocalIndicesSSBO;
+
+layout(std430, binding = 19) restrict readonly buffer TransformPaletteSSBO {
+    mat4 Transforms[];
+} transformPaletteSSBO;
+
+layout(std430, binding = 22) restrict readonly buffer RenderItemPoolSSBO {
+    GpuRenderItem RenderItems[];
+} renderItemPoolSSBO;
+
+taskNV in Task {
+    uint MeshletIndices[32];
+    uint RenderItemId;
+} IN;
+
+out VoxelData {
+    vec3 FragPos;
+    vec2 TexCoord;
+    vec3 Normal;
+    flat uint MaterialId;
+} outData[];
+
+// Shared memory for NDC positions (needed for dominant-axis computation)
+shared vec3 s_ndcPositions[MESHLET_MAX_VERTEX_COUNT];
+
+// Inlined from Transformations.glsl to avoid mesh-stage compile issues
+vec3 MapToZeroOne(vec3 value, vec3 rangeMin, vec3 rangeMax)
+{
+    return (value - rangeMin) / (rangeMax - rangeMin);
+}
+
+// Helper: extract a single uint8 local index from the packed array
+uint extractLocalIndex(uint indicesOffset, uint triIdx, uint vertInTri)
+{
+    uint byteIdx = triIdx * 3u + vertInTri;
+    uint wordIdx = byteIdx >> 2u;
+    uint byteInWord = byteIdx & 3u;
+    uint packedWord = meshletLocalIndicesSSBO.PackedIndices[indicesOffset + wordIdx];
+    return (packedWord >> (byteInWord * 8u)) & 0xFFu;
+}
+
+void main()
+{
+    uint tid = gl_LocalInvocationID.x;
+    uint meshletIndex = IN.MeshletIndices[gl_WorkGroupID.x];
+
+    GpuRenderItem item = renderItemPoolSSBO.RenderItems[IN.RenderItemId];
+    GpuMeshlet meshlet = meshletSSBO.Meshlets[meshletIndex];
+
+    gl_PrimitiveCountNV = meshlet.TriangleCount;
+
+    mat4 worldMat = transformPaletteSSBO.Transforms[item.transformIndex];
+    mat3 unitVecToWorld = mat3(transpose(inverse(worldMat)));
+
+    // Process vertices: transform to world space, then map to voxel NDC
+    for (uint i = tid; i < meshlet.VertexCount; i += 32u)
+    {
+        uint vertexIndex = meshletVertexIndicesSSBO.VertexIndices[meshlet.VertexOffset + i];
+        Vertex v = vertexDataSSBO.vertices[vertexIndex];
+
+        vec4 worldPos = worldMat * v.position;
+
+        outData[i].FragPos = worldPos.xyz;
+        outData[i].TexCoord = v.texCoords;
+        outData[i].Normal = normalize(unitVecToWorld * DecompressSR11G11B10(v.normal));
+        outData[i].MaterialId = item.materialId;
+
+        // Map world position to [0,1] then to [-1,1] NDC for voxel grid
+        vec3 ndc = MapToZeroOne(worldPos.xyz, voxelizerDataUBO.GridMin, voxelizerDataUBO.GridMax) * 2.0 - 1.0;
+        gl_MeshVerticesNV[i].gl_Position = vec4(ndc, 1.0);
+        s_ndcPositions[i] = ndc;
+    }
+
+    // Write triangle indices (packed local indices)
+    uint packedCount = (meshlet.TriangleCount * 3u + 3u) / 4u;
+    for (uint i = tid; i < packedCount; i += 32u)
+    {
+        writePackedPrimitiveIndices4x8NV(i * 4u,
+            meshletLocalIndicesSSBO.PackedIndices[meshlet.IndicesOffset + i]);
+    }
+
+    barrier();
+
+    // Compute dominant-axis per-triangle and set gl_ViewportIndex
+    // This replaces the NV_geometry_shader_passthrough dominant-axis logic
+    for (uint t = tid; t < meshlet.TriangleCount; t += 32u)
+    {
+        uint i0 = extractLocalIndex(meshlet.IndicesOffset, t, 0u);
+        uint i1 = extractLocalIndex(meshlet.IndicesOffset, t, 1u);
+        uint i2 = extractLocalIndex(meshlet.IndicesOffset, t, 2u);
+
+        vec3 p0 = s_ndcPositions[i0];
+        vec3 p1 = s_ndcPositions[i1];
+        vec3 p2 = s_ndcPositions[i2];
+
+        vec3 edge1 = p1 - p0;
+        vec3 edge2 = p2 - p0;
+        vec3 normalWeights = abs(cross(edge1, edge2));
+
+        int dominantAxis = (normalWeights.y > normalWeights.x) ? 1 : 0;
+        dominantAxis = (normalWeights.z > normalWeights[dominantAxis]) ? 2 : dominantAxis;
+
+        // Swizzle is applied by selecting a viewport (matches NV_viewport_swizzle setup)
+        gl_MeshPrimitivesNV[t].gl_ViewportIndex = 2 - dominantAxis;
+    }
+}

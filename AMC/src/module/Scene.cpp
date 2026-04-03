@@ -17,7 +17,11 @@ namespace AMC {
 
 	void Scene::writeDescSet(int index) {
 		descSet = descSetLayout->vkDescSet(index);
-		descSetLayout->writeToDescSet(index, 0, tlas);
+		// Only write the AS descriptor if we have a valid TLAS.
+		// Writing VK_NULL_HANDLE without nullDescriptor causes validation errors.
+		if (tlas != VK_NULL_HANDLE) {
+			descSetLayout->writeToDescSet(index, 0, tlas);
+		}
 	}
 
 	Scene::Scene(const AMC::VkContext* vkctx) {

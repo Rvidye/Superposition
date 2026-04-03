@@ -134,4 +134,14 @@ namespace AMC {
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, GlobalBindings::MeshTaskCmdPool, m_commandSSBO);
 	}
 
+	bool RenderExtractor::ExtractIfDirty(uint64_t geometryVersion) {
+		if (geometryVersion == m_lastGeometryVersion && !m_renderItems.empty()) {
+			return false; // skip - nothing changed
+		}
+		Extract();
+		UploadToGPU();
+		m_lastGeometryVersion = geometryVersion;
+		return true;
+	}
+
 } // namespace AMC

@@ -3,6 +3,7 @@
 #include <common.h>
 #include <Model.h>
 #include <ModelAssetManager.h>
+#include <SceneVersioning.h>
 
 namespace AMC {
 
@@ -92,6 +93,10 @@ namespace AMC {
 		// Total size of transform palette
 		uint32_t GetPaletteSize() const { return m_nextTransformSlot; }
 
+		// === Version tracking ===
+		uint64_t GetGeometryVersion() const { return m_geometryVersion; }
+		bool IsGeometryDirtyThisFrame() const { return m_geometryDirtyThisFrame; }
+
 	private:
 		SceneInstanceManager() = default;
 
@@ -125,6 +130,10 @@ namespace AMC {
 		GLuint m_instanceSSBO         = 0;
 
 		bool m_gpuBuffersCreated = false;
+
+		// === Dirty tracking ===
+		uint64_t m_geometryVersion = 1;
+		bool m_geometryDirtyThisFrame = true;
 	};
 
 } // namespace AMC

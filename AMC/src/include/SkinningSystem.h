@@ -51,6 +51,9 @@ namespace AMC {
 		// Get the skinned vertex offset for an instance (for mesh shader path)
 		uint32_t GetSkinnedVertexOffset(uint32_t instanceId) const;
 
+		// True if any visible skeletal instance was animated this frame
+		bool IsSkeletalDirtyThisFrame() const { return m_skeletalDirtyThisFrame; }
+
 	private:
 		SkinningSystem() = default;
 
@@ -75,6 +78,7 @@ namespace AMC {
 
 		ShaderProgram* m_skinComputeProgram = nullptr;
 		bool m_gpuCreated = false;
+		bool m_skeletalDirtyThisFrame = false;
 	};
 
 } // namespace AMC

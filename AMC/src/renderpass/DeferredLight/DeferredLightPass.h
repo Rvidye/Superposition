@@ -13,5 +13,5 @@ public:
 	GLuint m_FBO;
 	GLuint m_TextureResult;
 	bool shadow = true;
-	bool rtShadows = true; // user toggle for RT shadows
+	AMC::RenderContext* m_contextPtr = nullptr; // for exposing RT toggle
 };

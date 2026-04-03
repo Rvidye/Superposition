@@ -77,16 +77,25 @@ namespace AMC {
 
 	void SceneInstanceManager::SetVisible(uint32_t instanceId, bool visible) {
 		if (instanceId < m_instances.size()) {
+			uint32_t oldFlags = m_instances[instanceId].flags;
 			if (visible)
 				m_instances[instanceId].flags |= InstanceFlags::Visible;
 			else
 				m_instances[instanceId].flags &= ~InstanceFlags::Visible;
+			if (m_instances[instanceId].flags != oldFlags) {
+				m_geometryVersion++;
+				m_geometryDirtyThisFrame = true;
+			}
 		}
 	}
 
 	void SceneInstanceManager::SetWorldMatrix(uint32_t instanceId, const glm::mat4& matrix) {
 		if (instanceId < m_instances.size()) {
-			m_instances[instanceId].worldMatrix = matrix;
+			if (m_instances[instanceId].worldMatrix != matrix) {
+				m_instances[instanceId].worldMatrix = matrix;
+				m_geometryVersion++;
+				m_geometryDirtyThisFrame = true;
+			}
 		}
 	}
 
@@ -112,6 +121,11 @@ namespace AMC {
 
 	void SceneInstanceManager::BeginFrame(float deltaTime) {
 
+		// m_geometryDirtyThisFrame may already be true from SetWorldMatrix/SetVisible
+		// calls earlier this frame. We preserve that and additionally check animations.
+		bool wasDirtyFromMutations = m_geometryDirtyThisFrame;
+		m_geometryDirtyThisFrame = false;
+
 		// Step 1: current → previous
 		if (!m_currentTransforms.empty()) {
 			memcpy(m_prevTransforms.data(), m_currentTransforms.data(),
@@ -129,9 +143,18 @@ namespace AMC {
 				!(inst.flags & InstanceFlags::Skeletal))
 			{
 				EvaluateNodeAnimation(inst, deltaTime);
+				// Animated instances are always dirty while advancing
+				m_geometryDirtyThisFrame = true;
 			}
 
 			PropagateTransforms(inst);
+		}
+
+		m_geometryDirtyThisFrame = m_geometryDirtyThisFrame || wasDirtyFromMutations;
+		// Note: geometryVersion was already bumped by individual Set* calls.
+		// If only animation made us dirty, bump now.
+		if (m_geometryDirtyThisFrame && !wasDirtyFromMutations) {
+			m_geometryVersion++;
 		}
 	}
 

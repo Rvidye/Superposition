@@ -11,7 +11,7 @@ layout(location = 4)uniform int shadowIndex;
 
 void main()
 {
-    // float lightDistance = length(FragPos.xyz - shadows[shadowIndex].Position);
-    // lightDistance = lightDistance / shadows[shadowIndex].FarPlane;
-    // gl_FragDepth = lightDistance;
+    float lightDistance = length(FragPos.xyz - shadows[shadowIndex].Position);
+    lightDistance = lightDistance / shadows[shadowIndex].FarPlane;
+    gl_FragDepth = lightDistance;
 }

@@ -13,8 +13,8 @@ public:
 	AMC::ShaderProgram* m_programConeTrace;
 	GLuint textureResultConeTrace = 0;
 	float NormalRayOffset = 1.0f;
-	int MaxSamples = 4;
+	int MaxSamples = 5;
 	float GIBoost = 1.3f;
 	float GISkyBoxBoost = 1.0f / 1.3f;
-	float StepMultiplier = 0.5f;
+	float StepMultiplier = 0.50f;
 };

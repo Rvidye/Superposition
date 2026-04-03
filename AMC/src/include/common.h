@@ -93,6 +93,7 @@ namespace AMC {
 		glm::mat4 Projection;
 		glm::mat4 InvProjection;
 		glm::mat4 InvProjView;
+		glm::mat4 PrevProjView;
 		glm::vec3 ViewPos;
 		float NearPlane;        
 		float FarPlane;         
@@ -105,6 +106,9 @@ namespace AMC {
 	extern float bloom_maxcolor; // intensity of bloom
 	extern float VolumeScattering; // ideal value is between 0.5 ~ 0.9
 	extern float VolumeStength; // 0.5 ~ 1.0
+	extern float GlobalGIBoost;
+	extern float AtmosphericElevation;
+	extern float AtmosphericAzimuth;
 
 	int GetMaxMipmapLevel(int width, int height, int depth = 1); 
 	glm::ivec3 GetMipmapLevelSize(int width, int height, int depth, int level);

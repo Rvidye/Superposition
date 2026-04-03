@@ -12,6 +12,8 @@ public:
 	const char* getName() const override;
 	void renderUI() override;
 	AMC::ShaderProgram* m_ProgramGBuffer;
+	AMC::ShaderProgram* m_ProgramGBufferMeshShader;
+	AMC::ShaderProgram* m_ProgramGBufferIndirect;   // Indirect dispatch path (M5)
 
 	AMC::VkContext* ctx;
 
@@ -21,4 +23,5 @@ public:
 	GLuint m_textureMetallicRoughness = 0;
 	GLuint m_textureEmissive = 0;
 	AMC::Image m_textureDepth;
+	GLuint m_textureVelocity = 0;
 };

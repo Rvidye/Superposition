@@ -7,6 +7,7 @@ struct PerFrameData
     mat4 Projection;
     mat4 InvProjection;
     mat4 InvProjView;
+    mat4 PrevProjView;
     vec3 ViewPos;
     float NearPlane;
     float FarPlane;
@@ -68,6 +69,12 @@ struct GpuMaterial
     sampler2D Emissive;
     sampler2D Transmission;
     uvec2 _pad0;
+};
+
+struct TAAData {
+    vec2 Jitter;
+    int SampleCount;
+    float MipmapBias;
 };
 
 struct Vertex {

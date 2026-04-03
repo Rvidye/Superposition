@@ -14,9 +14,19 @@ namespace AMC {
         LIGHT_TYPE_POINT
     };
 
+    // ================================================================
+    // Per-light shadow backend selection
+    // ================================================================
+    enum class ShadowBackend : uint8_t {
+        None,              // No shadow for this light
+        RasterShadowMap,   // Traditional cubemap shadow map
+        RTShadow           // Vulkan ray-query shadow
+    };
+
     class Light {
     public:
         GpuLight gpuLight;
+        ShadowBackend shadowBackend = ShadowBackend::None;
         Light();
         ~Light();
         bool HasShadow() const;

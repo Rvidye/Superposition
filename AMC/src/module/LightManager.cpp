@@ -215,6 +215,58 @@ namespace AMC {
 		glNamedBufferSubData(uboLights, sizeof(GpuLight) * MAX_LIGHTS, sizeof(int), &lightsCount);
 
 		shadowManager->UpdateShadows(lights);
+		m_lightVersion++;
+	}
+
+	bool LightManager::NeedsRasterShadowMaps(bool vxgiEnabled, bool volumetricEnabled, bool rtShadowsAvailable) const
+	{
+		// VXGI voxelization and volumetric lighting always consume raster shadow maps.
+		// If either is enabled, we need raster shadows for any shadow-casting light.
+		if (vxgiEnabled || volumetricEnabled) {
+			for (const auto& light : lights) {
+				if (light.gpuLight.active && light.gpuLight.shadows)
+					return true;
+			}
+			return false;
+		}
+
+		// If RT shadows are not available, deferred lighting needs raster shadows.
+		if (!rtShadowsAvailable) {
+			for (const auto& light : lights) {
+				if (light.gpuLight.active && light.gpuLight.shadows)
+					return true;
+			}
+			return false;
+		}
+
+		// RT is available and no VXGI/volumetric: deferred lighting uses RT for all lights.
+		// No raster shadows needed.
+		return false;
+	}
+
+	void LightManager::ResolveShadowBackends(
+		bool rtShadowsAvailable, bool vxgiEnabled, bool volumetricEnabled,
+		bool deferredWantsRT)
+	{
+		// If VXGI or volumetric is active, those passes always sample raster
+		// cubemaps. Single backend per light per frame -> force raster.
+		bool rasterRequired = vxgiEnabled || volumetricEnabled;
+
+		for (auto& light : lights) {
+			if (!light.gpuLight.active || !light.gpuLight.shadows) {
+				light.shadowBackend = ShadowBackend::None;
+				continue;
+			}
+
+			if (rasterRequired) {
+				// Can't avoid raster cost; prefer single backend.
+				light.shadowBackend = ShadowBackend::RasterShadowMap;
+			} else if (rtShadowsAvailable && deferredWantsRT) {
+				light.shadowBackend = ShadowBackend::RTShadow;
+			} else {
+				light.shadowBackend = ShadowBackend::RasterShadowMap;
+			}
+		}
 	}
 
 	void LightManager::UpdateShadows()

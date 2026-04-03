@@ -12,6 +12,10 @@
 #include<RenderPass.h>
 #include<VulkanHelperClasses.h>
 #include<MemoryManager.h>
+#include<ModelAssetManager.h>
+#include<SceneInstanceManager.h>
+#include<RenderExtractor.h>
+#include<SkinningSystem.h>
 
 // Render Passes
 #include "renderpass/RTPass/RTPass.h"
@@ -30,6 +34,7 @@
 #include "renderpass/VXGI/Voxelizer.h"
 #include "renderpass/VXGI/ConeTracer.h"
 #include "renderpass/VolumetricLighting/VolumetricLighting.h"
+#include "renderpass/TAA/TAAPass.h"
 
 // Scenes
 #include "scenes/testscene/testScene.h"
@@ -67,6 +72,9 @@ float AMC::bloom_threshold = 1.0f; // threshold for bloom better if untouched
 float AMC::bloom_maxcolor = 2.8f; // intensity of bloom
 float AMC::VolumeScattering = 0.758f; // ideal value is between 0.5 ~ 0.9
 float AMC::VolumeStength = 0.3f; // 0.5 ~ 1.0
+float AMC::GlobalGIBoost = 0.3f; // 0.5 ~ 1.0
+float AMC::AtmosphericElevation = 1.57f; // 0.5 ~ 1.0
+float AMC::AtmosphericAzimuth = 0.0f; // 0.5 ~ 1.0
 
 void keyboard(AMC::RenderWindow* , char key, UINT keycode);
 void mouse(AMC::RenderWindow*, int button, int action, int x, int y);
@@ -153,6 +161,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	if (!glewIsSupported("GL_EXT_memory_object") || !glewIsSupported("GL_EXT_memory_object_win32")) {
 		LOG_ERROR(L"RTPass: GL_EXT_memory_object / GL_EXT_memory_object_win32 not supported, RT disabled");
 	}
+	if (!glewIsSupported("GL_EXT_shader_image_load_formatted"))
+		LOG_ERROR(L"GL_EXT_shader_image_load_formatted Not Supported");
+	if (!glewIsSupported("GL_NV_mesh_shader"))
+		LOG_ERROR(L"GL_NV_mesh_shader Not Supported");
 
 	const GLubyte* renderer = glGetString(GL_RENDERER);
 	const GLubyte* vendor = glGetString(GL_VENDOR);
@@ -405,17 +417,148 @@ void RenderFrame(void)
 			AMC::currentCamera = gpDebugCamera; // just  in case someone fucks up and getCamera returns null we'll fallback to debugcam
 		}
 		//AMC::currentCamera->setNearFarPlane();
+		static glm::mat4 prevUnjitteredProjView = glm::mat4(0.0f);
+
 		data.View = AMC::currentCamera->getViewMatrix();
 		data.InvView = glm::inverse(data.View);
 		data.Projection = AMC::currentCamera->getProjectionMatrix();
 		data.InvProjection = glm::inverse(data.Projection);
 		data.ProjView = data.Projection * data.View;
+
+		glm::mat4 unjitteredProjView = data.Projection * data.View;
+
+		// Apply TAA jitter to projection matrix
+		if (gpRenderer->context.IsTAA) {
+			glm::mat4 jitteredProjection = data.Projection;
+			jitteredProjection[2][0] += gpRenderer->context.taaJitter.x;
+			jitteredProjection[2][1] += gpRenderer->context.taaJitter.y;
+			data.ProjView = jitteredProjection * data.View;
+		}
+		else {
+			data.ProjView = unjitteredProjView;
+		}
+
 		data.InvProjView = glm::inverse(data.ProjView);
 		data.NearPlane = AMC::currentCamera->getNearPlane();
 		data.FarPlane = AMC::currentCamera->getFarPlane();
 		data.ViewPos = AMC::currentCamera->getViewPosition();
 
+		// Use unjittered PrevProjView for velocity (first frame: use current for zero velocity)
+		data.PrevProjView = (prevUnjitteredProjView[3][3] == 0.0f) ? unjitteredProjView : prevUnjitteredProjView;
+		prevUnjitteredProjView = unjitteredProjView;
+
 		glNamedBufferSubData(perframeUBO, 0, sizeof(AMC::PerFrameData), &data);
+
+		// ============================================================
+		// Per-frame pipeline: instances -> skinning -> extraction -> render
+		// ============================================================
+		{
+			auto& instMgr = AMC::SceneInstanceManager::Get();
+			auto& ctx = gpRenderer->context;
+
+			// 1. Sync world matrices from scene models -> instances
+			for (auto& [name, rm] : currentScene->models) {
+				if (rm.model && rm.model->instanceId >= 0) {
+					instMgr.SetWorldMatrix((uint32_t)rm.model->instanceId, rm.matrix);
+					instMgr.SetVisible((uint32_t)rm.model->instanceId, rm.visible);
+				}
+			}
+
+			// 2. Evaluate node animation + propagate transforms
+			instMgr.BeginFrame((float)AMC::deltaTime);
+
+			// 3. Read version counters and compute dirty flags
+			uint64_t curGeomVer = instMgr.GetGeometryVersion();
+			uint64_t curLightVer = currentScene->lightManager
+				? currentScene->lightManager->GetLightVersion() : 0;
+
+			ctx.dirtyFlags.geometryDirty =
+				(curGeomVer != ctx.versionCache.lastGeometryVersion);
+			ctx.dirtyFlags.lightDirty =
+				(curLightVer != ctx.versionCache.lastLightVersion);
+			ctx.dirtyFlags.extractorDirty = ctx.dirtyFlags.geometryDirty;
+			ctx.dirtyFlags.tlasDirty = ctx.dirtyFlags.geometryDirty;
+
+			// Raster shadows are dirty when geometry OR lights changed
+			ctx.dirtyFlags.rasterShadowDirty =
+				ctx.dirtyFlags.geometryDirty || ctx.dirtyFlags.lightDirty;
+			// Voxels are dirty when geometry OR lights changed
+			ctx.dirtyFlags.voxelDirty =
+				ctx.dirtyFlags.geometryDirty || ctx.dirtyFlags.lightDirty;
+
+			// Update version cache
+			ctx.versions.geometryVersion = curGeomVer;
+			ctx.versions.lightVersion = curLightVer;
+			ctx.versionCache.lastGeometryVersion = curGeomVer;
+			ctx.versionCache.lastLightVersion = curLightVer;
+
+			// 3b. Config-driven invalidation (Fix C):
+			// If runtime toggles changed, force-dirty affected caches.
+			{
+				AMC::RenderConfigSnapshot curCfg;
+				curCfg.isVXGI = ctx.IsVGXI;
+				curCfg.isVolumetric = ctx.IsVolumetric;
+				curCfg.isGenerateShadowMaps = ctx.IsGenerateShadowMaps;
+				curCfg.deferredWantsRTShadows = ctx.deferredWantsRTShadows;
+				curCfg.isRTShadows = ctx.IsRTShadows;
+
+				if (curCfg != ctx.versionCache.lastConfig) {
+					ctx.dirtyFlags.rasterShadowDirty = true;
+					ctx.dirtyFlags.voxelDirty = true;
+					if (currentScene->lightManager)
+						currentScene->lightManager->GetShadowManager()->InvalidateAllShadows();
+					ctx.versionCache.lastConfig = curCfg;
+				}
+			}
+
+			// 4. Resolve shadow backends (consumer-aware, Fix B)
+			if (currentScene->lightManager) {
+				currentScene->lightManager->ResolveShadowBackends(
+					ctx.IsRTShadows, ctx.IsVGXI, ctx.IsVolumetric,
+					ctx.deferredWantsRTShadows);
+				ctx.needsRasterShadows = currentScene->lightManager->NeedsRasterShadowMaps(
+					ctx.IsVGXI, ctx.IsVolumetric, ctx.IsRTShadows);
+			}
+
+			// 5. When geometry is dirty, invalidate all shadow maps so they re-render
+			if (ctx.dirtyFlags.geometryDirty && currentScene->lightManager) {
+				currentScene->lightManager->GetShadowManager()->InvalidateAllShadows();
+			}
+
+			// 6. Upload transforms only when data changed (Fix A).
+			// Upload for 2 frames: dirty frame + one more for correct prev-transform velocity.
+			{
+				static bool wasDirtyLastFrame = true;
+				bool needsUpload = ctx.dirtyFlags.geometryDirty || wasDirtyLastFrame;
+				wasDirtyLastFrame = ctx.dirtyFlags.geometryDirty;
+				if (needsUpload) {
+					instMgr.UploadToGPU();
+				}
+				instMgr.BindBuffers();
+			}
+
+			// 7. Evaluate skeletal bone transforms + upload bone palettes
+			AMC::SkinningSystem::Get().Update((float)AMC::deltaTime);
+			AMC::SkinningSystem::Get().BindBuffers();
+
+			// 7b. Skeletal animation invalidation (Fix D):
+			// Skinned meshes change shape every frame, so raster shadows
+			// and voxelization must refresh. TLAS is NOT dirtied because
+			// TLAS currently excludes animated meshes.
+			if (AMC::SkinningSystem::Get().IsSkeletalDirtyThisFrame()) {
+				ctx.dirtyFlags.rasterShadowDirty = true;
+				ctx.dirtyFlags.voxelDirty = true;
+				if (currentScene->lightManager)
+					currentScene->lightManager->GetShadowManager()->InvalidateAllShadows();
+			}
+
+			// 8. Extract render items - skip if geometry didn't change
+			auto& extractor = AMC::RenderExtractor::Get();
+			if (ctx.dirtyFlags.extractorDirty) {
+				extractor.Extract();
+				extractor.UploadToGPU();
+			}
+		}
 
 		gpRenderer->render(currentScene);
 		//currentScene->render();
@@ -432,6 +575,7 @@ void RenderFrame(void)
 	ImGui::Text("Common Controls:");
 	ImGui::Text("F : toggle fullscreen");
 	ImGui::Text("%.3lf FPS", fps);
+	ImGui::Text("%.3lf DT", AMC::deltaTime);
 
 	if (ImGui::Button(AMC::ANIMATING ? "Stop Animation" : "Start Animation")) {
 		AMC::ANIMATING = !AMC::ANIMATING;
@@ -474,6 +618,31 @@ void RenderFrame(void)
 	ImGui::Checkbox("IsBloom", &gpRenderer->context.IsBloom);
 	ImGui::Checkbox("IsVolumetric", &gpRenderer->context.IsVolumetric);
 	ImGui::Checkbox("IsToneMap", &gpRenderer->context.IsToneMap);
+	ImGui::Checkbox("UseMeshShaders", &gpRenderer->context.UseMeshShaders);
+	ImGui::Checkbox("IsTAA", &gpRenderer->context.IsTAA);
+
+	// === Dirty/Version System Debug ===
+	if (ImGui::CollapsingHeader("Dirty System")) {
+		auto& df = gpRenderer->context.dirtyFlags;
+		auto& vs = gpRenderer->context.versions;
+		ImGui::Text("Geometry Version: %llu", vs.geometryVersion);
+		ImGui::Text("Light Version:    %llu", vs.lightVersion);
+		ImGui::TextColored(df.geometryDirty ? ImVec4(1,0.3f,0.3f,1) : ImVec4(0.3f,1,0.3f,1),
+			"Geometry:  %s", df.geometryDirty ? "DIRTY" : "clean");
+		ImGui::TextColored(df.lightDirty ? ImVec4(1,0.3f,0.3f,1) : ImVec4(0.3f,1,0.3f,1),
+			"Light:     %s", df.lightDirty ? "DIRTY" : "clean");
+		ImGui::TextColored(df.extractorDirty ? ImVec4(1,0.3f,0.3f,1) : ImVec4(0.3f,1,0.3f,1),
+			"Extractor: %s", df.extractorDirty ? "DIRTY" : "clean");
+		ImGui::TextColored(df.rasterShadowDirty ? ImVec4(1,0.3f,0.3f,1) : ImVec4(0.3f,1,0.3f,1),
+			"Raster Shadow: %s", df.rasterShadowDirty ? "DIRTY" : "clean");
+		ImGui::TextColored(df.voxelDirty ? ImVec4(1,0.3f,0.3f,1) : ImVec4(0.3f,1,0.3f,1),
+			"Voxel:     %s", df.voxelDirty ? "DIRTY" : "clean");
+		ImGui::TextColored(df.tlasDirty ? ImVec4(1,0.3f,0.3f,1) : ImVec4(0.3f,1,0.3f,1),
+			"TLAS:      %s", df.tlasDirty ? "DIRTY" : "clean");
+		ImGui::Text("Needs Raster Shadows: %s",
+			gpRenderer->context.needsRasterShadows ? "YES" : "NO");
+	}
+
 	ImGui::Separator();
 
 	ImGui::Text("Select Debug Mode:");
@@ -560,6 +729,9 @@ void InitRenderPasses()
 	gpDebugCamera = new AMC::DebugCamera();
 	gpAudioPlayer = new AMC::AudioPlayer();
 
+	//gpAudioPlayer->initializeAudio(RESOURCE_PATH("Gravity.wav"));
+	//gpAudioPlayer->play();
+
 	gpRenderer = new AMC::Renderer();
 	glCreateVertexArrays(1,&AMC::Renderer::context.emptyVAO);
 
@@ -585,6 +757,7 @@ void InitRenderPasses()
 	gpRenderer->addPass(new SSR());
 	gpRenderer->addPass(new Bloom());
 	gpRenderer->addPass(new Volumetric());
+	gpRenderer->addPass(new TAAPass());
 	gpRenderer->addPass(new Tonemap());
 	gpRenderer->addPass(new BlitPass());
 
@@ -597,9 +770,9 @@ void InitRenderPasses()
 
 void InitScenes()
 {
-	//sceneQueue.push_back(new testScene());
-	//sceneQueue.push_back(new AMCBannerScene(vkcontext));
-	sceneQueue.push_back(new SuperpositionScene(vkcontext));
+	sceneQueue.push_back(new testScene(vkcontext));
+	////sceneQueue.push_back(new AMCBannerScene(vkcontext));
+	//sceneQueue.push_back(new SuperpositionScene(vkcontext));
 	//sceneQueue.push_back(new testScene(vkcontext));
 	//sceneQueue.push_back(new rtscene(vkcontext));
 
@@ -607,6 +780,30 @@ void InitScenes()
 		scene->init();
 		scene->BuildTLAS();
 	}
+
+	// Upload all registered model data to global GPU pools.
+	// This must happen after all scenes have loaded their models.
+	AMC::ModelAssetManager::Get().UploadToGPU();
+
+	// Mark all registered models as using global pools and create instances
+	auto& instMgr = AMC::SceneInstanceManager::Get();
+	auto& skinSys = AMC::SkinningSystem::Get();
+	for (auto* scene : sceneQueue) {
+		for (auto& [name, rm] : scene->models) {
+			if (rm.model && rm.model->assetId >= 0) {
+				rm.model->useGlobalPools = true;
+				// Create an instance in the scene instance manager
+				uint32_t instId = instMgr.CreateInstance(rm.model, rm.matrix, name);
+				rm.model->instanceId = (int32_t)instId;
+
+				// Register skeletal instances with the skinning system
+				if (rm.model->haveAnimation && rm.model->animType == AMC::SKELETALANIM) {
+					skinSys.RegisterSkeletalInstance(instId, rm.model);
+				}
+			}
+		}
+	}
+
 	playNextScene();
 
 	AMC::Scene::createDescSetLayout(vkcontext, sceneQueue.size());

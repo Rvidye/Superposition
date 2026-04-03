@@ -3,7 +3,7 @@
 
 namespace AMC {
 
-    VideoPlayer::VideoPlayer(const std::string& filename) : 
+    VideoPlayer::VideoPlayer(const std::string& filename) :
         av_format_ctx(nullptr),
         av_codec_ctx(nullptr),
         av_frame(nullptr),
@@ -17,8 +17,11 @@ namespace AMC {
         videoTime(0.0),
         frameDuration(0.0),
         isPlaying(false),
-        rgbBuffer(nullptr)
-    {
+        rgbBuffer(nullptr),
+        s_time(0),
+        e_time(0),
+        d_time(0),
+        vedioFPS(25.0) {
         avformat_network_init();
 
         if (!initializeFFmpeg(filename)) {
@@ -48,23 +51,19 @@ namespace AMC {
         }
     }
 
-    VideoPlayer::~VideoPlayer()
-	{
+    VideoPlayer::~VideoPlayer() {
         cleanup();
-	}
+    }
 
-    GLuint VideoPlayer::getTexture()
-    {
+    GLuint VideoPlayer::getTexture() {
         return textureID;
     }
 
-    float VideoPlayer::getDuration()
-    {
+    float VideoPlayer::getDuration() {
         return static_cast<float>(totalDuration);
     }
 
-    void VideoPlayer::update(double deltaTime)
-    {
+    void VideoPlayer::update(double deltaTime) {
         //if (!isPlaying || totalDuration <= 0.0) return;
 
         //// Increment videoTime based on deltaTime
@@ -136,6 +135,7 @@ namespace AMC {
         //}
         //// If no more frames are available, stop playback
         //isPlaying = false;
+
         int response;
 
         while (av_read_frame(av_format_ctx, av_packet) >= 0) {
@@ -156,28 +156,30 @@ namespace AMC {
             av_rgb_frame->data,
             av_rgb_frame->linesize
         );
-        flipImageVertically(av_rgb_frame->data[0], videoWidth, videoHeight, 4);
-        glTextureSubImage2D(textureID, 0, 0, 0, videoWidth, videoHeight, GL_RGBA, GL_UNSIGNED_BYTE, av_rgb_frame->data[0]);
+
+        e_time = clock();
+        d_time = (e_time - s_time) / (double)CLOCKS_PER_SEC;
+        std::cout << d_time << std::endl;
+        if (d_time >= 1.0 / vedioFPS) {
+            s_time = e_time;
+            glTextureSubImage2D(textureID, 0, 0, 0, videoWidth, videoHeight, GL_RGBA, GL_UNSIGNED_BYTE, av_rgb_frame->data[0]);
+        }
     }
 
-    void VideoPlayer::play()
-    {
+    void VideoPlayer::play() {
         isPlaying = true;
     }
 
-    void VideoPlayer::pause()
-    {
+    void VideoPlayer::pause() {
         isPlaying = false;
     }
 
-    void VideoPlayer::stop()
-    {
+    void VideoPlayer::stop() {
         isPlaying = false;
         videoTime = 0.0f;
     }
 
-    bool VideoPlayer::initializeFFmpeg(const std::string& filename)
-    {
+    bool VideoPlayer::initializeFFmpeg(const std::string& filename) {
         // Open video file
         if (avformat_open_input(&av_format_ctx, filename.c_str(), nullptr, nullptr) != 0) {
             std::cout << "Could not open video file: " << filename << std::endl;
@@ -289,8 +291,7 @@ namespace AMC {
         return true;
     }
 
-    bool VideoPlayer::initializeTexture()
-    {
+    bool VideoPlayer::initializeTexture() {
         glCreateTextures(GL_TEXTURE_2D, 1, &textureID);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTextureParameteri(textureID, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -301,8 +302,7 @@ namespace AMC {
         return true;
     }
 
-    void VideoPlayer::cleanup()
-    {
+    void VideoPlayer::cleanup() {
         if (textureID != 0) {
             glDeleteTextures(1, &textureID);
             textureID = 0;
@@ -346,14 +346,4 @@ namespace AMC {
         avformat_network_deinit();
     }
 
-    void VideoPlayer::flipImageVertically(uint8_t* data, int width, int height, int channels)
-    {
-        int stride = width * channels;
-        std::vector<uint8_t> row(stride);
-        for (int y = 0; y < height / 2; ++y) {
-            memcpy(row.data(), data + y * stride, stride);
-            memcpy(data + y * stride, data + (height - 1 - y) * stride, stride);
-            memcpy(data + (height - 1 - y) * stride, row.data(), stride);
-        }
-    }
 };

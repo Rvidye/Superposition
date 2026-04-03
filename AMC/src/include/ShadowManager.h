@@ -5,6 +5,7 @@
 
 namespace AMC {
 
+	class RenderExtractor;
 	class Scene;
 	class ShaderProgram;
 	class ShadowManager {
@@ -18,16 +19,33 @@ namespace AMC {
 
 			void UpdateShadows(const std::vector<Light>& lights);
 			void UpdateShadowUBO();
-			void RenderShadowMaps(ShaderProgram* program,const Scene* scene);
+
+			// Legacy draw path
+			void RenderShadowMaps(ShaderProgram* program, const Scene* scene);
+
+			// Mesh-pipeline path: renders per-face with meshlet culling.
+			// Falls back to legacy for skeletal/non-meshlet assets.
+			void RenderShadowMapsMesh(
+				ShaderProgram* meshProgram,
+				ShaderProgram* legacyProgram,
+				const Scene* scene,
+				const RenderExtractor& extractor,
+				bool useMeshShaders);
+
+			// Mark all shadows as needing update (e.g. when geometry changes)
+			void InvalidateAllShadows();
+
 			void UpdateShadowLightIndex(int shadowIndex, int newLightIndex);
 			void renderUI();
 
 			void BindUBO();
 
-			//GLuint getShadowMapTexture() const { return shadowmap; }
-			//GLuint getPointShadowCubemap() const { return pointShadowCubemap; }
-
 			std::vector<Shadow> shadows;
 			GLuint shadowsUBO = 0;
+
+		private:
+			// Per-face FBO for mesh-shader shadow rendering
+			GLuint m_meshShadowFBO = 0;
+			bool m_meshFBOCreated = false;
 	};
 };

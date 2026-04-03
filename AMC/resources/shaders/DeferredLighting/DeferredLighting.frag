@@ -16,6 +16,7 @@ layout(binding = 5) uniform sampler2D SamplerAO;
 layout(binding = 6) uniform sampler2D SamplerIndirectLighting;
 layout(binding = 7) uniform sampler2DArray SamplerRTShadow;
 
+float ShadowCalculation(Shadows light, vec3 fragPos, vec3 viewPos);
 vec3 EvaluateLighting(Light light, Surface surface, vec3 fragPos, vec3 viewPos, float ambientOcclusion);
 float Visibility(Shadows light, vec3 normal, vec3 lightToSample);
 float GetLightSpaceDepth(Shadows light, vec3 lightSpaceSamplePos);
@@ -82,8 +83,9 @@ void main()
             else if (light.shadowMapIndex != -1)
             {
                 Shadows lightShadow = shadows[light.shadowMapIndex];
-                vec3 lightToSample = unjitteredFragPos - light.position;
-                shadow = 1.0 - Visibility(lightShadow, normal, lightToSample);
+                // vec3 lightToSample = unjitteredFragPos - light.position;
+                // shadow = 1.0 - Visibility(lightShadow, normal, lightToSample);
+                shadow = ShadowCalculation(lightShadow, fragPos, perFrameDataUBO.ViewPos);
             }
             contribution *= (1.0 - shadow);
         }
@@ -158,4 +160,33 @@ float GetLightSpaceDepth(Shadows light, vec3 lightSpaceSamplePos)
     float dist = max(abs(lightSpaceSamplePos.x), max(abs(lightSpaceSamplePos.y), abs(lightSpaceSamplePos.z)));
     float depth = GetLogarithmicDepth(light.NearPlane, light.FarPlane, dist);
     return depth;
+}
+
+float ShadowCalculation(Shadows light, vec3 fragPos, vec3 viewPos)
+{
+    const vec3 gridSamplingDisk[20] = vec3[]
+    (
+    vec3(1, 1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1, 1,  1), 
+    vec3(1, 1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+    vec3(1, 1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1, 1,  0),
+    vec3(1, 0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1, 0, -1),
+    vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
+    );
+    // get vector between fragment position and light position
+    vec3 fragToLight = fragPos - light.Position;
+    float currentDepth = length(fragToLight);
+    float shadow = 0.0;
+    float bias = 0.15;
+    int samples = 20;
+    float viewDistance = length(viewPos - fragPos);
+    float diskRadius = (1.0 + (viewDistance / light.FarPlane)) / 25.0;
+    for(int i = 0; i < samples; ++i)
+    {
+        float closestDepth = texture(light.ShadowMapTexture, fragToLight + gridSamplingDisk[i] * diskRadius).r;
+        closestDepth *= light.FarPlane;
+        if(currentDepth - bias > closestDepth)
+            shadow += 1.0;
+    }
+    shadow /= float(samples);
+    return shadow;
 }

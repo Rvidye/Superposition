@@ -12,8 +12,7 @@ extern "C" {
 
 namespace AMC {
 
-    class VideoPlayer
-    {
+    class VideoPlayer {
     public:
 
         VideoPlayer(const std::string& filename);
@@ -41,7 +40,7 @@ namespace AMC {
 
         // OpenGL texture
         GLuint textureID;
-        
+
         // Video Properties
         int videoWidth;
         int videoHeight;
@@ -51,6 +50,11 @@ namespace AMC {
         double frameDuration; // Duration of a single frame in seconds
         bool isPlaying;
         double totalDuration;
+
+        double vedioFPS;
+        long long int s_time;
+        long long int e_time;
+        double d_time;
 
         // Buffer for RGB data
         uint8_t* rgbBuffer;

@@ -35,7 +35,13 @@ layout(std140, binding = 6) uniform GBufferDataUBO
     sampler2D MetallicRoughness;
     sampler2D Emissive;
     sampler2D Depth;
+    sampler2D Velocity;
 } gBufferDataUBO;
+
+layout(std140, binding = 7) uniform TAADataBlock
+{
+    TAAData taaDataUBO;
+};
 
 // SSBO's
 
@@ -56,3 +62,43 @@ layout(std430, binding = 1) writeonly buffer VertexBufferOut {
 layout(std430, binding = 6) readonly buffer BoneMatricesBuffer {
     mat4 boneMatrices[];
 };
+
+// ============================================================
+// Global pool SSBOs for pooled-buffer architecture
+// Guarded by USE_GLOBAL_POOLS define so existing shaders are unaffected.
+// ============================================================
+
+#ifdef USE_GLOBAL_POOLS
+
+#include<..\..\..\resources\shaders\include\GpuTypes.glsl>
+
+layout(std430, binding = 15) restrict readonly buffer MeshRecordPoolSSBO {
+    GpuMeshRecord MeshRecords[];
+} meshRecordPoolSSBO;
+
+layout(std430, binding = 16) restrict readonly buffer NodeRecordPoolSSBO {
+    GpuNodeRecord NodeRecords[];
+} nodeRecordPoolSSBO;
+
+layout(std430, binding = 17) restrict readonly buffer MeshBindingPoolSSBO {
+    GpuMeshBinding MeshBindings[];
+} meshBindingPoolSSBO;
+
+layout(std430, binding = 18) restrict readonly buffer AssetPoolSSBO {
+    GpuModelAsset Assets[];
+} assetPoolSSBO;
+
+// Transform palettes (Milestone 2)
+layout(std430, binding = 19) restrict readonly buffer TransformPaletteSSBO {
+    mat4 Transforms[];
+} transformPaletteSSBO;
+
+layout(std430, binding = 20) restrict readonly buffer PrevTransformPaletteSSBO {
+    mat4 Transforms[];
+} prevTransformPaletteSSBO;
+
+layout(std430, binding = 21) restrict readonly buffer InstancePoolSSBO {
+    GpuModelInstance Instances[];
+} instancePoolSSBO;
+
+#endif // USE_GLOBAL_POOLS

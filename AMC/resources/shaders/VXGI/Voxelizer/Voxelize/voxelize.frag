@@ -29,6 +29,7 @@ in InOutData
 } inData;
 
 vec3 EvaluateDiffuseLighting(Light light, vec3 albedo, vec3 sampleToLight);
+float ShadowCalculation(Shadows light, vec3 fragPos, vec3 viewPos);
 float Visibility(Shadows pointShadow, vec3 lightToSample);
 float GetLightSpaceDepth(Shadows pointShadow, vec3 lightSpaceSamplePos);
 ivec3 WorlSpaceToVoxelImageSpace(vec3 worldPos);
@@ -51,6 +52,7 @@ void main()
         {
             Shadows lightShadow = shadows[light.shadowMapIndex];
             contrib *= Visibility(lightShadow, -sampleToLight);
+            //contrrib *= ShadowCalculation(lightShadow, fragPos, perFrameDataUBO.ViewPos);;
         }
         directLighting += contrib;
     }
@@ -76,6 +78,35 @@ vec3 EvaluateDiffuseLighting(Light light, vec3 albedo, vec3 sampleToLight)
     }
 
     return vec3(0.0);
+}
+
+float ShadowCalculation(Shadows light, vec3 fragPos, vec3 viewPos)
+{
+    const vec3 gridSamplingDisk[20] = vec3[]
+    (
+    vec3(1, 1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1, 1,  1), 
+    vec3(1, 1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+    vec3(1, 1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1, 1,  0),
+    vec3(1, 0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1, 0, -1),
+    vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
+    );
+    // get vector between fragment position and light position
+    vec3 fragToLight = fragPos - light.Position;
+    float currentDepth = length(fragToLight);
+    float shadow = 0.0;
+    float bias = 0.15;
+    int samples = 20;
+    float viewDistance = length(viewPos - fragPos);
+    float diskRadius = (1.0 + (viewDistance / light.FarPlane)) / 25.0;
+    for(int i = 0; i < samples; ++i)
+    {
+        float closestDepth = texture(light.ShadowMapTexture, fragToLight + gridSamplingDisk[i] * diskRadius).r;
+        closestDepth *= light.FarPlane;
+        if(currentDepth - bias > closestDepth)
+            shadow += 1.0;
+    }
+    shadow /= float(samples);
+    return shadow;
 }
 
 float Visibility(Shadows light, vec3 lightToSample)

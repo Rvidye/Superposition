@@ -170,6 +170,12 @@ namespace AMC {
 		else if (extension == ".comp") {
 			return GL_COMPUTE_SHADER;
 		}
+		else if (extension == ".mesh") {
+			return GL_MESH_SHADER_NV;
+		}
+		else if (extension == ".task") {
+			return GL_TASK_SHADER_NV;
+		}
 		else {
 			throw std::runtime_error("Unsupported shader type in file: " + filePath.string());
 		}

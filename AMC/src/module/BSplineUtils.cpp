@@ -205,6 +205,8 @@ namespace AMC {
             refresh = true;
             break;
         case VK_OEM_6:
+            if (splineInterpolator->m_pointsVec.size() <= 4)
+                break;
             splineInterpolator->m_pointsVec.erase(splineInterpolator->m_pointsVec.begin() + selectedPoint);
             selectedPoint = selectedPoint % splineInterpolator->m_pointsVec.size();
             refresh = true;

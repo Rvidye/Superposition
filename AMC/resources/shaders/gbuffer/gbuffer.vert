@@ -14,21 +14,28 @@ layout(location = 3)in uint vTangent;
 
 layout(location = 0) uniform mat4 modelMat;
 layout(location = 1) uniform mat4 nodeMat;
+layout(location = 2) uniform mat4 prevModelMat;
+layout(location = 4) uniform mat4 prevNodeMat;
 
 out InOutData
 {
     vec2 TexCoord;
     vec3 Normal;
     vec3 Tangent;
+    vec4 ClipPos;
+    vec4 PrevClipPos;
 } outData;
 
-void main(void) 
+void main(void)
 {
-    gl_Position = perFrameDataUBO.ProjView * modelMat * nodeMat * vec4(vPos,1.0);
+    vec4 worldPos = modelMat * nodeMat * vec4(vPos, 1.0);
+    gl_Position = perFrameDataUBO.ProjView * worldPos;
     outData.TexCoord = vTex;
     vec3 normal = DecompressSR11G11B10(vNor);
     vec3 tangent = DecompressSR11G11B10(vTangent);
     mat3 unitVecToWorld = mat3(transpose(inverse(modelMat * nodeMat)));
     outData.Normal = normalize(unitVecToWorld * normal);
     outData.Tangent = normalize(unitVecToWorld * tangent);
+    outData.ClipPos = gl_Position;
+    outData.PrevClipPos = perFrameDataUBO.PrevProjView * prevModelMat * prevNodeMat * vec4(vPos, 1.0);
 };

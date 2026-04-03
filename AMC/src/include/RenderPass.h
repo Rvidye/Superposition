@@ -3,6 +3,7 @@
 #include <Scene.h>
 #include <UBO.h>
 #include <MemoryManager.h>
+#include <SceneVersioning.h>
 
 namespace AMC {
 	// Store Extra Data that can be accesses by all render passes
@@ -19,11 +20,25 @@ namespace AMC {
 		bool IsVolumetric = false;
 		bool IsToneMap = true;
 		bool IsRTShadows = false; // true when RT shadows are available and enabled
+		bool UseMeshShaders = false;
+		bool IsTAA = false;
+		glm::vec2 taaJitter = glm::vec2(0.0f);
+
+		// === Dirty/version system ===
+		SceneVersions  versions;
+		FrameDirtyFlags dirtyFlags;
+		VersionCache   versionCache;
+
+		// True if any enabled pass this frame requires raster shadow maps
+		bool needsRasterShadows = true;
+
+		// Deferred pass RT shadow toggle (exposed for main-loop backend resolution)
+		bool deferredWantsRTShadows = true;
 
 		GLsizei width = 2048, height = 2048;
 		GLsizei screenWidth, screenHeight;
 		//GBuffer
-		GLuint textureGBuffer[4]; // albedo, normal, metalroughness, emissive
+		GLuint textureGBuffer[6]; // albedo, normal, metalroughness, emissive, depth
 		//Need Depth to be seperate texture instead of part of array so Vulkan can use it
 		Image textureGBufferDepth;
 

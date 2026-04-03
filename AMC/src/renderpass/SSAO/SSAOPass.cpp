@@ -9,7 +9,7 @@ void SSAO::create(AMC::RenderContext& context) {
 	glTextureParameteri(m_textureResult, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTextureParameteri(m_textureResult, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(m_textureResult, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureStorage2D(m_textureResult, 1, GL_R8, context.width, context.width);
+	glTextureStorage2D(m_textureResult, 1, GL_R8, context.width, context.height);
 
 	context.textureSSAOResult = m_textureResult;
 }

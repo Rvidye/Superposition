@@ -1,0 +1,75 @@
+#version 460 core
+
+// ============================================================
+// Mesh-level frustum culling compute shader (Milestone 6)
+//
+// Input:  All GpuRenderItems from CPU extraction (binding 22)
+// Output: Visible GpuMeshTaskCommands (binding 23) + draw count (binding 28)
+//
+// Each thread processes one render item. If the item's world-space
+// AABB passes the frustum test, it atomically appends a command
+// to the output command buffer and increments the draw count.
+// ============================================================
+
+// Only include struct definitions — no bulk SSBO includes
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+#include<..\..\..\resources\shaders\include\GpuTypes.glsl>
+#include<..\..\..\resources\shaders\include\Box.glsl>
+#include<..\..\..\resources\shaders\include\Frustum.glsl>
+#include<..\..\..\resources\shaders\include\Ray.glsl>
+#include<..\..\..\resources\shaders\include\IntersectionRoutines.glsl>
+
+layout(local_size_x = 64) in;
+
+// === UBOs ===
+layout(std140, binding = 0) uniform PerFrameDataUBO
+{
+    PerFrameData perFrameDataUBO;
+};
+
+// === SSBOs (only what this shader needs) ===
+
+layout(std430, binding = 15) restrict readonly buffer MeshRecordPoolSSBO {
+    GpuMeshRecord MeshRecords[];
+} meshRecordPoolSSBO;
+
+layout(std430, binding = 22) restrict readonly buffer RenderItemPoolSSBO {
+    GpuRenderItem RenderItems[];
+} renderItemPoolSSBO;
+
+layout(std430, binding = 23) restrict writeonly buffer MeshTaskCmdPoolSSBO {
+    GpuMeshTaskCommand MeshTaskCommands[];
+} meshTaskCmdPoolSSBO;
+
+layout(std430, binding = 28) restrict buffer DrawCountSSBO {
+    uint VisibleDrawCount;
+} drawCountSSBO;
+
+uniform uint u_TotalRenderItems;
+
+void main()
+{
+    uint tid = gl_GlobalInvocationID.x;
+    if (tid >= u_TotalRenderItems) return;
+
+    GpuRenderItem item = renderItemPoolSSBO.RenderItems[tid];
+
+    // Frustum test on world-space AABB
+    Box worldBox;
+    worldBox.Min = item.worldBoundsMin;
+    worldBox.Max = item.worldBoundsMax;
+
+    Frustum frustum = GetFrustum(perFrameDataUBO.ProjView);
+
+    if (FrustumBoxIntersect(frustum, worldBox))
+    {
+        uint slot = atomicAdd(drawCountSSBO.VisibleDrawCount, 1);
+
+        GpuMeshRecord meshRec = meshRecordPoolSSBO.MeshRecords[item.meshId];
+
+        meshTaskCmdPoolSSBO.MeshTaskCommands[slot].count = (meshRec.meshletCount + 31) / 32;
+        meshTaskCmdPoolSSBO.MeshTaskCommands[slot].first = 0;
+        meshTaskCmdPoolSSBO.MeshTaskCommands[slot].renderItemId = tid;
+        meshTaskCmdPoolSSBO.MeshTaskCommands[slot]._pad0 = 0;
+    }
+}

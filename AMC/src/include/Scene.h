@@ -12,6 +12,7 @@ namespace AMC {
 	struct RenderModel {
 		Model* model = nullptr;
 		glm::mat4 matrix = glm::mat4(1.0f);
+		glm::mat4 prevMatrix = glm::mat4(1.0f);
 		bool visible = true;
 		UINT numInstance = 1;
 	};
@@ -125,7 +126,7 @@ namespace AMC {
 			bool completed = false;
 			std::unordered_map<std::string, RenderModel> models;
 			LightManager *lightManager  = nullptr;
-			AABB sceneAABB = {glm::vec3(FLT_MAX),glm::vec3(FLT_MAX)};
+			AABB sceneAABB = {glm::vec3(FLT_MAX),glm::vec3(-FLT_MAX)};
 			const VkContext* ctx;
 			VkDescriptorSet descSet;
 			static VkDescSetLayoutManager* descSetLayout;

@@ -1,0 +1,90 @@
+#version 460 core
+
+#extension GL_NV_mesh_shader : require
+#extension GL_ARB_bindless_texture : require
+
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+#include<..\..\..\resources\shaders\include\GpuTypes.glsl>
+
+#define MESHLET_MAX_VERTEX_COUNT 128
+#define MESHLET_MAX_TRIANGLE_COUNT 252
+
+layout(local_size_x = 32) in;
+layout(triangles, max_vertices = MESHLET_MAX_VERTEX_COUNT, max_primitives = MESHLET_MAX_TRIANGLE_COUNT) out;
+
+// Shadow face ProjView matrix
+layout(location = 0) uniform mat4 u_ShadowProjView;
+
+// === Inline struct ===
+struct GpuMeshlet {
+    uint VertexOffset;
+    uint IndicesOffset;
+    uint VertexCount;
+    uint TriangleCount;
+};
+
+// === SSBOs ===
+layout(std430, binding = 8) restrict readonly buffer VertexDataSSBO {
+    Vertex vertices[];
+} vertexDataSSBO;
+
+layout(std430, binding = 11) restrict readonly buffer MeshletSSBO {
+    GpuMeshlet Meshlets[];
+} meshletSSBO;
+
+layout(std430, binding = 13) restrict readonly buffer MeshletVertexIndicesSSBO {
+    uint VertexIndices[];
+} meshletVertexIndicesSSBO;
+
+layout(std430, binding = 14) restrict readonly buffer MeshletLocalIndicesSSBO {
+    uint PackedIndices[];
+} meshletLocalIndicesSSBO;
+
+layout(std430, binding = 19) restrict readonly buffer TransformPaletteSSBO {
+    mat4 Transforms[];
+} transformPaletteSSBO;
+
+layout(std430, binding = 22) restrict readonly buffer RenderItemPoolSSBO {
+    GpuRenderItem RenderItems[];
+} renderItemPoolSSBO;
+
+taskNV in Task {
+    uint MeshletIndices[32];
+    uint RenderItemId;
+} IN;
+
+// Output world-space position for distance-based depth
+out ShadowData {
+    vec3 WorldPos;
+} outData[];
+
+void main()
+{
+    uint tid = gl_LocalInvocationID.x;
+    uint meshletIndex = IN.MeshletIndices[gl_WorkGroupID.x];
+
+    GpuRenderItem item = renderItemPoolSSBO.RenderItems[IN.RenderItemId];
+    GpuMeshlet meshlet = meshletSSBO.Meshlets[meshletIndex];
+
+    gl_PrimitiveCountNV = meshlet.TriangleCount;
+
+    mat4 worldMat = transformPaletteSSBO.Transforms[item.transformIndex];
+
+    // Process vertices
+    for (uint i = tid; i < meshlet.VertexCount; i += 32)
+    {
+        uint vertexIndex = meshletVertexIndicesSSBO.VertexIndices[meshlet.VertexOffset + i];
+        Vertex v = vertexDataSSBO.vertices[vertexIndex];
+
+        vec4 worldPos = worldMat * v.position;
+        gl_MeshVerticesNV[i].gl_Position = u_ShadowProjView * worldPos;
+        outData[i].WorldPos = worldPos.xyz;
+    }
+
+    // Process triangles (packed local indices)
+    uint packedCount = (meshlet.TriangleCount * 3 + 3) / 4;
+    for (uint i = tid; i < packedCount; i += 32)
+    {
+        writePackedPrimitiveIndices4x8NV(i * 4, meshletLocalIndicesSSBO.PackedIndices[meshlet.IndicesOffset + i]);
+    }
+}

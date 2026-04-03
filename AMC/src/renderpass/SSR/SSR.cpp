@@ -9,23 +9,18 @@ void SSR::create(AMC::RenderContext& context) {
 	glTextureParameteri(textureSSR, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTextureParameteri(textureSSR, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(textureSSR, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTextureStorage2D(textureSSR, 1, GL_RGBA16F, context.width, context.width);
+	glTextureStorage2D(textureSSR, 1, GL_RGBA16F, context.width, context.height);
 	context.textureSSRResult = textureSSR;
 }
 
 void SSR::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	if (!context.IsSSR) return;
-	//glBindTextureUnit(0, context.textureGBuffer[0]); // albedo
-	//glBindTextureUnit(1, context.textureGBuffer[1]); // normal
-	//glBindTextureUnit(2, context.textureGBuffer[2]); // metal-roughness
-	//glBindTextureUnit(3, context.textureGBufferDepth); // depth
-	//glBindTextureUnit(5, context.textureAtmosphere); // skyAlbedo
 	glBindImageTexture(0, textureSSR, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16F); // ImgResult
 	glBindTextureUnit(4, context.textureDeferredResult); // sampler src
 	m_ProgramSSR->use();
-	glUniform1i(m_ProgramSSR->getUniformLocation("SampleCount"), 30);
-	glUniform1i(m_ProgramSSR->getUniformLocation("BinarySearchCount"), 8);
-	glUniform1f(m_ProgramSSR->getUniformLocation("MaxDist"), 50.0f);
+	glUniform1i(m_ProgramSSR->getUniformLocation("SampleCount"), SampleCount);
+	glUniform1i(m_ProgramSSR->getUniformLocation("BinarySearchCount"), BinarySearchCount);
+	glUniform1f(m_ProgramSSR->getUniformLocation("MaxDist"), MaxDist);
 	GLuint workGroupSizeX = (context.width + 8 - 1) / 8;
 	GLuint workGroupSizeY = (context.height + 8 - 1) / 8;
 	glDispatchCompute(workGroupSizeX, workGroupSizeY, 1);

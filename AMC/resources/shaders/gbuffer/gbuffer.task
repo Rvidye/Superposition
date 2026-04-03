@@ -1,0 +1,64 @@
+#version 460 core
+
+#extension GL_NV_mesh_shader : require
+#extension GL_KHR_shader_subgroup_ballot : require
+#extension GL_ARB_bindless_texture : require
+
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+#include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
+#include<..\..\..\resources\shaders\include\Meshlet.glsl>
+#include<..\..\..\resources\shaders\include\Box.glsl>
+#include<..\..\..\resources\shaders\include\Frustum.glsl>
+#include<..\..\..\resources\shaders\include\Ray.glsl>
+#include<..\..\..\resources\shaders\include\IntersectionRoutines.glsl>
+
+layout(local_size_x = 32) in;
+
+layout(location = 0) uniform mat4 modelMat;
+layout(location = 1) uniform mat4 nodeMat;
+layout(location = 6) uniform uint meshletOffset;
+layout(location = 7) uniform uint meshletCount;
+
+taskNV out Task {
+    uint MeshletIndices[32];
+} OUT;
+
+void main()
+{
+    uint tid = gl_LocalInvocationID.x;
+    uint meshletIndex = gl_WorkGroupID.x * 32 + tid;
+
+    bool isVisible = false;
+
+    if (meshletIndex < meshletCount)
+    {
+        uint globalIndex = meshletOffset + meshletIndex;
+        GpuMeshletInfo info = meshletInfoSSBO.MeshletsInfo[globalIndex];
+
+        Box meshletBox;
+        meshletBox.Min = info.Min;
+        meshletBox.Max = info.Max;
+
+        // Transform AABB to world space
+        mat4 worldMat = modelMat * nodeMat;
+        Box worldBox = BoxTransform(meshletBox, worldMat);
+
+        // Frustum cull
+        Frustum frustum = GetFrustum(perFrameDataUBO.ProjView);
+        isVisible = FrustumBoxIntersect(frustum, worldBox);
+    }
+
+    uvec4 vote = subgroupBallot(isVisible);
+    uint survivorCount = subgroupBallotBitCount(vote);
+    uint survivorOffset = subgroupBallotExclusiveBitCount(vote);
+
+    if (isVisible)
+    {
+        OUT.MeshletIndices[survivorOffset] = meshletOffset + meshletIndex;
+    }
+
+    if (tid == 0)
+    {
+        gl_TaskCountNV = survivorCount;
+    }
+}

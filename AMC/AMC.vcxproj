@@ -157,8 +157,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)lib\debug;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\ucrt\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\um\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)lib\debug;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\ucrt\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\um\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\ucrt\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\um\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>assimp-vc143-mtd.lib;meshoptimizer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>
@@ -194,8 +194,8 @@ copy /Y "$(ProjectDir)lib\debug\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$(C
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>false</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)lib\release;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\ucrt\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\um\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)lib\release;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\ucrt\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\um\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\ucrt\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.26100.0\um\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>assimp-vc143-mt.lib;meshoptimizer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>
@@ -231,8 +231,12 @@ copy /Y "$(ProjectDir)lib\release\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$
     <ClCompile Include="src\module\Compression.cpp" />
     <ClCompile Include="src\module\LightManager.cpp" />
     <ClCompile Include="src\module\MemoryManager.cpp" />
+    <ClCompile Include="src\module\ModelAssetManager.cpp" />
     <ClCompile Include="src\module\ModelPlacer.cpp" />
+    <ClCompile Include="src\module\RenderExtractor.cpp" />
+    <ClCompile Include="src\module\SceneInstanceManager.cpp" />
     <ClCompile Include="src\module\ShadowManager.cpp" />
+    <ClCompile Include="src\module\SkinningSystem.cpp" />
     <ClCompile Include="src\module\SplineCameraAdjuster.cpp" />
     <ClCompile Include="src\module\BSpline.cpp" />
     <ClCompile Include="src\module\BSplineUtils.cpp" />
@@ -256,6 +260,7 @@ copy /Y "$(ProjectDir)lib\release\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$
     <ClCompile Include="src\renderpass\Skybox\SkyBoxPass.cpp" />
     <ClCompile Include="src\renderpass\SSAO\SSAOPass.cpp" />
     <ClCompile Include="src\renderpass\SSR\SSR.cpp" />
+    <ClCompile Include="src\renderpass\TAA\TAAPass.cpp" />
     <ClCompile Include="src\renderpass\TestPass\TestPass.cpp" />
     <ClCompile Include="src\renderpass\Tonemap\Tonemap.cpp" />
     <ClCompile Include="src\renderpass\VolumetricLighting\VolumetricLighting.cpp" />
@@ -1057,13 +1062,18 @@ copy /Y "$(ProjectDir)lib\release\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$
     <ClInclude Include="src\include\LightManager.h" />
     <ClInclude Include="src\include\Log.h" />
     <ClInclude Include="src\include\MemoryManager.h" />
+    <ClInclude Include="src\include\meshoptimizer\meshoptimizer.h" />
     <ClInclude Include="src\include\Model.h" />
+    <ClInclude Include="src\include\ModelAssetManager.h" />
     <ClInclude Include="src\include\ModelPlacer.h" />
+    <ClInclude Include="src\include\RenderExtractor.h" />
     <ClInclude Include="src\include\RenderPass.h" />
     <ClInclude Include="src\include\Scene.h" />
+    <ClInclude Include="src\include\SceneInstanceManager.h" />
     <ClInclude Include="src\include\ShaderProgram.h" />
     <ClInclude Include="src\include\RenderWindow.h" />
     <ClInclude Include="src\include\ShadowManager.h" />
+    <ClInclude Include="src\include\SkinningSystem.h" />
     <ClInclude Include="src\include\SplineCameraAdjuster.h" />
     <ClInclude Include="src\include\stb_image.h" />
     <ClInclude Include="src\include\TextureManager.h" />
@@ -1079,6 +1089,7 @@ copy /Y "$(ProjectDir)lib\release\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$
     <ClInclude Include="src\renderpass\Skybox\SkyBoxPass.h" />
     <ClInclude Include="src\renderpass\SSAO\SSAOPass.h" />
     <ClInclude Include="src\renderpass\SSR\SSR.h" />
+    <ClInclude Include="src\renderpass\TAA\TAAPass.h" />
     <ClInclude Include="src\renderpass\TestPass\TestPass.h" />
     <ClInclude Include="src\renderpass\Tonemap\Tonemap.h" />
     <ClInclude Include="src\renderpass\VolumetricLighting\VolumetricLighting.h" />

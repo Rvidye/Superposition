@@ -204,7 +204,15 @@ void RTPass::glWaitRTDone() {
 
 void RTPass::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 	if (computePipeline == VK_NULL_HANDLE || !semaphoresValid) return;
-	scene->RebuildTLAS();
+
+	// Don't dispatch RT work if no TLAS was ever built or descriptor is invalid
+	if (!scene->tlasBuilt || scene->tlas == VK_NULL_HANDLE) return;
+
+	// Only rebuild TLAS when geometry actually changed
+	if (context.dirtyFlags.tlasDirty) {
+		scene->RebuildTLAS();
+	}
+
 	memset(context.rtLightLayers, -1, sizeof(context.rtLightLayers));
 	context.rtShadowLightCount = 0;
 
@@ -218,6 +226,8 @@ void RTPass::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 		for (int i = 0; i < MAX_LIGHTS; i++) {
 			AMC::Light* light = scene->lightManager->GetLight(i);
 			if (!light || !light->gpuLight.active || !light->gpuLight.shadows) continue;
+			// Only trace lights resolved to RT backend (Fix B)
+			if (light->shadowBackend != AMC::ShadowBackend::RTShadow) continue;
 			if (static_cast<int>(rtLights.size()) >= MAX_LIGHTS) break;
 
 			int layerIdx = static_cast<int>(rtLights.size());

@@ -24,10 +24,10 @@ namespace AMC {
 	inline constexpr int HairMeshSliceCount = HairLayerCount * 4 + 1;
 	inline constexpr int HairStyleSliceCount = HairLayerCount + 1;
 	inline constexpr int HairPatchQuadCount = 4;
-	inline constexpr float HairRootHalfExtent = 0.28f;
-	inline constexpr float HairLayerHalfExtent = 0.18f;
-	inline constexpr float HairLayerHeight = 0.9f;
-	inline constexpr float HairRibbonHalfWidth = 0.006f;
+	inline constexpr float HairRootHalfExtent = 0.055f;
+	inline constexpr float HairLayerHalfExtent = 0.035f;
+	inline constexpr float HairLayerHeight = 0.16f;
+	inline constexpr float HairRibbonHalfWidth = 0.0006f;
 
 	enum class HairBundleTopology : int {
 		Quad = 0,

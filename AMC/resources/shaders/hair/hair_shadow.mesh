@@ -87,7 +87,7 @@ void main()
         vec3 worldTangent = HairSafeNormalize(mat3(modelMat) * localTangent, vec3(0.0, 1.0, 0.0));
         vec3 lightDir = HairSafeNormalize(u_LightPos - worldCenter, vec3(0.0, -1.0, 0.0));
         vec3 ribbonAxis = HairComputeBillboardAxis(worldTangent, lightDir);
-        vec3 offset = ribbonAxis * max(s_halfWidth, 0.001);
+        vec3 offset = ribbonAxis * max(s_halfWidth, 1e-5);
 
         uint leftVertex = tid * 2u;
         uint rightVertex = leftVertex + 1u;

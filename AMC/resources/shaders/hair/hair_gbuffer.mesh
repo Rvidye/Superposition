@@ -91,7 +91,7 @@ void main()
         vec3 worldTangent = HairSafeNormalize(mat3(modelMat) * localTangent, vec3(0.0, 1.0, 0.0));
         vec3 viewDir = HairSafeNormalize(perFrameDataUBO.ViewPos - worldCenter, vec3(0.0, 0.0, 1.0));
         vec3 ribbonAxis = HairComputeBillboardAxis(worldTangent, viewDir);
-        vec3 offset = ribbonAxis * max(s_halfWidth, 0.001);
+        vec3 offset = ribbonAxis * max(s_halfWidth, 1e-5);
 
         vec4 centerClipPos = perFrameDataUBO.ProjView * vec4(worldCenter, 1.0);
         vec4 prevClipPos = perFrameDataUBO.PrevProjView * vec4(prevWorldCenter, 1.0);

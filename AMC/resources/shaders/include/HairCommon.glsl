@@ -62,20 +62,29 @@ vec3 HairSampleBetweenSlices(vec2 atlasUV, int sliceA, int sliceB, float t)
 
 vec3 HairEvaluateLocalCenterFromAtlasUV(vec2 atlasUV, float t)
 {
-    int tipSlice = hairAssetUBO.hairAsset.Counts.x * 4;
-    int midSlice = tipSlice / 2;
+    // Texture stores L cubic Bezier segments end-to-end. Each segment occupies
+    // 5 slices [P0, leftCtrl, mid, rightCtrl, P3] and is split into two
+    // quadratic Beziers per Truong et al. [2020]. Total slices = 4L + 1.
+    int layerCount = max(hairAssetUBO.hairAsset.Counts.x, 1);
+    float clampedT = clamp(t, 0.0, 1.0);
+    float scaledT = clampedT * float(layerCount);
+    int segmentIndex = min(int(floor(scaledT)), layerCount - 1);
+    float segmentT = scaledT - float(segmentIndex);
+    int sliceBase = segmentIndex * 4;
 
-    if (t <= 0.5)
+    if (segmentT <= 0.5)
     {
-        float localT = t * 2.0;
-        vec3 a = HairSampleBetweenSlices(atlasUV, 0, 1, localT);
-        vec3 b = HairSampleBetweenSlices(atlasUV, 1, midSlice, localT);
+        // First quadratic of this cubic segment: [P0, leftCtrl, mid]
+        float localT = segmentT * 2.0;
+        vec3 a = HairSampleBetweenSlices(atlasUV, sliceBase + 0, sliceBase + 1, localT);
+        vec3 b = HairSampleBetweenSlices(atlasUV, sliceBase + 1, sliceBase + 2, localT);
         return mix(a, b, localT);
     }
 
-    float localT = (t - 0.5) * 2.0;
-    vec3 a = HairSampleBetweenSlices(atlasUV, midSlice, tipSlice - 1, localT);
-    vec3 b = HairSampleBetweenSlices(atlasUV, tipSlice - 1, tipSlice, localT);
+    // Second quadratic of this cubic segment: [mid, rightCtrl, P3]
+    float localT = (segmentT - 0.5) * 2.0;
+    vec3 a = HairSampleBetweenSlices(atlasUV, sliceBase + 2, sliceBase + 3, localT);
+    vec3 b = HairSampleBetweenSlices(atlasUV, sliceBase + 3, sliceBase + 4, localT);
     return mix(a, b, localT);
 }
 

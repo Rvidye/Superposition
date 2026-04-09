@@ -16,12 +16,14 @@ class Voxelizer : public AMC::RenderPass {
 		void ClearTextures();
 		void Voxelize(const AMC::Scene* scene);
 		void VoxelizeMesh(const AMC::Scene* scene, bool useMeshShaders);
+		void VoxelizeHair(const AMC::Scene* scene);
 		void MipMap();
 		void DubugVoxels(AMC::RenderContext& context);
 
 		AMC::ShaderProgram* m_ProgramClearTexture = nullptr;
 		AMC::ShaderProgram* m_ProgramVoxelize = nullptr;
 		AMC::ShaderProgram* m_ProgramVoxelizeMesh = nullptr; // mesh pipeline path
+		AMC::ShaderProgram* m_ProgramHairVoxelize = nullptr;
 		AMC::ShaderProgram* m_ProgramMipMap = nullptr;
 		AMC::ShaderProgram* m_ProgramVisualizeDebug = nullptr;
 

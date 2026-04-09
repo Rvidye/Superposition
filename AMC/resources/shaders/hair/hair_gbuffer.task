@@ -1,0 +1,50 @@
+#version 460 core
+
+#extension GL_NV_mesh_shader : require
+#extension GL_ARB_bindless_texture : require
+
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+#include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
+#include<..\..\..\resources\shaders\include\HairTypes.glsl>
+#include<..\..\..\resources\shaders\include\HairCommon.glsl>
+#include<..\..\..\resources\shaders\include\Box.glsl>
+#include<..\..\..\resources\shaders\include\Frustum.glsl>
+#include<..\..\..\resources\shaders\include\Ray.glsl>
+#include<..\..\..\resources\shaders\include\IntersectionRoutines.glsl>
+
+layout(local_size_x = 32) in;
+
+layout(location = 0) uniform mat4 modelMat;
+
+taskNV out Task
+{
+    uint BundleIndex;
+    uint RootSampleOffset;
+    float LodFactor;
+} OUT;
+
+void main()
+{
+    if (gl_LocalInvocationID.x != 0u)
+    {
+        return;
+    }
+
+    const uint bundleIndex = gl_WorkGroupID.x;
+    HairBundleDesc bundle = hairBundleSSBO.Bundles[bundleIndex];
+
+    Box localBox;
+    localBox.Min = bundle.BoundsMin;
+    localBox.Max = bundle.BoundsMax;
+    Box worldBox = BoxTransform(localBox, modelMat);
+
+    Frustum frustum = GetFrustum(perFrameDataUBO.ProjView);
+    bool isVisible = FrustumBoxIntersect(frustum, worldBox);
+    float lodFactor = HairComputeBundleLodFactor(worldBox.Min, worldBox.Max, perFrameDataUBO.ViewPos, perFrameDataUBO.Projection);
+    uint strandCount = HairComputeBundleLodCount(bundleIndex, uint(bundle.RootInfo.y), lodFactor);
+
+    OUT.BundleIndex = bundleIndex;
+    OUT.RootSampleOffset = uint(bundle.RootInfo.x);
+    OUT.LodFactor = lodFactor;
+    gl_TaskCountNV = isVisible ? strandCount : 0u;
+}

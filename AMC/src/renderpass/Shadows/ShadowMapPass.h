@@ -13,6 +13,7 @@ public:
 	void renderUI() override;
 	AMC::ShaderProgram* m_programPointShadowMap = nullptr;
 	AMC::ShaderProgram* m_programShadowMesh = nullptr;  // mesh task/frag for shadows
+	AMC::ShaderProgram* m_programHairShadow = nullptr;
 #ifdef _MYDEBUG
 	AMC::ShadowManager* sm = nullptr;
 #endif

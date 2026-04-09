@@ -22,6 +22,8 @@
 #include "renderpass/TestPass/TestPass.h"
 #include "renderpass/Shadows/ShadowMapPass.h"
 #include "renderpass/GBuffer/GBufferPass.h"
+#include "renderpass/Hair/HairSimulationPass.h"
+#include "renderpass/Hair/HairGBufferPass.h"
 #include "renderpass/DebugPass/DebugDrawPass.h"
 #include "renderpass/SSAO/SSAOPass.h"
 #include "renderpass/SSR/SSR.h"
@@ -612,6 +614,9 @@ void RenderFrame(void)
 	ImGui::Text("Renderer Properties");
 	ImGui::Checkbox("IsVXGI", &gpRenderer->context.IsVGXI);
 	ImGui::Checkbox("IsGenerateShadowMaps", &gpRenderer->context.IsGenerateShadowMaps);
+	ImGui::Checkbox("IsHair", &gpRenderer->context.IsHair);
+	ImGui::Checkbox("HairCastShadows", &gpRenderer->context.HairCastShadows);
+	ImGui::Checkbox("HairDebugWireframe", &gpRenderer->context.IsHairDebugWireframe);
 	ImGui::Checkbox("IsSSAO", &gpRenderer->context.IsSSAO);
 	ImGui::Checkbox("IsSSR", &gpRenderer->context.IsSSR);
 	ImGui::Checkbox("IsSkyBox", &gpRenderer->context.IsSkyBox);
@@ -741,9 +746,12 @@ void InitRenderPasses()
 
 	// Add passes here
 	gpRenderer->addPass(new AtmosphericScatterer());
+	gpRenderer->addPass(new HairSimulationPass());
 	gpRenderer->addPass(new ShadowMapPass());
 	gpRenderer->addPass(new Voxelizer());
-	gpRenderer->addPass(new GBufferPass(vkcontext));
+	auto* gbufferPass = new GBufferPass(vkcontext);
+	gpRenderer->addPass(gbufferPass);
+	gpRenderer->addPass(new HairGBufferPass(gbufferPass));
 #ifdef _MYDEBUG
 	gpRenderer->addPass(new DebugDrawPass());
 #endif

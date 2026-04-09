@@ -2,6 +2,7 @@
 
 #include<common.h>
 #include<Model.h>
+#include<HairMeshAsset.h>
 #include<Camera.h>
 #include<LightManager.h>
 #include<VulkanHelperClasses.h>
@@ -17,12 +18,20 @@ namespace AMC {
 		UINT numInstance = 1;
 	};
 
+	struct RenderHair {
+		HairMeshAsset* asset = nullptr;
+		glm::mat4 matrix = glm::mat4(1.0f);
+		glm::mat4 prevMatrix = glm::mat4(1.0f);
+		bool visible = true;
+	};
+
 	class Scene {
 		public:
 			Scene(const AMC::VkContext* vkctx);
 			virtual void init() = 0;
 			//virtual void render() = 0; I would prefer if we don't let user draw whatever they want and pass system should render all the objects instead.
 			virtual void renderDebug() = 0; // only used in debug mode
+			virtual void renderHairDebug(RenderContext& context) {}
 			virtual void renderUI() = 0;
 			virtual void update() = 0;
 			virtual void keyboardfunc(char key, UINT keycode) = 0;
@@ -73,7 +82,6 @@ namespace AMC {
 			void reCalculateSceneAABB() {
 				sceneAABB.mMin = glm::vec3(FLT_MAX);
 				sceneAABB.mMax = glm::vec3(-FLT_MAX);
-				if (models.empty()) return;
 				for (const auto& [name, rendermodel] : models) {
 
 					if (!rendermodel.visible || !rendermodel.model)	continue;
@@ -109,6 +117,39 @@ namespace AMC {
 						sceneAABB.mMax = glm::max(sceneAABB.mMax, transformedAABB.mMax);
 					}
 				}
+
+				for (const auto& [name, renderhair] : hairs) {
+					if (!renderhair.visible || renderhair.asset == nullptr)	continue;
+
+					const AABB& hairAABB = renderhair.asset->bounds;
+					const glm::mat4& transform = renderhair.matrix;
+
+					glm::vec3 vertices[8] = {
+						glm::vec3(hairAABB.mMin.x, hairAABB.mMin.y, hairAABB.mMin.z),
+						glm::vec3(hairAABB.mMax.x, hairAABB.mMin.y, hairAABB.mMin.z),
+						glm::vec3(hairAABB.mMin.x, hairAABB.mMax.y, hairAABB.mMin.z),
+						glm::vec3(hairAABB.mMax.x, hairAABB.mMax.y, hairAABB.mMin.z),
+						glm::vec3(hairAABB.mMin.x, hairAABB.mMin.y, hairAABB.mMax.z),
+						glm::vec3(hairAABB.mMax.x, hairAABB.mMin.y, hairAABB.mMax.z),
+						glm::vec3(hairAABB.mMin.x, hairAABB.mMax.y, hairAABB.mMax.z),
+						glm::vec3(hairAABB.mMax.x, hairAABB.mMax.y, hairAABB.mMax.z),
+					};
+
+					AABB transformedAABB = { glm::vec3(FLT_MAX), glm::vec3(-FLT_MAX) };
+					for (const glm::vec3& vertex : vertices) {
+						glm::vec3 worldVertex = glm::vec3(transform * glm::vec4(vertex, 1.0f));
+						transformedAABB.mMin = glm::min(transformedAABB.mMin, worldVertex);
+						transformedAABB.mMax = glm::max(transformedAABB.mMax, worldVertex);
+					}
+
+					sceneAABB.mMin = glm::min(sceneAABB.mMin, transformedAABB.mMin);
+					sceneAABB.mMax = glm::max(sceneAABB.mMax, transformedAABB.mMax);
+				}
+
+				if (sceneAABB.mMin.x == FLT_MAX) {
+					sceneAABB.mMin = glm::vec3(0.0f);
+					sceneAABB.mMax = glm::vec3(0.0f);
+				}
 			}
 
 			bool OverrideRenderer = false;
@@ -125,6 +166,7 @@ namespace AMC {
 			VkFence tlasFence = VK_NULL_HANDLE;
 			bool completed = false;
 			std::unordered_map<std::string, RenderModel> models;
+			std::unordered_map<std::string, RenderHair> hairs;
 			LightManager *lightManager  = nullptr;
 			AABB sceneAABB = {glm::vec3(FLT_MAX),glm::vec3(-FLT_MAX)};
 			const VkContext* ctx;

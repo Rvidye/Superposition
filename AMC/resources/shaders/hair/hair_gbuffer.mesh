@@ -1,0 +1,128 @@
+#version 460 core
+
+#extension GL_NV_mesh_shader : require
+#extension GL_ARB_bindless_texture : require
+
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+#include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
+#include<..\..\..\resources\shaders\include\HairTypes.glsl>
+#include<..\..\..\resources\shaders\include\HairCommon.glsl>
+
+layout(local_size_x = 32) in;
+layout(triangles, max_vertices = 34, max_primitives = 32) out;
+
+layout(location = 0) uniform mat4 modelMat;
+layout(location = 4) uniform mat4 prevModelMat;
+
+taskNV in Task
+{
+    uint BundleIndex;
+    uint RootSampleOffset;
+    float LodFactor;
+} IN;
+
+out InOutData
+{
+    vec3 HairTangent;
+    vec4 CenterClipPos;
+    vec4 CenterPrevClipPos;
+} outData[];
+
+shared vec3 s_styledCenters[17];
+shared vec3 s_renderCenters[17];
+shared uint s_renderStep;
+shared uint s_parentStep;
+shared uint s_renderSegmentCount;
+shared uint s_renderCenterCount;
+shared float s_morphGamma;
+shared float s_halfWidth;
+
+void main()
+{
+    uint tid = gl_LocalInvocationID.x;
+    HairBundleDesc bundle = hairBundleSSBO.Bundles[IN.BundleIndex];
+    uint rootSampleIndex = IN.RootSampleOffset + gl_WorkGroupID.x;
+    HairRootSample rootSample = hairRootSampleSSBO.Samples[rootSampleIndex];
+
+    if (tid < HAIR_MAX_CENTER_COUNT)
+    {
+        float strandT = float(tid) / float(HAIR_MAX_SEGMENTS);
+        s_styledCenters[tid] = HairEvaluateStyledLocalCenter(bundle, rootSample.UVSeed.xy, rootSample.UVSeed.zw, strandT);
+    }
+
+    barrier();
+
+    if (tid == 0u)
+    {
+        HairLodSelection lodSelection = HairSelectSegmentLod(IN.LodFactor);
+        s_renderStep = lodSelection.RenderStep;
+        s_parentStep = lodSelection.ParentStep;
+        s_renderSegmentCount = lodSelection.RenderSegmentCount;
+        s_renderCenterCount = lodSelection.RenderCenterCount;
+        s_morphGamma = lodSelection.MorphGamma;
+        s_halfWidth = hairAssetUBO.hairAsset.LODParams.x * HairComputeThicknessScale(IN.LodFactor);
+        gl_PrimitiveCountNV = s_renderSegmentCount * 2u;
+    }
+
+    barrier();
+
+    if (tid < s_renderCenterCount)
+    {
+        uint baseIndex = tid * s_renderStep;
+        vec3 localCenter = s_styledCenters[baseIndex];
+
+        if (s_parentStep > s_renderStep && s_morphGamma > 0.0 && tid > 0u && tid + 1u < s_renderCenterCount && (tid & 1u) == 1u)
+        {
+            vec3 midpoint = 0.5 * (s_styledCenters[baseIndex - s_renderStep] + s_styledCenters[baseIndex + s_renderStep]);
+            localCenter = mix(localCenter, midpoint, s_morphGamma);
+        }
+
+        s_renderCenters[tid] = localCenter;
+    }
+
+    barrier();
+
+    if (tid < s_renderCenterCount)
+    {
+        vec3 localCenter = s_renderCenters[tid];
+        vec3 localTangent = HairComputeLocalTangent(s_renderCenters, s_renderCenterCount, tid);
+        vec3 worldCenter = vec3(modelMat * vec4(localCenter, 1.0));
+        vec3 prevWorldCenter = vec3(prevModelMat * vec4(localCenter, 1.0));
+        vec3 worldTangent = HairSafeNormalize(mat3(modelMat) * localTangent, vec3(0.0, 1.0, 0.0));
+        vec3 viewDir = HairSafeNormalize(perFrameDataUBO.ViewPos - worldCenter, vec3(0.0, 0.0, 1.0));
+        vec3 ribbonAxis = HairComputeBillboardAxis(worldTangent, viewDir);
+        vec3 offset = ribbonAxis * max(s_halfWidth, 0.001);
+
+        vec4 centerClipPos = perFrameDataUBO.ProjView * vec4(worldCenter, 1.0);
+        vec4 prevClipPos = perFrameDataUBO.PrevProjView * vec4(prevWorldCenter, 1.0);
+
+        uint leftVertex = tid * 2u;
+        uint rightVertex = leftVertex + 1u;
+
+        gl_MeshVerticesNV[leftVertex].gl_Position = perFrameDataUBO.ProjView * vec4(worldCenter - offset, 1.0);
+        gl_MeshVerticesNV[rightVertex].gl_Position = perFrameDataUBO.ProjView * vec4(worldCenter + offset, 1.0);
+
+        outData[leftVertex].HairTangent = worldTangent;
+        outData[rightVertex].HairTangent = worldTangent;
+        outData[leftVertex].CenterClipPos = centerClipPos;
+        outData[rightVertex].CenterClipPos = centerClipPos;
+        outData[leftVertex].CenterPrevClipPos = prevClipPos;
+        outData[rightVertex].CenterPrevClipPos = prevClipPos;
+    }
+
+    uint primitiveByteCount = (s_renderSegmentCount * 2u) * 3u;
+    uint packedCount = (primitiveByteCount + 3u) / 4u;
+    for (uint packedIndex = tid; packedIndex < packedCount; packedIndex += 32u)
+    {
+        uint packedValue = 0u;
+        for (uint byteOffset = 0u; byteOffset < 4u; ++byteOffset)
+        {
+            uint primitiveByte = packedIndex * 4u + byteOffset;
+            if (primitiveByte < primitiveByteCount)
+            {
+                packedValue = packedValue | ((HairPrimitiveIndexAt(primitiveByte) & 0xffu) << (byteOffset * 8u));
+            }
+        }
+        writePackedPrimitiveIndices4x8NV(packedIndex * 4u, packedValue);
+    }
+}

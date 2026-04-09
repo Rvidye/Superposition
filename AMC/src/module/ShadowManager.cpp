@@ -6,6 +6,7 @@
 #include<RenderExtractor.h>
 #include<ModelAssetManager.h>
 #include<SceneInstanceManager.h>
+#include<HairMeshAsset.h>
 
 static const int SHADOWMAP_SIZE = 512;
 
@@ -448,9 +449,11 @@ namespace AMC {
     void ShadowManager::RenderShadowMapsMesh(
         ShaderProgram* meshProgram,
         ShaderProgram* legacyProgram,
+        ShaderProgram* hairProgram,
         const Scene* scene,
         const RenderExtractor& extractor,
-        bool useMeshShaders)
+        bool useMeshShaders,
+        bool renderHair)
     {
         // Create per-face FBO on first use
         if (!m_meshFBOCreated) {
@@ -479,7 +482,7 @@ namespace AMC {
             glViewport(0, 0, SHADOWMAP_SIZE, SHADOWMAP_SIZE);
 
             // === Mesh pipeline path: render 6 faces separately with meshlet culling ===
-            if (useMeshShaders && extractor.HasItems()) {
+            if (useMeshShaders && meshProgram && extractor.HasItems()) {
                 meshProgram->use();
 
                 // Set light position and far plane for fragment shader
@@ -539,6 +542,31 @@ namespace AMC {
                 glUniformMatrix4fv(legacyProgram->getUniformLocation("model"),
                     1, GL_FALSE, glm::value_ptr(obj.matrix));
                 obj.model->draw(legacyProgram, obj.numInstance, false);
+            }
+
+            if (renderHair && hairProgram) {
+                hairProgram->use();
+                glUniform3fv(4, 1, glm::value_ptr(shadow.gpuShadow.Position));
+                glUniform1f(5, shadow.gpuShadow.FarPlane);
+                glBindVertexArray(0);
+
+                for (int face = 0; face < 6; ++face) {
+                    glNamedFramebufferTextureLayer(m_meshShadowFBO, GL_DEPTH_ATTACHMENT,
+                        shadow.texture, 0, face);
+                    glBindFramebuffer(GL_FRAMEBUFFER, m_meshShadowFBO);
+                    glUniformMatrix4fv(0, 1, GL_FALSE,
+                        glm::value_ptr(shadow.gpuShadow.ProjViewMatrices[face]));
+
+                    for (const auto& [hairName, hair] : scene->hairs) {
+                        if (!hair.visible || hair.asset == nullptr || !hair.asset->IsValid()) {
+                            continue;
+                        }
+
+                        hair.asset->Bind();
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(hair.matrix));
+                        glDrawMeshTasksNV(0, hair.asset->GetBundleCount());
+                    }
+                }
             }
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);

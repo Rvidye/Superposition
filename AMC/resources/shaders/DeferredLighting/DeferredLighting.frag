@@ -9,6 +9,7 @@
 #include<..\..\..\resources\shaders\include\Compression.glsl>
 #include<..\..\..\resources\shaders\include\Surface.glsl>
 #include<..\..\..\resources\shaders\include\Pbr.glsl>
+#include<..\..\..\resources\shaders\include\HairMarschner.glsl>
 
 layout(location = 0) out vec4 OutFragColor;
 
@@ -69,7 +70,9 @@ void main()
         Light light = u_Lights[i];
         if(light.isactive == 0) continue;
 
-        vec3 contribution = EvaluateLighting(light, surface, fragPos, perFrameDataUBO.ViewPos, ambientOcclusion);
+        vec3 contribution = (alpha < 0.01)
+            ? HairShade(light, surface, fragPos, perFrameDataUBO.ViewPos, ambientOcclusion)
+            : EvaluateLighting(light, surface, fragPos, perFrameDataUBO.ViewPos, ambientOcclusion);
 
         if (contribution != vec3(0.0) && IsShadows)
         {

@@ -33,10 +33,16 @@ class testScene : public AMC::Scene {
 		void init() override;
 		//void render() override;
 		void renderDebug() override;
+		void renderHairDebug(AMC::RenderContext& context) override;
 		void renderUI() override;
 		void update() override;
 		void keyboardfunc(char key, UINT keycode) override;
 		void updateRenderContext(AMC::RenderContext& context) override;
 		AMC::Camera* getCamera() override;
+
+	private:
+		AMC::ShaderProgram* hairDebugProgram = nullptr;
+		GLuint hairDebugVAO = 0;
+		GLuint hairDebugVBO = 0;
 };
 

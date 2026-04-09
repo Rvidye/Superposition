@@ -1,5 +1,8 @@
 #include "testScene.h"
 
+#include<RenderPass.h>
+#include<HairMeshAsset.h>
+
 void testScene::sceneEnd(float t)
 {
 	if (t > 0.99f)
@@ -27,6 +30,15 @@ void testScene::init()
 	// Shader Program Setup
 	programModel = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\model.vert"),RESOURCE_PATH("shaders\\model\\model.frag") });
 	programModelAnim = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\model\\modelAnim.vert"),RESOURCE_PATH("shaders\\model\\model.frag") });
+	hairDebugProgram = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\color\\color.vert"), RESOURCE_PATH("shaders\\color\\color.frag") });
+
+	glCreateVertexArrays(1, &hairDebugVAO);
+	glCreateBuffers(1, &hairDebugVBO);
+	glNamedBufferData(hairDebugVBO, sizeof(glm::vec4), nullptr, GL_DYNAMIC_DRAW);
+	glVertexArrayVertexBuffer(hairDebugVAO, 0, hairDebugVBO, 0, sizeof(glm::vec4));
+	glEnableVertexArrayAttrib(hairDebugVAO, 0);
+	glVertexArrayAttribFormat(hairDebugVAO, 0, 4, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayAttribBinding(hairDebugVAO, 0, 0);
 
 	// ModelPlacer
 	mp = new AMC::ModelPlacer(glm::vec3(0.0, 0.0, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1.0f);
@@ -41,6 +53,34 @@ void testScene::init()
 	animman.model = new AMC::Model(RESOURCE_PATH("models\\DamagedHelmet\\DamagedHelmet.gltf"), aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes, ctx);
 	animman.matrix = mp->getModelMatrix();
 	addModel("man", animman);
+
+	const glm::mat4 sweptLeftMatrix =
+		glm::translate(glm::mat4(1.0f), glm::vec3(-0.32f, 1.48f, 0.10f)) *
+		glm::rotate(glm::mat4(1.0f), glm::radians(-16.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	const glm::mat4 crownBobMatrix =
+		glm::translate(glm::mat4(1.0f), glm::vec3(0.00f, 1.52f, 0.00f));
+	const glm::mat4 ponytailMatrix =
+		glm::translate(glm::mat4(1.0f), glm::vec3(0.34f, 1.54f, -0.08f)) *
+		glm::rotate(glm::mat4(1.0f), glm::radians(12.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	hairs["hair_swept_left"] = {
+		new AMC::HairMeshAsset(RESOURCE_PATH("hair\\authoring\\swept_left.json")),
+		sweptLeftMatrix,
+		sweptLeftMatrix,
+		true
+	};
+	hairs["hair_crown_bob"] = {
+		new AMC::HairMeshAsset(RESOURCE_PATH("hair\\authoring\\crown_bob.json")),
+		crownBobMatrix,
+		crownBobMatrix,
+		true
+	};
+	hairs["hair_ponytail"] = {
+		new AMC::HairMeshAsset(RESOURCE_PATH("hair\\authoring\\ponytail_fan.json")),
+		ponytailMatrix,
+		ponytailMatrix,
+		true
+	};
 
 	// Spline Camera Setup
 	std::vector<glm::vec3> posVec = {
@@ -148,6 +188,7 @@ void testScene::init()
 	lightManager->AddLight(point);
 	lightManager->AddLight(spot);
 	//lightManager->AddLight(directional);
+	reCalculateSceneAABB();
 }
 
 //void testScene::render()
@@ -176,6 +217,38 @@ void testScene::renderDebug()
 			break;
 		case AMC::NONE:
 			break;
+	}
+}
+
+void testScene::renderHairDebug(AMC::RenderContext& context)
+{
+	if (!context.IsHairDebugWireframe || hairDebugProgram == nullptr || hairDebugVAO == 0) {
+		return;
+	}
+
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_BLEND);
+	glLineWidth(1.5f);
+
+	hairDebugProgram->use();
+	glUniform4f(2, 0.1f, 0.9f, 1.0f, 1.0f);
+	glBindVertexArray(hairDebugVAO);
+
+	for (const auto& [name, hair] : hairs) {
+		if (!hair.visible || hair.asset == nullptr) {
+			continue;
+		}
+
+		const auto& lines = hair.asset->GetDebugLineVertices();
+		if (lines.empty()) {
+			continue;
+		}
+
+		const glm::mat4 mvp = AMC::currentCamera->getProjectionMatrix() * AMC::currentCamera->getViewMatrix() * hair.matrix;
+		glNamedBufferData(hairDebugVBO, static_cast<GLsizeiptr>(lines.size() * sizeof(glm::vec4)), lines.data(), GL_DYNAMIC_DRAW);
+		glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvp));
+		glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(lines.size()));
 	}
 }
 

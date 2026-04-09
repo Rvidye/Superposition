@@ -5,6 +5,7 @@
 void ShadowMapPass::create(AMC::RenderContext& context) {
 	m_programPointShadowMap = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\shadows\\shadowVS.vert"), RESOURCE_PATH("shaders\\shadows\\shadowPointGS.geom"), RESOURCE_PATH("shaders\\shadows\\shadowFS.frag") });
 	m_programShadowMesh = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\shadows\\shadow_indirect.task"), RESOURCE_PATH("shaders\\shadows\\shadow_indirect.mesh"), RESOURCE_PATH("shaders\\shadows\\shadow_indirect.frag") });
+	m_programHairShadow = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\hair\\hair_shadow.task"), RESOURCE_PATH("shaders\\hair\\hair_shadow.mesh"), RESOURCE_PATH("shaders\\hair\\hair_shadow.frag") });
 }
 
 void ShadowMapPass::execute(AMC::Scene* scene, AMC::RenderContext& context) {
@@ -22,10 +23,11 @@ void ShadowMapPass::execute(AMC::Scene* scene, AMC::RenderContext& context) {
 
 	AMC::ShadowManager *sm = scene->lightManager->GetShadowManager();
 	auto& extractor = AMC::RenderExtractor::Get();
+	const bool renderHairShadows = context.HairCastShadows && !scene->hairs.empty() && m_programHairShadow != nullptr;
 
-	if (context.UseMeshShaders && m_programShadowMesh) {
-		sm->RenderShadowMapsMesh(m_programShadowMesh, m_programPointShadowMap,
-			scene, extractor, true);
+	if ((context.UseMeshShaders && m_programShadowMesh) || renderHairShadows) {
+		sm->RenderShadowMapsMesh(m_programShadowMesh, m_programPointShadowMap, m_programHairShadow,
+			scene, extractor, context.UseMeshShaders, renderHairShadows);
 	} else {
 		sm->RenderShadowMaps(m_programPointShadowMap, scene);
 	}

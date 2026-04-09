@@ -1,0 +1,85 @@
+#version 460 core
+
+#extension GL_ARB_bindless_texture : require
+
+#include<..\..\..\resources\shaders\include\HairTypes.glsl>
+
+layout(local_size_x = 64) in;
+
+vec3 HairSimSafeNormalize(vec3 value, vec3 fallback)
+{
+    float len2 = dot(value, value);
+    if (len2 <= 1e-8)
+    {
+        return fallback;
+    }
+    return value * inversesqrt(len2);
+}
+
+void main()
+{
+    uint pointIndex = gl_GlobalInvocationID.x;
+    uint controlPointCount = uint(hairSimulationUBO.hairSimulation.Limits.w);
+    if (pointIndex >= controlPointCount)
+    {
+        return;
+    }
+
+    HairSimulationRestPointGpuData restPoint = hairSimulationRestSSBO.RestPoints[pointIndex];
+    HairSimulationPointGpuData currentPoint = hairSimulationReadSSBO.ReadPoints[pointIndex];
+
+    uint patchVertexCount = uint(hairAssetUBO.hairAsset.Counts.y + 1);
+    uint layerVertexCount = patchVertexCount * patchVertexCount;
+    uint layerIndex = pointIndex / layerVertexCount;
+
+    if (hairSimulationUBO.hairSimulation.Limits.z < 0.5 || layerIndex == 0u)
+    {
+        hairSimulationWriteSSBO.WritePoints[pointIndex].Position = restPoint.Position;
+        hairSimulationWriteSSBO.WritePoints[pointIndex].Velocity = vec4(0.0);
+        return;
+    }
+
+    uint parentIndex = pointIndex - layerVertexCount;
+    vec3 restPosition = restPoint.Position.xyz;
+    vec3 parentPosition = hairSimulationReadSSBO.ReadPoints[parentIndex].Position.xyz;
+    vec3 restParentPosition = hairSimulationRestSSBO.RestPoints[parentIndex].Position.xyz;
+    vec3 currentPosition = currentPoint.Position.xyz;
+    vec3 currentVelocity = currentPoint.Velocity.xyz;
+
+    float dt = max(hairSimulationUBO.hairSimulation.GravityDeltaTime.w, 1e-5);
+    float tipWeight = clamp(restPoint.UVW.z * hairSimulationUBO.hairSimulation.Dynamics.w, 0.0, 2.0);
+    float windPulse = 0.5 + 0.5 * sin(
+        hairSimulationUBO.hairSimulation.WindDirectionTime.w * hairSimulationUBO.hairSimulation.Limits.y
+        + restPoint.UVW.x * 13.7
+        + restPoint.UVW.y * 9.1
+    );
+    vec3 acceleration = hairSimulationUBO.hairSimulation.GravityDeltaTime.xyz;
+    acceleration += hairSimulationUBO.hairSimulation.WindDirectionTime.xyz
+        * hairSimulationUBO.hairSimulation.Dynamics.x
+        * windPulse
+        * (0.25 + tipWeight);
+
+    vec3 velocity = currentVelocity * max(1.0 - hairSimulationUBO.hairSimulation.Dynamics.z * dt, 0.0);
+    velocity += acceleration * dt;
+    vec3 position = currentPosition + velocity * dt;
+
+    float stiffness = clamp(hairSimulationUBO.hairSimulation.Dynamics.y * dt * 0.05, 0.0, 1.0);
+    position = mix(position, restPosition, stiffness * (1.0 - 0.35 * restPoint.UVW.z));
+
+    vec3 restSegment = restPosition - restParentPosition;
+    float restLength = max(length(restSegment), 1e-5);
+    vec3 segmentDirection = HairSimSafeNormalize(position - parentPosition, HairSimSafeNormalize(restSegment, vec3(0.0, 1.0, 0.0)));
+    position = parentPosition + segmentDirection * restLength;
+
+    vec3 displacement = position - restPosition;
+    float maxDisplacement = hairSimulationUBO.hairSimulation.Limits.x * clamp(0.2 + restPoint.UVW.z, 0.2, 1.0);
+    float displacementLength = length(displacement);
+    if (displacementLength > maxDisplacement)
+    {
+        position = restPosition + displacement * (maxDisplacement / max(displacementLength, 1e-5));
+    }
+
+    velocity = (position - currentPosition) / dt;
+    hairSimulationWriteSSBO.WritePoints[pointIndex].Position = vec4(position, 1.0);
+    hairSimulationWriteSSBO.WritePoints[pointIndex].Velocity = vec4(velocity, 0.0);
+}

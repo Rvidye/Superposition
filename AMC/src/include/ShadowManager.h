@@ -28,9 +28,11 @@ namespace AMC {
 			void RenderShadowMapsMesh(
 				ShaderProgram* meshProgram,
 				ShaderProgram* legacyProgram,
+				ShaderProgram* hairProgram,
 				const Scene* scene,
 				const RenderExtractor& extractor,
-				bool useMeshShaders);
+				bool useMeshShaders,
+				bool renderHair);
 
 			// Mark all shadows as needing update (e.g. when geometry changes)
 			void InvalidateAllShadows();

@@ -1,0 +1,148 @@
+#version 460 core
+
+#extension GL_NV_mesh_shader : require
+#extension GL_ARB_bindless_texture : require
+
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+#include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
+#include<..\..\..\resources\shaders\include\HairTypes.glsl>
+#include<..\..\..\resources\shaders\include\HairCommon.glsl>
+
+layout(local_size_x = 32) in;
+layout(triangles, max_vertices = 34, max_primitives = 32) out;
+
+layout(location = 0) uniform mat4 modelMat;
+
+taskNV in Task
+{
+    uint BundleIndex;
+    uint RootSampleOffset;
+    float LodFactor;
+} IN;
+
+out VoxelData
+{
+    vec3 FragPos;
+    vec3 Normal;
+} outData[];
+
+shared vec3 s_styledCenters[17];
+shared vec3 s_renderCenters[17];
+shared vec3 s_ndcPositions[34];
+shared uint s_renderStep;
+shared uint s_parentStep;
+shared uint s_renderSegmentCount;
+shared uint s_renderCenterCount;
+shared float s_morphGamma;
+shared float s_halfWidth;
+
+vec3 HairWorldToVoxelNdc(vec3 worldPos)
+{
+    return ((worldPos - voxelizerDataUBO.GridMin) / (voxelizerDataUBO.GridMax - voxelizerDataUBO.GridMin)) * 2.0 - 1.0;
+}
+
+void main()
+{
+    uint tid = gl_LocalInvocationID.x;
+    HairBundleDesc bundle = hairBundleSSBO.Bundles[IN.BundleIndex];
+    uint rootSampleIndex = IN.RootSampleOffset + gl_WorkGroupID.x;
+    HairRootSample rootSample = hairRootSampleSSBO.Samples[rootSampleIndex];
+
+    if (tid < HAIR_MAX_CENTER_COUNT)
+    {
+        float strandT = float(tid) / float(HAIR_MAX_SEGMENTS);
+        s_styledCenters[tid] = HairEvaluateStyledLocalCenter(bundle, rootSample.UVSeed.xy, rootSample.UVSeed.zw, strandT);
+    }
+
+    barrier();
+
+    if (tid == 0u)
+    {
+        HairLodSelection lodSelection = HairSelectSegmentLod(IN.LodFactor);
+        s_renderStep = lodSelection.RenderStep;
+        s_parentStep = lodSelection.ParentStep;
+        s_renderSegmentCount = lodSelection.RenderSegmentCount;
+        s_renderCenterCount = lodSelection.RenderCenterCount;
+        s_morphGamma = lodSelection.MorphGamma;
+        s_halfWidth = hairAssetUBO.hairAsset.LODParams.x * HairComputeThicknessScale(IN.LodFactor);
+        gl_PrimitiveCountNV = s_renderSegmentCount * 2u;
+    }
+
+    barrier();
+
+    if (tid < s_renderCenterCount)
+    {
+        uint baseIndex = tid * s_renderStep;
+        vec3 localCenter = s_styledCenters[baseIndex];
+
+        if (s_parentStep > s_renderStep && s_morphGamma > 0.0 && tid > 0u && tid + 1u < s_renderCenterCount && (tid & 1u) == 1u)
+        {
+            vec3 midpoint = 0.5 * (s_styledCenters[baseIndex - s_renderStep] + s_styledCenters[baseIndex + s_renderStep]);
+            localCenter = mix(localCenter, midpoint, s_morphGamma);
+        }
+
+        s_renderCenters[tid] = localCenter;
+    }
+
+    barrier();
+
+    if (tid < s_renderCenterCount)
+    {
+        vec3 localCenter = s_renderCenters[tid];
+        vec3 localTangent = HairComputeLocalTangent(s_renderCenters, s_renderCenterCount, tid);
+        vec3 worldCenter = vec3(modelMat * vec4(localCenter, 1.0));
+        vec3 worldTangent = HairSafeNormalize(mat3(modelMat) * localTangent, vec3(0.0, 1.0, 0.0));
+        vec3 referenceAxis = (abs(worldTangent.y) < 0.95) ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+        vec3 ribbonAxis = HairComputeBillboardAxis(worldTangent, referenceAxis);
+        vec3 normal = HairSafeNormalize(cross(ribbonAxis, worldTangent), vec3(0.0, 0.0, 1.0));
+        vec3 offset = ribbonAxis * max(s_halfWidth, 0.001);
+
+        uint leftVertex = tid * 2u;
+        uint rightVertex = leftVertex + 1u;
+        vec3 leftWorldPos = worldCenter - offset;
+        vec3 rightWorldPos = worldCenter + offset;
+
+        gl_MeshVerticesNV[leftVertex].gl_Position = vec4(HairWorldToVoxelNdc(leftWorldPos), 1.0);
+        gl_MeshVerticesNV[rightVertex].gl_Position = vec4(HairWorldToVoxelNdc(rightWorldPos), 1.0);
+        outData[leftVertex].FragPos = leftWorldPos;
+        outData[rightVertex].FragPos = rightWorldPos;
+        outData[leftVertex].Normal = normal;
+        outData[rightVertex].Normal = normal;
+        s_ndcPositions[leftVertex] = gl_MeshVerticesNV[leftVertex].gl_Position.xyz;
+        s_ndcPositions[rightVertex] = gl_MeshVerticesNV[rightVertex].gl_Position.xyz;
+    }
+
+    uint primitiveByteCount = (s_renderSegmentCount * 2u) * 3u;
+    uint packedCount = (primitiveByteCount + 3u) / 4u;
+    for (uint packedIndex = tid; packedIndex < packedCount; packedIndex += 32u)
+    {
+        uint packedValue = 0u;
+        for (uint byteOffset = 0u; byteOffset < 4u; ++byteOffset)
+        {
+            uint primitiveByte = packedIndex * 4u + byteOffset;
+            if (primitiveByte < primitiveByteCount)
+            {
+                packedValue = packedValue | ((HairPrimitiveIndexAt(primitiveByte) & 0xffu) << (byteOffset * 8u));
+            }
+        }
+        writePackedPrimitiveIndices4x8NV(packedIndex * 4u, packedValue);
+    }
+
+    barrier();
+
+    for (uint primitiveIndex = tid; primitiveIndex < s_renderSegmentCount * 2u; primitiveIndex += 32u)
+    {
+        uint i0 = HairPrimitiveIndexAt(primitiveIndex * 3u + 0u);
+        uint i1 = HairPrimitiveIndexAt(primitiveIndex * 3u + 1u);
+        uint i2 = HairPrimitiveIndexAt(primitiveIndex * 3u + 2u);
+
+        vec3 p0 = s_ndcPositions[i0];
+        vec3 p1 = s_ndcPositions[i1];
+        vec3 p2 = s_ndcPositions[i2];
+        vec3 normalWeights = abs(cross(p1 - p0, p2 - p0));
+
+        int dominantAxis = (normalWeights.y > normalWeights.x) ? 1 : 0;
+        dominantAxis = (normalWeights.z > normalWeights[dominantAxis]) ? 2 : dominantAxis;
+        gl_MeshPrimitivesNV[primitiveIndex].gl_ViewportIndex = 2 - dominantAxis;
+    }
+}

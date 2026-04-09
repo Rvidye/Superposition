@@ -12,6 +12,9 @@ namespace AMC {
 		bool IsVGXI = false;
 		bool IsGenerateShadowMaps = true;
 		bool IsGbuffer = true;
+		bool IsHair = true;
+		bool IsHairDebugWireframe = false;
+		bool HairCastShadows = true;
 		bool IsDeferredLighting = true;
 		bool IsSSAO = false;
 		bool IsSkyBox = false;

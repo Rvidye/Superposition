@@ -1,5 +1,6 @@
 #include<common.h>
 #include "Voxelizer.h"
+#include <HairMeshAsset.h>
 #include <RenderExtractor.h>
 #include <ModelAssetManager.h>
 #include <SceneInstanceManager.h>
@@ -9,6 +10,7 @@ void Voxelizer::create(AMC::RenderContext& context){
 	m_ProgramClearTexture = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\VXGI\\Voxelizer\\Clear\\Clear.comp")});
 	m_ProgramVoxelize = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\VXGI\\Voxelizer\\Voxelize\\Voxelize.vert"), RESOURCE_PATH("shaders\\VXGI\\Voxelizer\\Voxelize\\Voxelize.frag"), RESOURCE_PATH("shaders\\VXGI\\Voxelizer\\Voxelize\\Voxelize.geom") });
 	m_ProgramVoxelizeMesh = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\VXGI\\Voxelizer\\Voxelize\\voxelize_indirect.task"), RESOURCE_PATH("shaders\\VXGI\\Voxelizer\\Voxelize\\voxelize_indirect.mesh"), RESOURCE_PATH("shaders\\VXGI\\Voxelizer\\Voxelize\\voxelize_indirect.frag") });
+	m_ProgramHairVoxelize = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\hair\\hair_voxelize.task"), RESOURCE_PATH("shaders\\hair\\hair_voxelize.mesh"), RESOURCE_PATH("shaders\\hair\\hair_voxelize.frag") });
 	m_ProgramMipMap = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\VXGI\\Voxelizer\\Mipmap\\mipmap.comp")});
 	m_ProgramVisualizeDebug = new AMC::ShaderProgram({ RESOURCE_PATH("shaders\\VXGI\\Voxelizer\\Debug\\debug.comp") });
 
@@ -53,6 +55,10 @@ void Voxelizer::execute(AMC::Scene* scene, AMC::RenderContext& context){
 		VoxelizeMesh(scene, true);
 	} else {
 		Voxelize(scene);
+	}
+
+	if (context.IsHair && !scene->hairs.empty() && m_ProgramHairVoxelize != nullptr) {
+		VoxelizeHair(scene);
 	}
 
 	MipMap();
@@ -209,6 +215,43 @@ void Voxelizer::VoxelizeMesh(const AMC::Scene* scene, bool useMeshShaders) {
 
 		glUniformMatrix4fv(m_ProgramVoxelize->getUniformLocation("modelMat"), 1, GL_FALSE, glm::value_ptr(obj.matrix));
 		obj.model->draw(m_ProgramVoxelize);
+	}
+
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+}
+
+void Voxelizer::VoxelizeHair(const AMC::Scene* scene) {
+	glBindFramebuffer(GL_FRAMEBUFFER, tmpFBO);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
+	glDisable(GL_CONSERVATIVE_RASTERIZATION_NV);
+	glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glCullFace(GL_BACK);
+	glDepthFunc(GL_LESS);
+
+	glViewportSwizzleNV(1, 0x9350, 0x9354, 0x9352, 0x9356);
+	glViewportSwizzleNV(2, 0x9354, 0x9352, 0x9354, 0x9356);
+	glViewportIndexedf(0, 0.0f, 0.0f, (float)width, (float)height);
+	glViewportIndexedf(1, 0.0f, 0.0f, (float)width, (float)height);
+	glViewportIndexedf(2, 0.0f, 0.0f, (float)width, (float)height);
+	glViewport(0, 0, 256, 256);
+	glBindImageTexture(0, resultVoxels, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA16F);
+
+	scene->lightManager->BindUBO();
+	scene->lightManager->GetShadowManager()->BindUBO();
+	m_ProgramHairVoxelize->use();
+	glBindVertexArray(0);
+
+	for (const auto& [name, hair] : scene->hairs) {
+		if (!hair.visible || hair.asset == nullptr || !hair.asset->IsValid()) {
+			continue;
+		}
+
+		hair.asset->Bind();
+		glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(hair.matrix));
+		glDrawMeshTasksNV(0, hair.asset->GetBundleCount());
 	}
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);

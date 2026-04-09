@@ -1,0 +1,21 @@
+{
+  "root_half_extent": 0.26,
+  "tip_half_extent": 0.16,
+  "layer_height": 0.92,
+  "crown_height": 0.04,
+  "side_sweep": [0.08, -0.03],
+  "forward_sweep": [0.01, -0.09],
+  "lean": [-0.06, 0.03, -0.02],
+  "twist": -0.35,
+  "bulge": 0.018,
+  "simulation_enabled": true,
+  "gravity": [0.0, -9.81, 0.0],
+  "wind_direction": [0.8, 0.0, 0.2],
+  "wind_strength": 0.55,
+  "wind_pulse_frequency": 1.1,
+  "stiffness": 26.0,
+  "damping": 0.24,
+  "tip_influence": 1.15,
+  "max_displacement": 0.14,
+  "time_scale": 1.0
+}

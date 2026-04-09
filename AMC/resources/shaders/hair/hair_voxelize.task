@@ -1,0 +1,51 @@
+#version 460 core
+
+#extension GL_NV_mesh_shader : require
+#extension GL_ARB_bindless_texture : require
+
+#include<..\..\..\resources\shaders\include\CommonTypes.glsl>
+#include<..\..\..\resources\shaders\include\StaticUniformBuffers.glsl>
+#include<..\..\..\resources\shaders\include\HairTypes.glsl>
+#include<..\..\..\resources\shaders\include\HairCommon.glsl>
+#include<..\..\..\resources\shaders\include\Box.glsl>
+
+layout(local_size_x = 32) in;
+
+layout(location = 0) uniform mat4 modelMat;
+
+taskNV out Task
+{
+    uint BundleIndex;
+    uint RootSampleOffset;
+    float LodFactor;
+} OUT;
+
+void main()
+{
+    if (gl_LocalInvocationID.x != 0u)
+    {
+        return;
+    }
+
+    uint bundleIndex = gl_WorkGroupID.x;
+    HairBundleDesc bundle = hairBundleSSBO.Bundles[bundleIndex];
+    Box localBox;
+    localBox.Min = bundle.BoundsMin;
+    localBox.Max = bundle.BoundsMax;
+    Box worldBox = BoxTransform(localBox, modelMat);
+
+    bool overlapsGrid = !(worldBox.Max.x < voxelizerDataUBO.GridMin.x ||
+        worldBox.Min.x > voxelizerDataUBO.GridMax.x ||
+        worldBox.Max.y < voxelizerDataUBO.GridMin.y ||
+        worldBox.Min.y > voxelizerDataUBO.GridMax.y ||
+        worldBox.Max.z < voxelizerDataUBO.GridMin.z ||
+        worldBox.Min.z > voxelizerDataUBO.GridMax.z);
+
+    float lodFactor = HairComputeBundleLodFactor(worldBox.Min, worldBox.Max, perFrameDataUBO.ViewPos, perFrameDataUBO.Projection);
+    uint strandCount = HairComputeBundleLodCount(bundleIndex, uint(bundle.RootInfo.y), lodFactor);
+
+    OUT.BundleIndex = bundleIndex;
+    OUT.RootSampleOffset = uint(bundle.RootInfo.x);
+    OUT.LodFactor = lodFactor;
+    gl_TaskCountNV = overlapsGrid ? strandCount : 0u;
+}

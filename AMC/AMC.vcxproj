@@ -229,6 +229,7 @@ copy /Y "$(ProjectDir)lib\release\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$
     <ClCompile Include="src\include\imgui\imgui_tables.cpp" />
     <ClCompile Include="src\include\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\module\Compression.cpp" />
+    <ClCompile Include="src\module\HairMeshAsset.cpp" />
     <ClCompile Include="src\module\LightManager.cpp" />
     <ClCompile Include="src\module\MemoryManager.cpp" />
     <ClCompile Include="src\module\ModelAssetManager.cpp" />
@@ -256,6 +257,8 @@ copy /Y "$(ProjectDir)lib\release\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$
     <ClCompile Include="src\renderpass\DebugPass\DebugDrawPass.cpp" />
     <ClCompile Include="src\renderpass\DeferredLight\DeferredLightPass.cpp" />
     <ClCompile Include="src\renderpass\GBuffer\GBufferPass.cpp" />
+    <ClCompile Include="src\renderpass\Hair\HairGBufferPass.cpp" />
+    <ClCompile Include="src\renderpass\Hair\HairSimulationPass.cpp" />
     <ClCompile Include="src\renderpass\Shadows\ShadowMapPass.cpp" />
     <ClCompile Include="src\renderpass\Skybox\SkyBoxPass.cpp" />
     <ClCompile Include="src\renderpass\SSAO\SSAOPass.cpp" />
@@ -1062,6 +1065,7 @@ copy /Y "$(ProjectDir)lib\release\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$
     <ClInclude Include="src\include\LightManager.h" />
     <ClInclude Include="src\include\Log.h" />
     <ClInclude Include="src\include\MemoryManager.h" />
+    <ClInclude Include="src\include\HairMeshAsset.h" />
     <ClInclude Include="src\include\meshoptimizer\meshoptimizer.h" />
     <ClInclude Include="src\include\Model.h" />
     <ClInclude Include="src\include\ModelAssetManager.h" />
@@ -1085,6 +1089,8 @@ copy /Y "$(ProjectDir)lib\release\swscale-8.dll" "$(ProjectDir)bin\$(Platform)\$
     <ClInclude Include="src\renderpass\DebugPass\DebugDrawPass.h" />
     <ClInclude Include="src\renderpass\DeferredLight\DeferredLightPass.h" />
     <ClInclude Include="src\renderpass\GBuffer\GBufferPass.h" />
+    <ClInclude Include="src\renderpass\Hair\HairGBufferPass.h" />
+    <ClInclude Include="src\renderpass\Hair\HairSimulationPass.h" />
     <ClInclude Include="src\renderpass\Shadows\ShadowMapPass.h" />
     <ClInclude Include="src\renderpass\Skybox\SkyBoxPass.h" />
     <ClInclude Include="src\renderpass\SSAO\SSAOPass.h" />

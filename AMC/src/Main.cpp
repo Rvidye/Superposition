@@ -66,7 +66,7 @@ BOOL AMC::ANIMATING = FALSE;
 BOOL AMC::DEBUGCAM = TRUE;
 BOOL AMC::MUTE = FALSE;
 UINT AMC::DEBUGMODE = AMC::DEBUGMODES::NONE;
-std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Spline", "PostProcess"};
+std::vector<std::string> debugModes = { "None", "Camera", "Model", "Light", "Spline", "PostProcess", "Hair"};
 AMC::Camera* AMC::currentCamera;
 
 float AMC::fade = 0.0f;

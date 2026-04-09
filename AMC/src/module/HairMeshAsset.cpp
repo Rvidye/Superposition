@@ -39,7 +39,15 @@ namespace AMC {
 			glm::vec3 Lean = glm::vec3(0.0f);
 			float Twist = 0.0f;
 			float Bulge = 0.015f;
+			// Quadratic-in-layerT bend: shifts the tip away from straight up so the
+			// rest pose has non-vertical tangents. Without this the simulation has
+			// nothing to rotate against and gravity gets normalized away by the
+			// length constraint.
+			glm::vec3 Bend = glm::vec3(0.0f);
+			float RadialBend = 0.0f;
 			HairSimulationParams Simulation{};
+			HairStyleParameters Style{};
+			bool HasStyleOverride = false;
 		};
 
 		HairStyleParameters g_globalStyleParameters{};
@@ -423,10 +431,21 @@ namespace AMC {
 			);
 			const glm::vec3 lean = params.Lean * layerT;
 
+			// Quadratic bend: the tangent at the root stays +Y (so the strand emerges
+			// vertically from the scalp), then progressively curls toward params.Bend
+			// plus a radial outward component as layerT grows. The vertical growth is
+			// reduced by the magnitude of the horizontal bend to keep approximate arc
+			// length conservation, otherwise heavily-bent presets would feel stretched.
+			const float bendT = layerT * layerT;
+			const glm::vec3 bend = params.Bend * bendT
+				+ glm::vec3(signedUV.x, 0.0f, signedUV.y) * (params.RadialBend * bendT);
+			const float bendHorizontalLen = std::sqrt(bend.x * bend.x + bend.z * bend.z);
+			const float verticalShortening = bendHorizontalLen * 0.35f;
+
 			return glm::vec3(
-				xz.x + sweep.x + params.Bulge * layerT * signedUV.x + lean.x,
-				params.LayerHeight * layerT + crown + lean.y,
-				xz.y + sweep.y + params.Bulge * layerT * signedUV.y + lean.z
+				xz.x + sweep.x + params.Bulge * layerT * signedUV.x + lean.x + bend.x,
+				params.LayerHeight * layerT + crown + lean.y + bend.y - verticalShortening,
+				xz.y + sweep.y + params.Bulge * layerT * signedUV.y + lean.z + bend.z
 			);
 		}
 
@@ -498,6 +517,7 @@ namespace AMC {
 			const std::string json = stream.str();
 
 			params.Simulation = g_globalSimulationParameters;
+			params.Style = g_globalStyleParameters;
 			TryParseJsonNumber(json, "root_half_extent", params.RootHalfExtent);
 			TryParseJsonNumber(json, "tip_half_extent", params.TipHalfExtent);
 			TryParseJsonNumber(json, "layer_height", params.LayerHeight);
@@ -507,6 +527,8 @@ namespace AMC {
 			TryParseJsonVec3(json, "lean", params.Lean);
 			TryParseJsonNumber(json, "twist", params.Twist);
 			TryParseJsonNumber(json, "bulge", params.Bulge);
+			TryParseJsonVec3(json, "bend", params.Bend);
+			TryParseJsonNumber(json, "radial_bend", params.RadialBend);
 			TryParseJsonBool(json, "simulation_enabled", params.Simulation.Enabled);
 			TryParseJsonVec3(json, "gravity", params.Simulation.Gravity);
 			TryParseJsonVec3(json, "wind_direction", params.Simulation.WindDirection);
@@ -517,6 +539,38 @@ namespace AMC {
 			TryParseJsonNumber(json, "tip_influence", params.Simulation.TipInfluence);
 			TryParseJsonNumber(json, "max_displacement", params.Simulation.MaxDisplacement);
 			TryParseJsonNumber(json, "time_scale", params.Simulation.TimeScale);
+
+			// Procedural styling parameters from Bhokare et al. 2024 supplemental
+			// (fuzz, frizz, kink, curl, clumping). Any field present in the JSON
+			// flips HasStyleOverride and is propagated to the asset's style state
+			// after the cage is built.
+			auto tryStyleField = [&](const char* key, float& target) {
+				if (TryParseJsonNumber(json, key, target)) {
+					params.HasStyleOverride = true;
+				}
+			};
+			tryStyleField("fuzz_amplitude", params.Style.FuzzAmplitude);
+			tryStyleField("fuzz_amplitude_exponent", params.Style.FuzzAmplitudeExponent);
+			tryStyleField("fuzz_distribution_exponent", params.Style.FuzzDistributionExponent);
+			tryStyleField("frizz_amplitude", params.Style.FrizzAmplitude);
+			tryStyleField("frizz_amplitude_exponent", params.Style.FrizzAmplitudeExponent);
+			tryStyleField("frizz_frequency", params.Style.FrizzFrequency);
+			tryStyleField("kink_amplitude", params.Style.KinkAmplitude);
+			tryStyleField("kink_amplitude_exponent", params.Style.KinkAmplitudeExponent);
+			tryStyleField("kink_uv_frequency", params.Style.KinkUVFrequency);
+			tryStyleField("kink_w_frequency", params.Style.KinkWFrequency);
+			tryStyleField("curl_amplitude", params.Style.CurlAmplitude);
+			tryStyleField("curl_amplitude_exponent", params.Style.CurlAmplitudeExponent);
+			tryStyleField("curl_distribution_exponent", params.Style.CurlDistributionExponent);
+			tryStyleField("curl_frequency", params.Style.CurlFrequency);
+			tryStyleField("curl_rotations", params.Style.CurlRotations);
+			tryStyleField("clump_thickness", params.Style.ClumpThickness);
+			tryStyleField("clump_exponent", params.Style.ClumpExponent);
+			tryStyleField("clump_noise_amount", params.Style.ClumpNoiseAmount);
+			tryStyleField("clump_noise_frequency", params.Style.ClumpNoiseFrequency);
+			tryStyleField("clump_grid_resolution", params.Style.ClumpGridResolution);
+			tryStyleField("clump_percentage", params.Style.ClumpPercentage);
+			tryStyleField("clump_variation", params.Style.ClumpVariation);
 			return true;
 		}
 
@@ -692,6 +746,9 @@ namespace AMC {
 		}
 
 		InitializeFromDefinition(BuildDefinitionFromCage(BuildAuthoredHairCage(params), params.Simulation));
+		if (params.HasStyleOverride) {
+			SetStyleParameters(params.Style);
+		}
 		return true;
 	}
 

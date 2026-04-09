@@ -75,7 +75,7 @@ vec3 HairShade(Light light, Surface surface, vec3 fragPos, vec3 viewPos, float a
     // cos(phi/2) via half-angle identity (always non-negative for phi in [0, pi]).
     float cosHalfPhi = sqrt(max(0.5 + 0.5 * cosPhiD, 0.0));
 
-    // === Longitudinal lobes (Gaussian around shifted cuticle angle) ===
+    // Longitudinal lobes (Gaussian around shifted cuticle angle)
     float alphaR   =  HairMarschnerCuticleShift;
     float alphaTT  = -HairMarschnerCuticleShift * 0.5;
     float alphaTRT = -HairMarschnerCuticleShift * 1.5;
@@ -89,11 +89,11 @@ vec3 HairShade(Light light, Surface surface, vec3 fragPos, vec3 viewPos, float a
 
     vec3 hairColor = max(surface.Albedo, vec3(1e-3));
 
-    // === Azimuthal R lobe ===
+    // Azimuthal R lobe
     float fR = HairSchlickFresnel(sqrt(max(0.5 + 0.5 * dot(lightDir, viewDir), 0.0)), HairMarschnerIor);
     float Nr = 0.25 * cosHalfPhi * fR;
 
-    // === Azimuthal TT lobe ===
+    // Azimuthal TT lobe
     // a = 1/eta', Karis approximation of the modified IOR.
     float a = 1.55 / (HairMarschnerIor * (1.19 / cosThetaD + 0.36 * cosThetaD));
     float h = clamp((1.0 + a * (0.6 - 0.8 * cosPhiD)) * cosHalfPhi, -1.0, 1.0);
@@ -105,7 +105,7 @@ vec3 HairShade(Light light, Surface surface, vec3 fragPos, vec3 viewPos, float a
     vec3  Att = (1.0 - fTT) * (1.0 - fTT) * Ttt;
     vec3  Ntt = 0.5 * Att * Dtt;
 
-    // === Azimuthal TRT lobe ===
+    // Azimuthal TRT lobe
     vec3  Ttrt = pow(hairColor, vec3(0.8 / cosThetaD));
     float Dtrt = exp(17.0 * cosPhiD - 16.78);
     float fTRT = HairSchlickFresnel(cosThetaD * 0.5, HairMarschnerIor);
@@ -121,8 +121,7 @@ vec3 HairShade(Light light, Surface surface, vec3 fragPos, vec3 viewPos, float a
 
     // Wrap-around diffuse — hair scatters light from all azimuths, so we use a
     // soft falloff against cosThetaI / cosHalfPhi instead of a hard N.L term.
-    float diffuseWrap = mix(1.0, cosThetaI,   HairMarschnerDiffuseFalloff)
-                      * mix(1.0, cosHalfPhi,  HairMarschnerDiffuseAzimFalloff);
+    float diffuseWrap = mix(1.0, cosThetaI,   HairMarschnerDiffuseFalloff) * mix(1.0, cosHalfPhi,  HairMarschnerDiffuseAzimFalloff);
     vec3 diffuse = hairColor * diffuseWrap * HairMarschnerScaleDiffuse * sinL * ambientOcclusion;
 
     return (diffuse + marschner) * attenuation * light.color;

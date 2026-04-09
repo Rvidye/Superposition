@@ -28,6 +28,10 @@ class testScene : public AMC::Scene {
 		void fadeIn(float);
 		void fadeOut(float);
 
+		void addHairInstance(const std::string& name, const std::string& assetPath,
+			const glm::vec3& position, const glm::vec3& eulerDegrees, float scale);
+		void renderHairUI();
+
 	public:
 		testScene(const AMC::VkContext* ctx) : AMC::Scene(ctx) {}
 		void init() override;

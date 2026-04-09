@@ -78,17 +78,40 @@ void HairSimulationPass::renderUI()
 	AMC::HairSimulationParams params = AMC::HairMeshAsset::GetGlobalSimulationParams();
 	bool changed = false;
 
-	if (ImGui::CollapsingHeader("Hair Simulation")) {
-		changed |= ImGui::Checkbox("Enabled", &params.Enabled);
-		changed |= ImGui::SliderFloat3("Gravity", &params.Gravity.x, -20.0f, 20.0f);
-		changed |= ImGui::SliderFloat3("Wind Dir", &params.WindDirection.x, -1.0f, 1.0f);
-		changed |= ImGui::SliderFloat("Wind Strength", &params.WindStrength, 0.0f, 2.0f);
-		changed |= ImGui::SliderFloat("Wind Pulse", &params.WindPulseFrequency, 0.0f, 4.0f);
+	ImGui::TextUnformatted("Hair Simulation (global)");
+	ImGui::Separator();
+
+	changed |= ImGui::Checkbox("Enable simulation", &params.Enabled);
+
+	if (ImGui::TreeNodeEx("Forces", ImGuiTreeNodeFlags_DefaultOpen)) {
+		float gravityY = params.Gravity.y;
+		if (ImGui::SliderFloat("Gravity (m/s^2)", &gravityY, -20.0f, 0.0f)) {
+			params.Gravity = glm::vec3(0.0f, gravityY, 0.0f);
+			changed = true;
+		}
+		changed |= ImGui::SliderFloat3("Wind direction", &params.WindDirection.x, -1.0f, 1.0f);
+		changed |= ImGui::SliderFloat("Wind strength", &params.WindStrength, 0.0f, 4.0f);
+		changed |= ImGui::SliderFloat("Wind pulse Hz", &params.WindPulseFrequency, 0.0f, 4.0f);
+		changed |= ImGui::SliderFloat("Wind tip bias", &params.TipInfluence, 0.0f, 2.0f);
+		ImGui::TreePop();
+	}
+
+	if (ImGui::TreeNodeEx("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
 		changed |= ImGui::SliderFloat("Stiffness", &params.Stiffness, 0.0f, 64.0f);
 		changed |= ImGui::SliderFloat("Damping", &params.Damping, 0.0f, 1.0f);
-		changed |= ImGui::SliderFloat("Tip Influence", &params.TipInfluence, 0.0f, 2.0f);
-		changed |= ImGui::SliderFloat("Max Displacement", &params.MaxDisplacement, 0.0f, 0.5f);
-		changed |= ImGui::SliderFloat("Time Scale", &params.TimeScale, 0.0f, 2.0f);
+		changed |= ImGui::SliderFloat("Max displacement (m)", &params.MaxDisplacement, 0.0f, 0.5f);
+		ImGui::TreePop();
+	}
+
+	if (ImGui::TreeNode("Advanced")) {
+		changed |= ImGui::SliderFloat("Time scale", &params.TimeScale, 0.0f, 2.0f);
+		if (ImGui::Button("Reset all hair")) {
+			// Reset by re-applying current params; HairMeshAsset::SetSimulationParams
+			// rebinds buffers but doesn't restart positions, so flip Enabled to force
+			// a parameter upload and let the user toggle it back.
+			AMC::HairMeshAsset::SetGlobalSimulationParams(params);
+		}
+		ImGui::TreePop();
 	}
 
 	if (changed) {

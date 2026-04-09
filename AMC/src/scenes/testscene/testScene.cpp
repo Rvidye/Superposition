@@ -3,6 +3,33 @@
 #include<RenderPass.h>
 #include<HairMeshAsset.h>
 
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/transform.hpp>
+
+namespace {
+	glm::mat4 BuildHairMatrix(const AMC::RenderHair& hair) {
+		const glm::vec3 r = glm::radians(hair.eulerDegrees);
+		return glm::translate(glm::mat4(1.0f), hair.position)
+			* glm::yawPitchRoll(r.y, r.x, r.z)
+			* glm::scale(glm::mat4(1.0f), glm::vec3(hair.uniformScale));
+	}
+}
+
+void testScene::addHairInstance(const std::string& name, const std::string& assetPath,
+	const glm::vec3& position, const glm::vec3& eulerDegrees, float scale)
+{
+	AMC::RenderHair hair;
+	hair.asset = new AMC::HairMeshAsset(RESOURCE_PATH(assetPath));
+	hair.assetPath = assetPath;
+	hair.position = position;
+	hair.eulerDegrees = eulerDegrees;
+	hair.uniformScale = scale;
+	hair.visible = true;
+	hair.matrix = BuildHairMatrix(hair);
+	hair.prevMatrix = hair.matrix;
+	hairs[name] = hair;
+}
+
 void testScene::sceneEnd(float t)
 {
 	if (t > 0.99f)
@@ -54,33 +81,12 @@ void testScene::init()
 	animman.matrix = mp->getModelMatrix();
 	addModel("man", animman);
 
-	const glm::mat4 sweptLeftMatrix =
-		glm::translate(glm::mat4(1.0f), glm::vec3(-0.32f, 1.48f, 0.10f)) *
-		glm::rotate(glm::mat4(1.0f), glm::radians(-16.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	const glm::mat4 crownBobMatrix =
-		glm::translate(glm::mat4(1.0f), glm::vec3(0.00f, 1.52f, 0.00f));
-	const glm::mat4 ponytailMatrix =
-		glm::translate(glm::mat4(1.0f), glm::vec3(0.34f, 1.54f, -0.08f)) *
-		glm::rotate(glm::mat4(1.0f), glm::radians(12.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-	hairs["hair_swept_left"] = {
-		new AMC::HairMeshAsset(RESOURCE_PATH("hair\\authoring\\swept_left.json")),
-		sweptLeftMatrix,
-		sweptLeftMatrix,
-		true
-	};
-	hairs["hair_crown_bob"] = {
-		new AMC::HairMeshAsset(RESOURCE_PATH("hair\\authoring\\crown_bob.json")),
-		crownBobMatrix,
-		crownBobMatrix,
-		true
-	};
-	hairs["hair_ponytail"] = {
-		new AMC::HairMeshAsset(RESOURCE_PATH("hair\\authoring\\ponytail_fan.json")),
-		ponytailMatrix,
-		ponytailMatrix,
-		true
-	};
+	addHairInstance("hair_crown_bob",  "hair\\authoring\\crown_bob.json",
+		glm::vec3(0.00f, 1.52f, 0.00f), glm::vec3(0.0f), 1.0f);
+	addHairInstance("hair_swept_left", "hair\\authoring\\swept_left.json",
+		glm::vec3(-0.32f, 1.48f, 0.10f), glm::vec3(0.0f), 1.0f);
+	addHairInstance("hair_ponytail",   "hair\\authoring\\ponytail_fan.json",
+		glm::vec3(0.34f, 1.54f, -0.08f), glm::vec3(0.0f), 1.0f);
 
 	// Spline Camera Setup
 	std::vector<glm::vec3> posVec = {
@@ -267,12 +273,116 @@ void testScene::renderUI()
 		case AMC::LIGHT:
 			lightManager->renderUI();
 		break;
+		case AMC::HAIR:
+			renderHairUI();
+		break;
 		case AMC::SPLINE:
 		break;
 		case AMC::NONE:
 		break;
 	}
 	#endif
+}
+
+void testScene::renderHairUI()
+{
+#if defined(_MYDEBUG)
+	ImGui::Text("Hair Instances (%d)", static_cast<int>(hairs.size()));
+	ImGui::Separator();
+
+	bool transformsChanged = false;
+	std::string toRemove;
+
+	int instanceIndex = 0;
+	for (auto& [name, hair] : hairs) {
+		ImGui::PushID(instanceIndex++);
+		const std::string header = name + "##hairInstance";
+		if (ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+			ImGui::Checkbox("Visible", &hair.visible);
+
+			bool dirty = false;
+			dirty |= ImGui::DragFloat3("Position", &hair.position.x, 0.01f);
+			dirty |= ImGui::DragFloat3("Rotation (deg)", &hair.eulerDegrees.x, 0.5f);
+			dirty |= ImGui::DragFloat("Scale", &hair.uniformScale, 0.01f, 0.01f, 10.0f);
+
+			if (dirty) {
+				hair.matrix = BuildHairMatrix(hair);
+				transformsChanged = true;
+			}
+
+			ImGui::TextUnformatted(hair.assetPath.c_str());
+
+			if (hair.asset != nullptr && hair.asset->IsValid()) {
+				if (ImGui::TreeNode("Styling")) {
+					AMC::HairStyleParameters style = hair.asset->GetStyleParameters();
+					bool styleChanged = false;
+
+					if (ImGui::TreeNodeEx("Fuzz", ImGuiTreeNodeFlags_DefaultOpen)) {
+						styleChanged |= ImGui::SliderFloat("Amplitude##fuzz", &style.FuzzAmplitude, 0.0f, 0.05f);
+						styleChanged |= ImGui::SliderFloat("Amplitude Exp##fuzz", &style.FuzzAmplitudeExponent, 0.5f, 3.0f);
+						styleChanged |= ImGui::SliderFloat("Distribution Exp##fuzz", &style.FuzzDistributionExponent, 0.5f, 3.0f);
+						ImGui::TreePop();
+					}
+					if (ImGui::TreeNode("Frizz")) {
+						styleChanged |= ImGui::SliderFloat("Amplitude##frizz", &style.FrizzAmplitude, 0.0f, 0.05f);
+						styleChanged |= ImGui::SliderFloat("Amplitude Exp##frizz", &style.FrizzAmplitudeExponent, 0.5f, 3.0f);
+						styleChanged |= ImGui::SliderFloat("Frequency##frizz", &style.FrizzFrequency, 0.5f, 24.0f);
+						ImGui::TreePop();
+					}
+					if (ImGui::TreeNode("Kink")) {
+						styleChanged |= ImGui::SliderFloat("Amplitude##kink", &style.KinkAmplitude, 0.0f, 0.06f);
+						styleChanged |= ImGui::SliderFloat("Amplitude Exp##kink", &style.KinkAmplitudeExponent, 0.5f, 3.0f);
+						styleChanged |= ImGui::SliderFloat("UV Frequency##kink", &style.KinkUVFrequency, 0.5f, 24.0f);
+						styleChanged |= ImGui::SliderFloat("W Frequency##kink", &style.KinkWFrequency, 0.5f, 24.0f);
+						ImGui::TreePop();
+					}
+					if (ImGui::TreeNode("Curl")) {
+						styleChanged |= ImGui::SliderFloat("Amplitude##curl", &style.CurlAmplitude, 0.0f, 0.08f);
+						styleChanged |= ImGui::SliderFloat("Amplitude Exp##curl", &style.CurlAmplitudeExponent, 0.5f, 3.0f);
+						styleChanged |= ImGui::SliderFloat("Distribution Exp##curl", &style.CurlDistributionExponent, 0.5f, 3.0f);
+						styleChanged |= ImGui::SliderFloat("Frequency##curl", &style.CurlFrequency, 0.5f, 12.0f);
+						styleChanged |= ImGui::SliderFloat("Rotations##curl", &style.CurlRotations, 0.0f, 6.0f);
+						ImGui::TreePop();
+					}
+					if (ImGui::TreeNode("Clump")) {
+						styleChanged |= ImGui::SliderFloat("Thickness##clump", &style.ClumpThickness, 0.0f, 0.05f);
+						styleChanged |= ImGui::SliderFloat("Exponent##clump", &style.ClumpExponent, 0.5f, 3.0f);
+						styleChanged |= ImGui::SliderFloat("Noise Amount##clump", &style.ClumpNoiseAmount, 0.0f, 1.0f);
+						styleChanged |= ImGui::SliderFloat("Noise Frequency##clump", &style.ClumpNoiseFrequency, 0.5f, 16.0f);
+						styleChanged |= ImGui::SliderFloat("Grid Resolution##clump", &style.ClumpGridResolution, 1.0f, 16.0f);
+						styleChanged |= ImGui::SliderFloat("Percentage##clump", &style.ClumpPercentage, 0.0f, 1.0f);
+						styleChanged |= ImGui::SliderFloat("Variation##clump", &style.ClumpVariation, 0.0f, 1.0f);
+						ImGui::TreePop();
+					}
+
+					if (styleChanged) {
+						hair.asset->SetStyleParameters(style);
+					}
+					ImGui::TreePop();
+				}
+			}
+
+			if (ImGui::Button("Remove##hair")) {
+				toRemove = name;
+			}
+			ImGui::Separator();
+		}
+		ImGui::PopID();
+	}
+
+	if (!toRemove.empty()) {
+		auto it = hairs.find(toRemove);
+		if (it != hairs.end()) {
+			delete it->second.asset;
+			hairs.erase(it);
+			transformsChanged = true;
+		}
+	}
+
+	if (transformsChanged) {
+		reCalculateSceneAABB();
+	}
+#endif
 }
 
 void testScene::update()

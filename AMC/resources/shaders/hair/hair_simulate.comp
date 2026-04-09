@@ -63,13 +63,24 @@ void main()
     velocity += acceleration * dt;
     vec3 position = currentPosition + velocity * dt;
 
+    // Stiffness pulls each point back toward its (now bent) rest position. The
+    // tip is pulled less so gravity / wind have visible authority over the strand
+    // ends instead of being snapped to rest every frame.
     float stiffness = clamp(hairSimulationUBO.hairSimulation.Dynamics.y * dt * 0.05, 0.0, 1.0);
-    position = mix(position, restPosition, stiffness * (1.0 - 0.35 * restPoint.UVW.z));
+    position = mix(position, restPosition, stiffness * (1.0 - 0.75 * restPoint.UVW.z));
 
+    // Soft length constraint: blend toward the rest length instead of snapping
+    // to it. With a hard snap, segments collinear with gravity have their drift
+    // normalized away every frame and the strand can never rotate. Allowing a
+    // little stretch lets the rotation accumulate over multiple substeps.
     vec3 restSegment = restPosition - restParentPosition;
     float restLength = max(length(restSegment), 1e-5);
-    vec3 segmentDirection = HairSimSafeNormalize(position - parentPosition, HairSimSafeNormalize(restSegment, vec3(0.0, 1.0, 0.0)));
-    position = parentPosition + segmentDirection * restLength;
+    vec3 currentSegment = position - parentPosition;
+    float currentLength = length(currentSegment);
+    vec3 segmentDirection = HairSimSafeNormalize(currentSegment, HairSimSafeNormalize(restSegment, vec3(0.0, 1.0, 0.0)));
+    float constraintWeight = 0.85;
+    float targetLength = mix(currentLength, restLength, constraintWeight);
+    position = parentPosition + segmentDirection * targetLength;
 
     vec3 displacement = position - restPosition;
     float maxDisplacement = hairSimulationUBO.hairSimulation.Limits.x * clamp(0.2 + restPoint.UVW.z, 0.2, 1.0);

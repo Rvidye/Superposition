@@ -79,7 +79,8 @@ namespace AMC {
 		MODEL,
 		LIGHT,
 		SPLINE,
-		POSTPROCESS
+		POSTPROCESS,
+		HAIR
 	};
 
 	class Camera;

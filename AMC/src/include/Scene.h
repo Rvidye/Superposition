@@ -1,6 +1,7 @@
 #pragma once
 
 #include<common.h>
+#include<string>
 #include<Model.h>
 #include<HairMeshAsset.h>
 #include<Camera.h>
@@ -23,6 +24,13 @@ namespace AMC {
 		glm::mat4 matrix = glm::mat4(1.0f);
 		glm::mat4 prevMatrix = glm::mat4(1.0f);
 		bool visible = true;
+		// Authoring fields for the in-engine hair UI. The matrix is rebuilt from
+		// these whenever the user edits a slider; storing them avoids round-tripping
+		// through a matrix decompose every frame.
+		glm::vec3 position = glm::vec3(0.0f);
+		glm::vec3 eulerDegrees = glm::vec3(0.0f);
+		float uniformScale = 1.0f;
+		std::string assetPath;
 	};
 
 	class Scene {

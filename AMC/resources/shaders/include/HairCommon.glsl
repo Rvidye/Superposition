@@ -164,6 +164,13 @@ vec2 HairNoiseDirection2(vec3 p)
     return normalize(gradient);
 }
 
+// Procedural styling operations from Bhokare et al. "Real-Time Hair Rendering
+// with Hair Meshes" (SIGGRAPH 2024) supplemental document. All operations are
+// expressed in the local (u, v, w) frame of the strand and converted to object
+// space via the per-vertex frame matrix.
+
+// Eq. (1): fuzz applies a constant per-strand direction with amplitude
+// (w)^b_fuzz * (xi_a)^c_fuzz, picked from two random per-strand seeds.
 vec3 HairApplyFuzz(mat3 frame, float wCoord, vec2 strandSeeds)
 {
     float amplitude = hairAssetUBO.hairAsset.FuzzParams.x
@@ -173,61 +180,95 @@ vec3 HairApplyFuzz(mat3 frame, float wCoord, vec2 strandSeeds)
     return frame * vec3(cos(angle) * amplitude, sin(angle) * amplitude, 0.0);
 }
 
-vec3 HairApplyFrizz(mat3 frame, vec2 globalUV, float wCoord)
+// Eq. (2): frizz samples a per-strand noise direction at (u*f, v*f, 0) and
+// applies the same direction to every vertex of the strand, scaled by w^b.
+vec3 HairApplyFrizz(mat3 frame, vec2 noiseUV, float wCoord)
 {
-    vec2 direction = HairNoiseDirection2(vec3(globalUV * hairAssetUBO.hairAsset.FrizzParams.z, 0.0));
+    vec2 direction = HairNoiseDirection2(vec3(noiseUV * hairAssetUBO.hairAsset.FrizzParams.z, 0.0));
     float amplitude = hairAssetUBO.hairAsset.FrizzParams.x * pow(max(wCoord, 0.0), hairAssetUBO.hairAsset.FrizzParams.y);
     return frame * vec3(direction * amplitude, 0.0);
 }
 
-vec3 HairApplyKink(mat3 frame, vec2 globalUV, float wCoord)
+// Eq. (3): kink samples a per-vertex noise direction at (u*f_uv, v*f_uv, w*f_w).
+vec3 HairApplyKink(mat3 frame, vec2 noiseUV, float wCoord)
 {
     vec2 direction = HairNoiseDirection2(vec3(
-        globalUV * hairAssetUBO.hairAsset.KinkParams.z,
+        noiseUV * hairAssetUBO.hairAsset.KinkParams.z,
         wCoord * hairAssetUBO.hairAsset.KinkParams.w
     ));
     float amplitude = hairAssetUBO.hairAsset.KinkParams.x * pow(max(wCoord, 0.0), hairAssetUBO.hairAsset.KinkParams.y);
     return frame * vec3(direction * amplitude, 0.0);
 }
 
-vec3 HairApplyCurl(mat3 frame, vec2 globalUV, float wCoord, float phaseSeed)
+// Eqs. (4)-(5): curl spirals around the strand using a scalar noise phase
+// sampled at (u*f, v*f, 0). Per the supplemental, curl always uses the
+// clump-center uv regardless of v_clump.
+vec3 HairApplyCurl(mat3 frame, vec2 curlUV, float wCoord)
 {
-    float phase = HairValueNoise3(vec3(globalUV * hairAssetUBO.hairAsset.CurlParams.w, phaseSeed * 23.0));
+    float phase = HairValueNoise3(vec3(curlUV * hairAssetUBO.hairAsset.CurlParams.w, 0.0));
     float theta = HAIR_TWO_PI * hairAssetUBO.hairAsset.StyleExtraParams.x
         * (phase + pow(max(wCoord, 0.0), hairAssetUBO.hairAsset.CurlParams.z));
     float amplitude = hairAssetUBO.hairAsset.CurlParams.x * pow(max(wCoord, 0.0), hairAssetUBO.hairAsset.CurlParams.y);
     return frame * vec3(cos(theta) * amplitude, sin(theta) * amplitude, 0.0);
 }
 
-vec3 HairApplyClump(vec3 baseCenter, vec2 globalUV, float strandT, float wCoord, float strandSeed)
+// Aggregate result of the clumping pass: the displacement applied to the
+// strand vertex, plus the (uv) coordinates that downstream styling operations
+// must use for their noise inputs (per the supplemental's v_clump rule).
+struct HairClumpResult
 {
-    float gridResolution = max(hairAssetUBO.hairAsset.ClumpParams.y, 1.0);
+    vec3 Displacement;   // d_clump (eq. 6) without the (w)^b_clump weight
+    vec2 NoiseUV;        // (uv) for frizz / kink: mix(originalUV, clumpCenterUV, v_clump)
+    vec2 CurlUV;         // (uv) for curl: clumpCenterUV (always, when in a clump)
+};
+
+HairClumpResult HairEvaluateClump(vec3 baseCenter, vec2 globalUV, float strandT, float strandSeed)
+{
+    HairClumpResult result;
+    result.Displacement = vec3(0.0);
+    result.NoiseUV = globalUV;
+    result.CurlUV = globalUV;
+
+    // p_clump: random per-strand inclusion test.
     if (strandSeed > hairAssetUBO.hairAsset.ClumpParams.z)
     {
-        return vec3(0.0);
+        return result;
     }
 
-    vec2 cell = floor(clamp(globalUV, vec2(0.0), vec2(0.999999)) * gridResolution);
+    float gridResolution = max(hairAssetUBO.hairAsset.ClumpParams.y, 1.0);
+    vec2 clampedUV = clamp(globalUV, vec2(0.0), vec2(0.999999));
+    vec2 cell = floor(clampedUV * gridResolution);
     vec2 cellMin = cell / gridResolution;
     vec2 cellMax = (cell + 1.0) / gridResolution;
     vec2 clumpCenterUV = (cell + 0.5) / gridResolution;
 
-    vec2 clumpNoise = HairNoiseDirection2(vec3(clumpCenterUV * hairAssetUBO.hairAsset.ClumpParams.x, strandSeed * 19.0));
+    // Break the regular grid by perturbing each clump center with a noise
+    // sample keyed off the cell-center uv.
+    vec2 clumpNoise = HairNoiseDirection2(vec3(clumpCenterUV * hairAssetUBO.hairAsset.ClumpParams.x, 0.0));
     clumpCenterUV += clumpNoise * (hairAssetUBO.hairAsset.StyleExtraParams.w / gridResolution);
     clumpCenterUV = clamp(clumpCenterUV, cellMin, cellMax);
 
-    vec2 variedUV = mix(globalUV, clumpCenterUV, hairAssetUBO.hairAsset.ClumpParams.w * strandSeed);
-    vec3 referenceCenter = HairEvaluateLocalCenterFromAtlasUV(HairGlobalToAtlasUV(variedUV), strandT);
+    result.CurlUV = clumpCenterUV;
+    // v_clump interpolates the strand's uv toward the clump center for noise
+    // lookups (frizz / kink). Curl always uses the clump-center uv directly.
+    result.NoiseUV = mix(globalUV, clumpCenterUV, hairAssetUBO.hairAsset.ClumpParams.w);
+
+    // Reference strand vertex p_c at the same parametric height (strandT).
+    vec3 referenceCenter = HairEvaluateLocalCenterFromAtlasUV(HairGlobalToAtlasUV(clumpCenterUV), strandT);
     vec3 delta = referenceCenter - baseCenter;
     float distanceToCenter = length(delta);
     if (distanceToCenter <= 1e-6)
     {
-        return vec3(0.0);
+        return result;
     }
 
+    // h: texture-space distance from clump center, normalized by clump cell
+    // half-extent. Strands at the cell boundary have h = 1, strands at the
+    // center have h = 0.
     float h = clamp(length(globalUV - clumpCenterUV) * gridResolution, 0.0, 1.0);
     float influence = max(1.0 - h * hairAssetUBO.hairAsset.StyleExtraParams.y / distanceToCenter, 0.0);
-    return delta * influence * pow(max(wCoord, 0.0), hairAssetUBO.hairAsset.StyleExtraParams.z);
+    result.Displacement = delta * influence;
+    return result;
 }
 
 vec3 HairEvaluateStyledLocalCenter(HairBundleDesc bundle, vec2 rootUV, vec2 strandSeeds, float strandT)
@@ -243,12 +284,16 @@ vec3 HairEvaluateStyledLocalCenter(HairBundleDesc bundle, vec2 rootUV, vec2 stra
     float wCoord = HairSampleW(atlasUV, strandT);
     mat3 frame = HairSampleFrame(atlasUV, strandT);
 
+    HairClumpResult clump = HairEvaluateClump(baseCenter, globalUV, strandT, strandSeeds.x);
+
+    float clumpFalloff = pow(max(wCoord, 0.0), hairAssetUBO.hairAsset.StyleExtraParams.z);
+
     vec3 styledCenter = baseCenter;
-    styledCenter += HairApplyClump(baseCenter, globalUV, strandT, wCoord, strandSeeds.x);
+    styledCenter += clump.Displacement * clumpFalloff;
     styledCenter += HairApplyFuzz(frame, wCoord, strandSeeds);
-    styledCenter += HairApplyFrizz(frame, globalUV, wCoord);
-    styledCenter += HairApplyKink(frame, globalUV, wCoord);
-    styledCenter += HairApplyCurl(frame, globalUV, wCoord, strandSeeds.y);
+    styledCenter += HairApplyFrizz(frame, clump.NoiseUV, wCoord);
+    styledCenter += HairApplyKink(frame, clump.NoiseUV, wCoord);
+    styledCenter += HairApplyCurl(frame, clump.CurlUV, wCoord);
     return styledCenter;
 }
 
